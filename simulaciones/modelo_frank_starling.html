@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modelo de Frank-Starling y asa presión-volumen</title>
+<style>
+:root{--bg:#f7f8f6;--card:#fff;--ink:#14202b;--ink2:#4a5a68;--ink3:#7b8894;--line:#dfe4e1;--grid:rgba(20,32,43,.09);--a:#1f6fb5;--b:#d4572a;--c:#12906a;--g:#8a949c}
+@media (prefers-color-scheme:dark){:root{--bg:#10171d;--card:#18222b;--ink:#eaf0f4;--ink2:#b3c0ca;--ink3:#8796a2;--line:#2a3742;--grid:rgba(234,240,244,.1);--a:#5aa6ea;--b:#ef8458;--c:#38c496;--g:#8f9ba5}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1040px;margin:0 auto;padding:28px 18px 48px}
+h1{font:600 26px/1.25 Georgia,"Times New Roman",serif;margin:0 0 6px}
+.sub{color:var(--ink2);margin:0 0 22px;max-width:70ch}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.kpi span{display:block;font-size:13px;color:var(--ink2)}
+.kpi b{font:600 26px/1.3 Georgia,serif;font-variant-numeric:lining-nums tabular-nums}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 14px 10px}
+.panel h2{font:600 16px/1.3 system-ui,sans-serif;margin:0 0 2px}
+.panel p{margin:0 0 8px;font-size:13px;color:var(--ink2)}
+.cv{position:relative;height:320px}
+.lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin:8px 0 0}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.ctl{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-top:14px;display:grid;gap:10px}
+.row{display:grid;grid-template-columns:170px 1fr 64px;align-items:center;gap:12px;font-size:14px}
+.row label{color:var(--ink2)}
+.row output{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--a)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+button{font:inherit;font-size:14px;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:8px;padding:7px 14px;cursor:pointer}
+button:hover{background:var(--bg);border-color:var(--ink3)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+.notes{margin-top:22px;font-size:14px;color:var(--ink2);max-width:80ch}
+.notes h2{font:600 16px/1.3 system-ui,sans-serif;color:var(--ink);margin:16px 0 4px}
+.notes p{margin:0 0 8px}
+.sec{font:600 21px/1.3 Georgia,serif;margin:30px 0 4px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:14px;margin-top:14px}
+.two ol,.two ul{margin:0;padding-left:20px;font-size:14px;color:var(--ink2)}
+.two li{margin-bottom:5px}
+.cv.s{height:260px}
+.eq{font:italic 17px/1.8 Georgia,serif;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:8px 0}
+.eq small{font:13px system-ui,sans-serif;font-style:normal;color:var(--ink2);margin-left:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:4px 0 8px}
+th,td{border-bottom:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{color:var(--ink);font-weight:600}
+@media (max-width:560px){.row{grid-template-columns:1fr 56px}.row label{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<main>
+<h1>Frank-Starling y asa presión-volumen del ventrículo izquierdo</h1>
+<p class="sub">Un solo modelo alimenta ambos gráficos. Cambia la precarga, la contractilidad o la poscarga y observa cómo responden la curva de Starling y el asa a la vez.</p>
+
+<div class="kpis">
+<div class="kpi"><span>Volumen sistólico</span><b id="k-sv"></b></div>
+<div class="kpi"><span>Fracción de eyección</span><b id="k-ef"></b></div>
+<div class="kpi"><span>Presión sistólica máx.</span><b id="k-ps"></b></div>
+<div class="kpi"><span>Trabajo sistólico</span><b id="k-sw"></b></div>
+<div class="kpi"><span>Gasto cardiaco</span><b id="k-co"></b></div>
+<div class="kpi"><span>Acople Ees / Ea</span><b id="k-cp"></b></div>
+</div>
+
+<div class="charts">
+<section class="panel">
+<h2>Curva de Frank-Starling</h2>
+<p>Volumen sistólico según el volumen telediastólico.</p>
+<div class="cv"><canvas id="c1" role="img" aria-label="Curva de Frank-Starling: el volumen sistólico aumenta con el volumen telediastólico y tiende a una meseta."></canvas></div>
+<div class="lg"><span><i style="background:var(--a)"></i>Curva actual</span><span><i style="background:var(--g)"></i>Curva basal</span><span><i style="background:var(--b)"></i>Punto de operación</span></div>
+</section>
+<section class="panel">
+<h2>Asa presión-volumen</h2>
+<p>A: fin de diástole · B: apertura aórtica · C: fin de sístole · D: apertura mitral.</p>
+<div class="cv"><canvas id="c2" role="img" aria-label="Asa presión-volumen del ventrículo izquierdo con las relaciones de fin de sístole y fin de diástole y la recta de elastancia arterial."></canvas></div>
+<div class="lg"><span><i style="background:var(--a)"></i>Asa</span><span><i style="background:var(--b)"></i>Fin de sístole (RPVFS)</span><span><i style="background:var(--c)"></i>Fin de diástole (RPVFD)</span><span><i style="background:var(--ink3)"></i>Recta de Ea</span><span><i style="background:var(--g)"></i>Asa basal</span></div>
+</section>
+</div>
+
+<section class="ctl" aria-label="Controles del modelo">
+<div class="row"><label for="edv">Precarga (VTD, mL)</label><input type="range" id="edv" min="70" max="220" step="1" value="120"><output id="v-edv"></output></div>
+<div class="row"><label for="con">Contractilidad (Ees)</label><input type="range" id="con" min="0.4" max="1.6" step="0.05" value="1"><output id="v-con"></output></div>
+<div class="row"><label for="ea">Poscarga (Ea, mmHg/mL)</label><input type="range" id="ea" min="0.6" max="2.6" step="0.05" value="1.45"><output id="v-ea"></output></div>
+<div class="row"><label for="hr">Frecuencia (lpm)</label><input type="range" id="hr" min="40" max="160" step="1" value="70"><output id="v-hr"></output></div>
+<div class="row"><label for="ser">Recaptación de Ca²⁺ (SERCA)</label><input type="range" id="ser" min="0.5" max="1.5" step="0.05" value="1"><output id="v-ser"></output></div>
+<div class="btns">
+<button id="b0">Restablecer</button>
+<button id="b1">Aumentar precarga</button>
+<button id="b2">Aumentar poscarga</button>
+<button id="b3">Insuficiencia cardiaca</button>
+<button id="b4">Ejercicio</button>
+<button id="b5">Estímulo β-adrenérgico</button>
+<button id="b6">Falla de SERCA</button>
+</div>
+</section>
+
+<h2 class="sec">Contracción del miocardio y manejo del calcio</h2>
+<p class="sub">Los mismos controles actúan sobre el sarcómero: la precarga fija su longitud y la contractilidad fija el calcio sistólico.</p>
+<div class="kpis">
+<div class="kpi"><span>Longitud del sarcómero</span><b id="m-sl"></b></div>
+<div class="kpi"><span>Ca²⁺ sistólico</span><b id="m-ca"></b></div>
+<div class="kpi"><span>CE₅₀ (sensibilidad)</span><b id="m-ec"></b></div>
+<div class="kpi"><span>Fuerza pico</span><b id="m-f"></b></div>
+</div>
+<div class="charts">
+<section class="panel">
+<h2>Transitorio de calcio y fuerza</h2>
+<p>Un latido: el calcio sube primero y la fuerza lo sigue con retraso.</p>
+<div class="cv s"><canvas id="c3" role="img" aria-label="Transitorio de calcio intracelular y curso temporal de la fuerza de contracción durante un latido."></canvas></div>
+<div class="lg"><span><i style="background:var(--b)"></i>Ca²⁺ libre (µM, eje izquierdo)</span><span><i style="background:var(--a)"></i>Fuerza (% del máximo, eje derecho)</span></div>
+</section>
+<section class="panel">
+<h2>Relación fuerza-calcio</h2>
+<p>Más estiramiento desplaza la curva a la izquierda: misma cantidad de calcio, más fuerza.</p>
+<div class="cv s"><canvas id="c4" role="img" aria-label="Relación sigmoidea entre calcio intracelular y fuerza, con desplazamiento a la izquierda al aumentar la longitud del sarcómero."></canvas></div>
+<div class="lg"><span><i style="background:var(--a)"></i>Curva actual</span><span><i style="background:var(--g)"></i>Curva basal</span><span><i style="background:var(--b)"></i>Sístole</span><span><i style="background:var(--ink3)"></i>Diástole</span></div>
+</section>
+</div>
+<div class="two">
+<section class="panel">
+<h2>Acoplamiento excitación-contracción</h2>
+<ol>
+<li>El potencial de acción despolariza el sarcolema y abre los canales de Ca²⁺ tipo L (receptor de dihidropiridina).</li>
+<li>Entra una pequeña cantidad de calcio, que activa los receptores de rianodina (RyR2) del retículo sarcoplásmico.</li>
+<li>El retículo libera mucho más calcio (liberación de calcio inducida por calcio) y el Ca²⁺ libre sube de unos 0,1 µM en diástole a 0,5–1 µM en sístole.</li>
+<li>El calcio se une a la troponina C, la tropomiosina deja libre el sitio de la actina y los puentes cruzados de miosina generan fuerza con ATP.</li>
+<li>En la relajación, SERCA (regulada por fosfolambán) devuelve al retículo cerca del 70 % del calcio y el intercambiador Na⁺/Ca²⁺ saca el 25–30 % (valores medidos en conejo y otras especies, que se asumen similares en el ventrículo humano). En la rata SERCA aporta más de 90 %. La bomba de la membrana y la mitocondria manejan una fracción mínima.</li>
+</ol>
+</section>
+<section class="panel">
+<h2>Cómo se conecta con el modelo</h2>
+<ul>
+<li>Frank-Starling: más VTD estira el sarcómero y la troponina C se vuelve más sensible al calcio (activación dependiente de la longitud). Eso baja la CE₅₀ y sube la fuerza sin cambiar el calcio.</li>
+<li>Contractilidad (Ees): más calcio sistólico, por ejemplo con estímulo β-adrenérgico o inhibición de la bomba Na⁺/K⁺, sube la fuerza y la pendiente de la RPVFS.</li>
+<li>Estímulo β-adrenérgico: la PKA fosforila canales L, RyR2, fosfolambán y troponina I. Sube el calcio, SERCA recapta más rápido y la relajación se acelera.</li>
+<li>Falla de SERCA: el calcio decae lento, el retículo se carga menos y baja la contractilidad. Es un mecanismo frecuente en insuficiencia cardiaca, junto con una diástole más rígida.</li>
+</ul>
+</section>
+</div>
+
+<h2 class="sec">Gasto cardiaco: efecto de la precarga y la poscarga</h2>
+<div class="eq">GC = VS × FC<small>L/min = (mL/latido × latidos/min) / 1000</small></div>
+<div class="eq">VS = VTD − VFS<small>volumen telediastólico menos telesistólico</small></div>
+<div class="eq">VS ≈ (VTD − V₀) · Ees / (Ees + Ea)<small>forma lineal de la intersección entre la RPVFS y la recta de Ea</small></div>
+<div class="eq">PAM = GC × RVP + PVC<small>relación hemodinámica: la presión resulta del flujo y la resistencia</small></div>
+<p class="sub" style="margin-top:10px">Las comparaciones siguientes mantienen fija la frecuencia y la contractilidad que tengas en los controles.</p>
+<div class="kpis">
+<div class="kpi"><span>Gasto cardiaco actual</span><b id="g-0"></b></div>
+<div class="kpi"><span>Precarga +20 % (VTD)</span><b id="g-1"></b></div>
+<div class="kpi"><span>Poscarga +30 % (Ea)</span><b id="g-2"></b></div>
+</div>
+<div class="charts">
+<section class="panel">
+<h2>Gasto cardiaco según la precarga</h2>
+<p>Una curva por nivel de poscarga. Más llenado aumenta el gasto hasta aplanarse.</p>
+<div class="cv s"><canvas id="c5" role="img" aria-label="Gasto cardiaco en función del volumen telediastólico para tres niveles de elastancia arterial."></canvas></div>
+<div class="lg"><span><i style="background:var(--c)"></i>Ea 0,9</span><span><i style="background:var(--a)"></i>Ea 1,45</span><span><i style="background:var(--b)"></i>Ea 2,2</span><span><i style="background:var(--ink)"></i>Estado actual</span></div>
+</section>
+<section class="panel">
+<h2>Gasto cardiaco según la poscarga</h2>
+<p>Una curva por nivel de llenado. Más resistencia reduce el gasto, y más si el llenado es bajo.</p>
+<div class="cv s"><canvas id="c6" role="img" aria-label="Gasto cardiaco en función de la elastancia arterial para tres niveles de volumen telediastólico."></canvas></div>
+<div class="lg"><span><i style="background:var(--c)"></i>VTD 90 mL</span><span><i style="background:var(--a)"></i>VTD 120 mL</span><span><i style="background:var(--b)"></i>VTD 160 mL</span><span><i style="background:var(--ink)"></i>Estado actual</span></div>
+</section>
+</div>
+<div class="two">
+<section class="panel">
+<h2>Precarga</h2>
+<ul>
+<li>Más retorno venoso eleva el VTD, el sarcómero se estira y la fuerza aumenta (Frank-Starling). El volumen sistólico y el gasto suben.</li>
+<li>El efecto se aplana a precargas altas y se aplana antes si la contractilidad es baja.</li>
+<li>En el asa, la precarga desplaza el punto A a la derecha sin cambiar la RPVFS.</li>
+<li>Menos precarga (hemorragia, deshidratación, vasodilatación venosa) hace el camino inverso.</li>
+</ul>
+</section>
+<section class="panel">
+<h2>Poscarga</h2>
+<ul>
+<li>Más resistencia arterial eleva la Ea. El fin de sístole sube por la RPVFS, queda más sangre en el ventrículo y el volumen sistólico baja.</li>
+<li>Si la frecuencia no cambia, el gasto cae. El corazón sano compensa en parte, porque el volumen residual aumenta el llenado del latido siguiente.</li>
+<li>Con contractilidad baja (Ees/Ea pequeño), el mismo aumento de poscarga reduce el gasto mucho más. Por eso en la insuficiencia cardiaca se usan vasodilatadores.</li>
+<li>En el asa, la poscarga hace el asa más alta y más angosta.</li>
+</ul>
+</section>
+</div>
+
+<section class="notes">
+<h2>Cómo se calcula</h2>
+<p>La relación de fin de sístole es una curva ligeramente cóncava, Pes = Ees·(V − V₀) − k·(V − V₀)², y la de fin de diástole es exponencial, Ped = 0,8·(e^(0,022·(V − V₀)) − 1). El punto de fin de sístole es la intersección de la RPVFS con la recta de elastancia arterial Ea, que une (VTD, 0) con (VFS, Pes). De ahí salen VS = VTD − VFS y Ea = Pes / VS. El trabajo sistólico es el área del asa (1 mmHg·mL = 1,333×10⁻⁴ J).</p>
+<h2>Modelo de calcio</h2>
+<p>La longitud del sarcómero se obtiene linealmente desde el VTD: 1,8 µm a 70 mL, 2,0 µm a unos 135 mL y 2,2 µm a unos 200 mL. El calcio diastólico es 0,12 µM y el sistólico es 0,12 + 0,68·contractilidad (µM). La fuerza sigue una función de Hill (n = 3,5) con CE₅₀ = 0,7·e^(−1,2·(SL − 2,0)) µM, de modo que cae cerca de 40 % entre 1,8 y 2,2 µm, y se filtra con una constante de tiempo de 70 ms para reproducir el retraso respecto del calcio. El transitorio sube con constante de 25 ms y decae con 110 ms dividido por el factor de SERCA. Con valores basales, el calcio sistólico activa solo cerca de la mitad de la fuerza máxima: el miocardio normal no trabaja saturado, y por eso puede aumentar su fuerza con más calcio o más estiramiento.</p>
+<h2>Valores de referencia</h2>
+<div style="overflow-x:auto"><table>
+<tr><th>Parámetro</th><th>Modelo basal</th><th>Rango típico en adulto sano en reposo</th></tr>
+<tr><td>Volumen telediastólico</td><td>120 mL</td><td>100–140 mL (varía con sexo y superficie corporal)</td></tr>
+<tr><td>Volumen telesistólico</td><td>≈ 50 mL</td><td>40–60 mL</td></tr>
+<tr><td>Volumen sistólico</td><td>≈ 70 mL</td><td>60–100 mL</td></tr>
+<tr><td>Fracción de eyección</td><td>≈ 58 %</td><td>55–70 %</td></tr>
+<tr><td>Frecuencia y gasto cardiaco</td><td>70 lpm, ≈ 4,9 L/min</td><td>60–100 lpm, 4–8 L/min (≈ 5 en reposo)</td></tr>
+<tr><td>Presión sistólica máxima del VI</td><td>≈ 115 mmHg</td><td>100–140 mmHg (igual a la sistólica aórtica)</td></tr>
+<tr><td>Presión de fin de sístole</td><td>≈ 100 mmHg</td><td>90–110 mmHg</td></tr>
+<tr><td>Presión telediastólica del VI</td><td>≈ 8 mmHg</td><td>4–12 mmHg</td></tr>
+<tr><td>Ees (RPVFS)</td><td>≈ 2,5 mmHg/mL (pendiente efectiva)</td><td>≈ 2–3 mmHg/mL; varía mucho con el método</td></tr>
+<tr><td>Ea</td><td>1,45 mmHg/mL</td><td>≈ 1,2–2,2 mmHg/mL</td></tr>
+<tr><td>Acople Ees/Ea</td><td>≈ 1,7</td><td>≈ 1–2</td></tr>
+<tr><td>Ca²⁺ diastólico y sistólico</td><td>0,12 y 0,8 µM</td><td>≈ 0,1–0,2 y 0,5–1,2 µM (depende de especie y temperatura)</td></tr>
+<tr><td>Longitud del sarcómero</td><td>≈ 1,95 µm en reposo</td><td>≈ 1,8–2,2 µm; fuerza máxima cerca de 2,2 µm</td></tr>
+<tr><td>CE₅₀ y coeficiente de Hill</td><td>0,74 µM y 3,5</td><td>valor aproximado para músculo intacto; en fibras permeabilizadas la CE₅₀ suele ser mayor</td></tr>
+</table></div>
+<p>Los volúmenes y la fracción de eyección se cotejaron con Petersen y cols. 2017 (resonancia, adultos sanos de 45 a 74 años): mujeres con VTD 124 ± 21 mL, VTS 49 ± 11 mL y FE 61 ± 5 %; hombres con VTD 166 ± 32 mL, VTS 69 ± 16 mL y FE 58 ± 5 %. El basal del modelo se parece más al de una mujer adulta. La relación Ees/Ea se cotejó con Asanoi y cols. 1989 (en sujetos normales Ees fue casi el doble de Ea). El resto de los rangos son valores típicos que no se verificaron fila por fila contra una fuente concreta, y varían entre métodos y especies.</p>
+<h2>Referencias</h2>
+<ol style="margin:0 0 8px;padding-left:20px;font-size:13px">
+<li>Petersen SE, Aung N, Sanghvi MM, et al. Reference ranges for cardiac structure and function using cardiovascular magnetic resonance in Caucasians from the UK Biobank population cohort. J Cardiovasc Magn Reson. 2017;19:18. doi:10.1186/s12968-017-0327-9</li>
+<li>Le Ven F, Bibeau K, De Larochellière É, et al. Cardiac morphology and function reference values derived from a large subset of healthy young Caucasian adults by magnetic resonance imaging. Eur Heart J Cardiovasc Imaging. 2016;17:981–990.</li>
+<li>Kawel-Boehm N, Maceira A, Valsangiacomo-Buechel ER, et al. Normal values for cardiovascular magnetic resonance in adults and children. J Cardiovasc Magn Reson. 2015;17:29. doi:10.1186/s12968-015-0111-7</li>
+<li>Asanoi H, et al. Ventriculoarterial coupling in normal and failing heart in humans. Circ Res. 1989;65:483–493. PMID 2752553.</li>
+<li>Kelly RP, Ting CT, Yang TM, et al. Effective arterial elastance as index of arterial vascular load in humans. Circulation. 1992;86:513–521.</li>
+<li>Chantler PD, Lakatta EG. Arterial–ventricular coupling with aging and disease. Front Physiol. 2012;3:90. doi:10.3389/fphys.2012.00090</li>
+<li>Klotz S, et al. Single-beat estimation of end-diastolic pressure-volume relationship. Am J Physiol Heart Circ Physiol. 2006;291:H403–H412.</li>
+<li>Klotz S, Dickstein ML, Burkhoff D. A computational method of prediction of the end-diastolic pressure-volume relationship by single beat. Nat Protoc. 2007.</li>
+<li>Bers DM. Cardiac excitation-contraction coupling. Nature. 2002;415:198–205.</li>
+<li>Piacentino V, Weber CR, Chen X, et al. Cellular basis of abnormal calcium transients of failing human ventricular myocytes. Circ Res. 2003;92(6). doi:10.1161/01.RES.0000062469.83985.9B</li>
+<li>Myofilament length dependent activation (de Tombe PP, et al.). J Mol Cell Cardiol. 2010. PMC2854194.</li>
+<li>Titin and troponin: central players in the Frank-Starling mechanism of the heart. Curr Cardiol Rev. 2009;5(2):119–124.</li>
+</ol>
+<p>Los autores abreviados o ausentes se tomaron de las fichas de búsqueda; conviene completarlos desde PubMed. Los parámetros del calcio (CE₅₀, coeficiente de Hill, constantes de tiempo y magnitud del desplazamiento por longitud) no se pudieron verificar en estas fuentes y son estimaciones del modelo.</p>
+<h2>Limitaciones</h2>
+<p>El modelo molecular se conecta con el hemodinámico solo de forma cualitativa: comparten los controles de precarga y contractilidad, pero la fuerza calculada aquí no alimenta las ecuaciones del asa. Es un modelo didáctico con valores típicos de adulto sano, sin ajuste individual. El escenario de insuficiencia cardiaca representa una miocardiopatía dilatada con función sistólica reducida, pero no desplaza la relación de fin de diástole, que en la práctica se corre a la derecha con el remodelado. La forma de la fase de eyección es una curva suave construida, no un registro real, y las constantes no están ajustadas a pacientes. No sirve para cálculos clínicos.</p>
+</section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+var V0=10,EES0=2.8,A=0.8,B=0.022;
+function edp(v){return A*(Math.exp(B*(v-V0))-1)}
+function solve(edv,c,ea){
+ var ees=EES0*c,k=0.008*c,D=edv-V0,s=ees+ea;
+ var disc=Math.max(0,s*s-4*k*ea*D);
+ var x=(s-Math.sqrt(disc))/(2*k);
+ var esv=V0+x,pes=ees*x-k*x*x;
+ return {ees:ees,k:k,esv:esv,pes:pes,sv:edv-esv};
+}
+function loop(edv,c,ea){
+ var r=solve(edv,c,ea),pdia=r.pes*0.82,pts=[],i;
+ pts.push({x:edv,y:edp(edv)});
+ pts.push({x:edv,y:pdia});
+ for(i=1;i<=24;i++){var t=i/24;pts.push({x:edv+(r.esv-edv)*t,y:pdia+(r.pes-pdia)*t+0.22*r.pes*Math.sin(Math.PI*t)})}
+ pts.push({x:r.esv,y:edp(r.esv)});
+ for(i=1;i<=16;i++){var v=r.esv+(edv-r.esv)*i/16;pts.push({x:v,y:edp(v)})}
+ var pmax=0,w=0,n=pts.length;
+ pts.forEach(function(q){if(q.y>pmax)pmax=q.y});
+ for(i=0;i<n;i++){var a=pts[i],b=pts[(i+1)%n];w+=a.x*b.y-b.x*a.y}
+ r.pts=pts;r.pmax=pmax;r.pdia=pdia;r.work=Math.abs(w)/2;
+ return r;
+}
+function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+var C={};
+function colors(){C={a:cv('--a'),b:cv('--b'),c:cv('--c'),g:cv('--g'),t:cv('--ink3'),gr:cv('--grid'),ink:cv('--ink')}}
+colors();
+var xs=[];for(var x=70;x<=230;x+=4)xs.push(x);
+var vx=[];for(var q=0;q<=250;q+=5)vx.push(q);
+function ax(t,mn,mx,ty){return {min:mn,max:mx,title:{display:true,text:t,color:C.t},ticks:{color:C.t},grid:{color:ty?C.gr:'transparent'}}}
+var base=solve(120,1,1.45);
+var ch1=new Chart(document.getElementById('c1'),{type:'line',
+ data:{labels:xs,datasets:[
+  {data:[],borderColor:C.a,backgroundColor:C.a+'22',fill:true,borderWidth:2.5,pointRadius:0,tension:.3,order:2},
+  {data:xs.map(function(v){return solve(v,1,1.45).sv}),borderColor:C.g,borderDash:[5,4],borderWidth:1.5,pointRadius:0,tension:.3,order:3},
+  {data:[],borderColor:C.b,backgroundColor:C.b,pointRadius:7,pointBorderWidth:2,pointBorderColor:'#fff',showLine:false,order:1}]},
+ options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+  scales:{x:{title:{display:true,text:'Volumen telediastólico (mL)',color:C.t},ticks:{color:C.t,autoSkip:false,maxRotation:0,callback:function(v,i){return xs[i]%40==0?xs[i]:''}},grid:{display:false}},
+   y:{min:0,max:160,title:{display:true,text:'Volumen sistólico (mL)',color:C.t},ticks:{color:C.t},grid:{color:C.gr}}}}});
+var lab={id:'lbl',afterDatasetsDraw:function(c){
+ var m=c.$m;if(!m)return;
+ var ctx=c.ctx,X=c.scales.x,Y=c.scales.y;
+ var L=[['A',m.edv,edp(m.edv),-12,14],['B',m.edv,m.pdia,10,-4],['C',m.esv,m.pes,-12,-8],['D',m.esv,edp(m.esv),-12,14]];
+ ctx.save();ctx.font='600 12px system-ui,sans-serif';
+ L.forEach(function(l){var px=X.getPixelForValue(l[1]),py=Y.getPixelForValue(l[2]);
+  ctx.beginPath();ctx.arc(px,py,3.5,0,6.283);ctx.fillStyle=C.a;ctx.fill();
+  ctx.fillStyle=C.ink;ctx.fillText(l[0],px+l[3],py+l[4])});
+ ctx.restore();}};
+var ch2=new Chart(document.getElementById('c2'),{type:'scatter',
+ data:{datasets:[
+  {data:[],showLine:true,borderColor:C.a,backgroundColor:C.a+'26',fill:true,borderWidth:2.5,pointRadius:0,tension:0,order:1},
+  {data:[],showLine:true,borderColor:C.b,borderWidth:2,pointRadius:0,tension:.2,order:2},
+  {data:vx.map(function(v){return {x:v,y:edp(v)}}),showLine:true,borderColor:C.c,borderWidth:2,pointRadius:0,tension:.3,order:3},
+  {data:[],showLine:true,borderColor:C.t,borderDash:[3,3],borderWidth:1.5,pointRadius:0,order:4},
+  {data:loop(120,1,1.45).pts,showLine:true,borderColor:C.g,borderDash:[5,4],borderWidth:1.5,pointRadius:0,tension:0,order:5}]},
+ options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+  scales:{x:ax('Volumen ventricular izquierdo (mL)',0,250,false),y:ax('Presión ventricular (mmHg)',0,200,true)}},
+ plugins:[lab]});
+function g(id){return document.getElementById(id)}
+function upd(){
+ var e=+g('edv').value,c=+g('con').value,ea=+g('ea').value,h=+g('hr').value;
+ var r=loop(e,c,ea);
+ ch1.data.datasets[0].data=xs.map(function(v){return solve(v,c,ea).sv});
+ var pt=xs.map(function(){return null});pt[Math.round((e-70)/4)]=r.sv;
+ ch1.data.datasets[2].data=pt;ch1.update();
+ var es=[];for(var v=V0;v<=250;v+=5){var xx=v-V0;es.push({x:v,y:r.ees*xx-r.k*xx*xx})}
+ ch2.data.datasets[0].data=r.pts;
+ ch2.data.datasets[1].data=es;
+ ch2.data.datasets[3].data=[{x:e,y:0},{x:r.esv,y:r.pes}];
+ ch2.$m={edv:e,esv:r.esv,pes:r.pes,pdia:r.pdia};ch2.update();
+ g('k-sv').textContent=Math.round(r.sv)+' mL';
+ g('k-ef').textContent=Math.round(100*r.sv/e)+' %';
+ g('k-ps').textContent=Math.round(r.pmax)+' mmHg';
+ g('k-sw').textContent=(r.work*0.0001333).toFixed(2)+' J';
+ g('k-co').textContent=(r.sv*h/1000).toFixed(1)+' L/min';
+ g('k-cp').textContent=((r.pes/(r.esv-V0))/ea).toFixed(2);
+ g('v-edv').textContent=e;g('v-con').textContent=c.toFixed(2);g('v-ea').textContent=ea.toFixed(2);g('v-hr').textContent=h;
+ g('v-ser').textContent=(+g('ser').value).toFixed(2);mol(e,c,+g('ser').value);gc(e,c,ea,h);
+}
+function hill(ca,ec){var a=Math.pow(ca,3.5);return a/(a+Math.pow(ec,3.5))}
+var EC0=0.7*Math.exp(-1.2*((1.8+0.2*50/65)-2.0));
+var ch3=new Chart(document.getElementById('c3'),{type:'scatter',
+ data:{datasets:[
+  {data:[],showLine:true,borderColor:C.b,borderWidth:2.5,pointRadius:0,tension:.3,yAxisID:'y'},
+  {data:[],showLine:true,borderColor:C.a,borderWidth:2.5,pointRadius:0,tension:.3,yAxisID:'y2'}]},
+ options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+  scales:{x:ax('Tiempo (ms)',0,600,false),
+   y:{min:0,max:1.5,title:{display:true,text:'Ca²⁺ (µM)',color:C.t},ticks:{color:C.t},grid:{color:C.gr}},
+   y2:{position:'right',min:0,max:100,title:{display:true,text:'Fuerza (%)',color:C.t},ticks:{color:C.t},grid:{display:false}}}}});
+var cx=[];for(var u=0;u<=2.001;u+=0.04)cx.push(u);
+var ch4=new Chart(document.getElementById('c4'),{type:'scatter',
+ data:{datasets:[
+  {data:[],showLine:true,borderColor:C.a,borderWidth:2.5,pointRadius:0,tension:.3,order:2},
+  {data:cx.map(function(u){return {x:u,y:hill(u,EC0)*100}}),showLine:true,borderColor:C.g,borderDash:[5,4],borderWidth:1.5,pointRadius:0,tension:.3,order:3},
+  {data:[],showLine:false,backgroundColor:C.b,pointRadius:7,pointBorderWidth:2,pointBorderColor:'#fff',order:1},
+  {data:[],showLine:false,backgroundColor:C.t,pointRadius:6,pointBorderWidth:2,pointBorderColor:'#fff',order:1}]},
+ options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+  scales:{x:ax('Ca²⁺ libre (µM)',0,2,false),y:ax('Fuerza (% del máximo)',0,100,true)}}});
+function mol(e,c,s){
+ var SL=1.8+0.2*(e-70)/65;
+ var ec=0.7*Math.exp(-1.2*(SL-2.0));
+ var cap=0.12+0.68*c,cad=0.12,tD=110/s,tR=25;
+ var tp=Math.log(tD/tR)*tD*tR/(tD-tR),nm=Math.exp(-tp/tD)-Math.exp(-tp/tR);
+ var ca=[],fo=[],F=hill(cad,ec),fmax=0;
+ for(var t=0;t<=600;t+=5){
+  var z=cad+(cap-cad)*(Math.exp(-t/tD)-Math.exp(-t/tR))/nm;
+  F+=(hill(z,ec)-F)*5/70;
+  if(F>fmax)fmax=F;
+  ca.push({x:t,y:z});fo.push({x:t,y:F*100});
+ }
+ ch3.data.datasets[0].data=ca;ch3.data.datasets[1].data=fo;ch3.update();
+ ch4.data.datasets[0].data=cx.map(function(u){return {x:u,y:hill(u,ec)*100}});
+ ch4.data.datasets[2].data=[{x:cap,y:hill(cap,ec)*100}];
+ ch4.data.datasets[3].data=[{x:cad,y:hill(cad,ec)*100}];
+ ch4.update();
+ g('m-sl').textContent=SL.toFixed(2)+' µm';
+ g('m-ca').textContent=cap.toFixed(2)+' µM';
+ g('m-ec').textContent=ec.toFixed(2)+' µM';
+ g('m-f').textContent=Math.round(fmax*100)+' %';
+}
+function gco(e,c,ea,h){return solve(e,c,ea).sv*h/1000}
+var gx=[];for(var gv=70;gv<=220;gv+=5)gx.push(gv);
+var ax2=[];for(var gw=0.6;gw<=2.601;gw+=0.1)ax2.push(Math.round(gw*10)/10);
+function lin(c0){return {data:[],showLine:true,borderColor:c0,borderWidth:2.2,pointRadius:0,tension:.3}}
+var ch5=new Chart(document.getElementById('c5'),{type:'scatter',
+ data:{datasets:[lin(C.c),lin(C.a),lin(C.b),{data:[],showLine:false,backgroundColor:C.ink,pointRadius:7,pointBorderWidth:2,pointBorderColor:'#fff'}]},
+ options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+  scales:{x:ax('Volumen telediastólico (mL)',70,220,false),y:ax('Gasto cardiaco (L/min)',0,20,true)}}});
+var ch6=new Chart(document.getElementById('c6'),{type:'scatter',
+ data:{datasets:[lin(C.c),lin(C.a),lin(C.b),{data:[],showLine:false,backgroundColor:C.ink,pointRadius:7,pointBorderWidth:2,pointBorderColor:'#fff'}]},
+ options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+  scales:{x:ax('Elastancia arterial Ea (mmHg/mL)',0.6,2.6,false),y:ax('Gasto cardiaco (L/min)',0,20,true)}}});
+function pct(a,b){var d=Math.round(100*(a-b)/b);return (d>0?'+':'')+d+' %'}
+function gc(e,c,ea,h){
+ [0.9,1.45,2.2].forEach(function(q,i){ch5.data.datasets[i].data=gx.map(function(v){return {x:v,y:gco(v,c,q,h)}})});
+ [90,120,160].forEach(function(q,i){ch6.data.datasets[i].data=ax2.map(function(v){return {x:v,y:gco(q,c,v,h)}})});
+ var b=gco(e,c,ea,h);
+ ch5.data.datasets[3].data=[{x:e,y:b}];ch6.data.datasets[3].data=[{x:ea,y:b}];
+ ch5.update();ch6.update();
+ var p=gco(e*1.2,c,ea,h),a=gco(e,c,ea*1.3,h);
+ g('g-0').textContent=b.toFixed(1)+' L/min';
+ g('g-1').textContent=p.toFixed(1)+' L/min ('+pct(p,b)+')';
+ g('g-2').textContent=a.toFixed(1)+' L/min ('+pct(a,b)+')';
+}
+function setv(a){g('edv').value=a[0];g('con').value=a[1];g('ea').value=a[2];g('hr').value=a[3];g('ser').value=a[4]||1;upd()}
+['edv','con','ea','hr','ser'].forEach(function(i){g(i).addEventListener('input',upd)});
+g('b0').onclick=function(){setv([120,1,1.45,70])};
+g('b1').onclick=function(){setv([165,1,1.45,70])};
+g('b2').onclick=function(){setv([120,1,2.2,70])};
+g('b3').onclick=function(){setv([190,0.4,1.9,90,0.7])};
+g('b4').onclick=function(){setv([140,1.5,1.1,140,1.3])};
+g('b5').onclick=function(){setv([+g('edv').value,1.5,+g('ea').value,100,1.4])};
+g('b6').onclick=function(){setv([+g('edv').value,0.6,+g('ea').value,+g('hr').value,0.6])};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){location.reload()});
+upd();
+</script>
+</body>
+</html>

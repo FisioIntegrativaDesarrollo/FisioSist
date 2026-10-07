@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Potencial de acción del nodo sinusal humano (Fabbri 2017)</title>
+<style>
+:root{--bg:#fff;--fg:#1d1d1f;--mut:#6b6b70;--card:#f5f5f7;--line:#d6d6db;--ap:#c0392b;--tr:#2471a3;--ac:#c0392b}
+@media(prefers-color-scheme:dark){:root{--bg:#161618;--fg:#ececf0;--mut:#9a9aa2;--card:#222226;--line:#3a3a40;--ap:#ff7b6b;--tr:#6cb4e8;--ac:#ff7b6b}}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;max-width:980px;margin-inline:auto}
+h1{font-size:1.3rem;margin:0 0 4px}
+p.s{color:var(--mut);margin:0 0 14px;font-size:.9rem}
+canvas{width:100%;height:230px;display:block;background:var(--card);border-radius:10px}
+.lbl{display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px;font-size:.85rem;color:var(--mut)}
+select,button{font:inherit;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.ro{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.ro div{background:var(--card);border-radius:10px;padding:8px 10px;font-size:.78rem;color:var(--mut)}
+.ro b{display:block;font-size:1.15rem;color:var(--fg);font-variant-numeric:tabular-nums}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 24px;margin-top:6px}
+.ctl label{display:block;font-size:.85rem}
+.ctl label span{float:right;font-variant-numeric:tabular-nums;color:var(--mut)}
+input[type=range]{width:100%;accent-color:var(--ac)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+details{margin-top:16px;background:var(--card);border-radius:10px;padding:10px 14px;font-size:.88rem}
+summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<h1>Potencial de acción de una célula del nodo sinusal humano</h1>
+<p class="s">Modelo de célula única de Fabbri, Fantini, Wilders y Severi (2017), con dinámica completa de Ca²⁺ (reloj de membrana y reloj de calcio). Sin estímulo externo: la célula late sola.</p>
+
+<canvas id="cv"></canvas>
+<div class="lbl"><span>Traza adicional:
+  <select id="sel">
+    <option value="If">I_f (corriente "funny", HCN4)</option>
+    <option value="ICaL" selected>I_CaL (Ca²⁺ tipo L)</option>
+    <option value="ICaT">I_CaT (Ca²⁺ tipo T)</option>
+    <option value="IKr">I_Kr (K⁺ rápido)</option>
+    <option value="IKs">I_Ks (K⁺ lento)</option>
+    <option value="INaCa">I_NaCa (intercambiador Na⁺/Ca²⁺)</option>
+    <option value="IKACh">I_KACh (K⁺ activado por ACh)</option>
+    <option value="Cai">[Ca²⁺] citosólico (nM)</option>
+    <option value="Cas">[Ca²⁺] subsarcolémico (nM)</option>
+    <option value="Cj">[Ca²⁺] en el RS de liberación (mM)</option>
+  </select></span><span id="unit"></span></div>
+<canvas id="cv2"></canvas>
+
+<div class="ro">
+  <div>V<sub>m</sub> (mV)<b id="rV">–</b></div>
+  <div>Frecuencia (lpm)<b id="rF">–</b></div>
+  <div>Pot. diastólico máx. (mV)<b id="rR">–</b></div>
+  <div>Pico (mV)<b id="rP">–</b></div>
+  <div>[Ca²⁺]<sub>i</sub> (nM)<b id="rC">–</b></div>
+</div>
+
+<div class="row">
+  <label style="display:flex;align-items:center;gap:6px;font-size:.9rem"><input type="checkbox" id="iso"> Isoproterenol 1 µM</label>
+  <button id="bp">Pausar</button>
+  <button id="br">Reiniciar</button>
+  <button id="bz">Restablecer parámetros</button>
+  <span id="eff" style="font-size:.8rem;color:var(--mut);align-self:center"></span>
+</div>
+
+<div class="ctl" id="ctl"></div>
+
+<details>
+<summary>Cómo interpretar el potencial y experimentos sugeridos</summary>
+<p><b>Fase 4 (despolarización diastólica):</b> I<sub>f</sub> (HCN4) se activa con la hiperpolarización, I<sub>CaT</sub> aporta corriente entrante, I<sub>Kr</sub> se desactiva y, en la parte tardía, la liberación local de Ca²⁺ del retículo sarcoplásmico activa I<sub>NaCa</sub> (reloj de calcio). <b>Fase 0:</b> upstroke lento por I<sub>CaL</sub> (sin I<sub>Na</sub> relevante). <b>Fase 3:</b> I<sub>Kr</sub> e I<sub>Ks</sub> repolarizan hasta el potencial diastólico máximo (≈ −59 mV), muy despolarizado respecto al ventrículo por la ausencia de I<sub>K1</sub>.</p>
+<p><b>Experimentos (resultados de este código, ciclo control 813 ms ≈ 74 lpm):</b> I<sub>f</sub> al 0 % (ivabradina): ≈ 58 lpm (−22 %). Isoproterenol: ≈ 94 lpm (+27 %). ACh 10 nM: ≈ 59 lpm (−21 %); ACh 30 nM: ≈ 31 lpm; ACh 100 nM: la célula se silencia. Liberación del RS al 0 % (ryanodina): ≈ 70 lpm, el reloj de membrana sostiene el ritmo. I<sub>CaL</sub> al 50 %: el automatismo se pierde. I<sub>Kr</sub> al 50 %: ≈ 111 lpm, con potencial diastólico más despolarizado. [K⁺]<sub>o</sub> = 8 mM: ≈ 98 lpm.</p>
+<p><b>Notas del modelo:</b> el modelo es el de la célula central con las constantes por defecto del CellML oficial; [Na⁺]<sub>i</sub> se mantiene fija en 5 mM (como en el CellML) y los efectos de ACh e isoproterenol siguen las ecuaciones de los autores (isoproterenol es todo o nada, a 1 µM). Los deslizadores escalan la conductancia o permeabilidad de cada corriente. La integración usa Rush-Larsen para las compuertas y Euler con paso de 10 µs para el resto (los resultados no cambian con 2 µs). Si tu equipo es lento, la simulación se ralentiza sola y se indica la velocidad real.</p>
+<p><b>Referencia:</b> Fabbri A, Fantini M, Wilders R, Severi S (2017) Computational analysis of the human sinus node action potential: model development and effects of mutations. J Physiol 595:2365-2396. Ecuaciones portadas del CellML del Physiome Model Repository (models.physiomeproject.org/e/568, licencia CC BY 3.0).</p>
+</details>
+
+<script>
+"use strict";
+// Fabbri, Fantini, Wilders & Severi (2017), J Physiol 595:2365. Port del CellML oficial (PMR e/568).
+// Tiempo en s, V en mV, corrientes en nA, C en µF, concentraciones en mM.
+const RG=8314.472,TK=310,FA=96485.3415,Cm=5.7e-5,RT=RG*TK/FA;
+const Nao=140,Ki=140,Cao=1.8,Nai=5;
+const Rc=3.9,Lc=67,Lsub=0.02,PI=Math.PI;
+const Vcell=1e-9*PI*Rc*Rc*Lc,Vsub=1e-9*2*PI*Lsub*(Rc-Lsub/2)*Lc,Vjsr=0.0012*Vcell,Vi=0.46*Vcell-Vsub,Vnsr=0.0116*Vcell;
+const DEF={If:1,CaL:1,CaT:1,Kr:1,Ks:1,NaCa:1,Up:1,Rel:1,Na:1,Ko:5.4,ACh:0,Iso:0,spd:1};
+let P={...DEF},K={};
+function prep(){
+  const Ko=P.Ko,ACh=P.ACh*1e-6,iso=P.Iso>0,Km_f=45,al=0.5927;
+  K.Ko=Ko;K.EK=RT*Math.log(Ko/Ki);
+  const Gf=0.00427/(Ko/(Ko+Km_f)),GfK=Gf/(al+1),GfNa=al*GfK;
+  K.gfNa=GfNa*Ko/(Ko+Km_f)*P.If;K.gfK=GfK*Ko/(Ko+Km_f)*P.If;
+  K.AChsh=ACh>0?-1-9.898*Math.pow(ACh,0.618)/(Math.pow(ACh,0.618)+0.00122423):0;
+  K.Isosh=iso?7.5:0;
+  K.bup=iso?-0.25:ACh>0?0.7*ACh/(9e-5+ACh):0;
+  K.Pup=5*(1-K.bup)*P.Up;
+  K.gKs=(iso?1.2:1)*0.00065*P.Ks;
+  K.NaKi=iso?1.2:1;K.CaLi=iso?1.23:1;K.AChbl=0.31*ACh/(ACh+9e-5);
+  K.dLsh=iso?-8:0;K.dLsl=iso?-27:0;K.nsh=iso?-14:0;
+  K.aa=(3.5988-0.025641)/(1+1.2155e-6/Math.pow(ACh,1.6951))+0.025641;
+  K.ACh=ACh;K.PCaL=0.4578*P.CaL;K.PCaT=0.04132*P.CaT;K.gKr=0.00424*P.Kr;K.gNa=0.0223*P.Na;
+  K.KNaCa=3.343*P.NaCa;K.ks=148041085.1*P.Rel;
+  K.k34=Nao/(4.663+Nao);
+  K.ENa=RT*Math.log(Nao/Nai);K.Emh=RT*Math.log((Nao+0.12*Ko)/(Nai+0.12*Ki));
+  K.EKs=RT*Math.log((Ko+0.12*Nao)/(Ki+0.12*Nai));
+}
+const init=()=>({V:-47.787168,Cas:6.226104e-5,y:0.009508,m:0.447724,h:0.003058,dL:0.001921,fL:0.846702,fCa:0.844449,dT:0.268909,fT:0.020484,
+ R:0.9308,O:6.181512e-9,I:4.595622e-10,RI:0.069199,Cjsr:0.409551,Cnsr:0.435148,Cai:9.15641e-6,fTMM:0.653777,fCMi:0.217311,fCMs:0.158521,
+ fTC:0.017929,fTMC:0.259947,fCQ:0.138975,rK:0.011845,sK:0.845304,q:0.430836,r:0.014523,paS:0.283185,paF:0.011068,piy:0.709051,n:0.1162,a:0.00277,t:0});
+let S=init();
+const I={};
+function ghk(V,z,Pc,Ci,Co,f){const v=nz(V),e=Math.exp(-v*z/RT);return f*Pc*v/(RT*(1-e))*(Ci-Co*e);}
+const rl=(x,xi,tau,dt)=>xi+(x-xi)*Math.exp(-dt/tau);
+const nz=x=>Math.abs(x)<1e-7?1e-7:x;
+function step(dt){
+  const s=S,V=s.V,ex=Math.exp;
+  const sh=K.AChsh+K.Isosh;
+  // If
+  const u1=nz(V+148.8-sh),u2=nz(V+87.3-sh);
+  const tauy=1/(0.36*u1/(ex(0.066*u1)-1)+0.1*u2/(1-ex(-0.2*u2)))-0.054;
+  const yinf=V<-(80-sh)?0.01329+0.99921/(1+ex((V+97.134-sh)/8.1752)):0.0002501*ex(-(V-sh)/12.861);
+  // CaL
+  const fLinf=1/(1+ex((V+37.4)/5.3)),taufL=0.001*(44.3+230*ex(-Math.pow((V+36)/10,2)));
+  const dLinf=1/(1+ex(-((V+16.4508)-K.dLsh)/(4.3371*(1+K.dLsl/100))));
+  let ad=V;if(Math.abs(V+41.8)<1e-6)ad=-41.8;else if(Math.abs(V)<1e-6)ad=0;else if(Math.abs(V+6.8)<1e-6)ad=-6.80001;
+  const aL=-0.02839*(ad+41.8)/(ex(-(ad+41.8)/2.5)-1)-0.0849*(ad+6.8)/(ex(-(ad+6.8)/4.8)-1);
+  const bd=Math.abs(V+1.8)<1e-6?-1.80001:V;
+  const bL=0.01143*(bd+1.8)/(ex((bd+1.8)/2.5)-1);
+  const taudL=0.001/(aL+bL);
+  const fCainf=0.000338/(0.000338+s.Cas),taufCa=0.001*fCainf/0.0075;
+  // CaT
+  const dTinf=1/(1+ex(-(V+38.3)/5.5)),taudT=0.001/(1.068*ex((V+38.3)/30)+1.068*ex(-(V+38.3)/30));
+  const fTinf=1/(1+ex((V+58.7)/3.8)),taufT=1/(16.67*ex(-(V+75)/83.3)+16.67*ex((V+75)/15.38));
+  // Kur, to
+  const taurK=0.009/(1+ex((V+5)/12))+0.0005,rKinf=1/(1+ex((V+6)/-8.6));
+  const tausK=0.59/(1+ex((V+60)/10))+3.05,sKinf=1/(1+ex((V+7.5)/10));
+  const qinf=1/(1+ex((V+49)/13)),tauq=0.001*0.6*(65.17/(0.57*ex(-0.08*(V+44))+0.065*ex(0.1*(V+45.93)))+10.1);
+  const rinf=1/(1+ex(-(V-19.3)/15)),taur=0.001*0.66*1.4*(15.59/(1.037*ex(0.09*(V+30.61))+0.369*ex(-0.12*(V+23.84)))+2.98);
+  // Kr
+  const painf=1/(1+ex(-(V+10.0144)/7.6607)),tauS=0.846554/(4.2*ex(V/17)+0.15*ex(-V/21.6)),tauF=1/(30*ex(V/10)+ex(-V/12));
+  const piinf=1/(1+ex((V+28.6)/17.1)),taupi=1/(100*ex(-V/54.645)+656*ex(V/106.157));
+  // KACh
+  const ba=10*ex(0.0133*(V+40)),ainf=K.aa/(K.aa+ba),taua=1/(K.aa+ba);
+  // Na
+  const hinf=1/(1+ex((V+69.804)/4.4565)),ah=20*ex(-0.125*(V+75)),bh=2000/(320*ex(-0.1*(V+75))+1),tauh=1/(ah+bh);
+  const minf=1/(1+ex(-(V+42.0504)/8.3106)),E0=V+41,am=Math.abs(E0)<1e-5?2000:200*E0/(1-ex(-0.1*E0)),bm=8000*ex(-0.056*(V+66)),taum=1/(am+bm);
+  // Ks
+  const ninf=Math.sqrt(1/(1+ex(-((V+0.6383)-K.nsh)/10.7071))),an=28/(1+ex(-((V-40)-K.nsh)/3)),bn=ex(-((V-K.nsh)-5)/25),taun=1/(an+bn);
+  // corrientes
+  const dg=s.dL*s.fL*s.fCa;
+  const siCa=ghk(V,2,K.PCaL,s.Cas,Cao,2)*dg;
+  const siK=0.000365*ghk(V,1,K.PCaL,Ki,K.Ko,1)*dg,siNa=1.85e-5*ghk(V,1,K.PCaL,Nai,Nao,1)*dg;
+  const iCaL=(siCa+siK+siNa)*(1-K.AChbl)*K.CaLi;
+  const iCaT=ghk(V,2,K.PCaT,s.Cas,Cao,2)*s.dT*s.fT;
+  const ifNa=s.y*K.gfNa*(V-K.ENa),ifK=s.y*K.gfK*(V-K.EK),iF=ifNa+ifK;
+  const iKr=K.gKr*(V-K.EK)*(0.9*s.paF+0.1*s.paS)*s.piy;
+  const iKs=K.gKs*(V-K.EKs)*s.n*s.n;
+  const ito=3.5e-3*(V-K.EK)*s.q*s.r,iKur=0.1539e-3*s.rK*s.sK*(V-K.EK);
+  const iKACh=K.ACh>0?0.00345*(V-K.EK)*(1+ex((V+20)/20))*s.a:0;
+  const iNa=K.gNa*s.m*s.m*s.m*s.h*(V-K.Emh);
+  const iNaK=K.NaKi*0.08105/(1+Math.pow(1.4/K.Ko,1.2))/(1+Math.pow(14/Nai,1.3))/(1+ex(-((V-K.ENa)+110)/20));
+  // NaCa
+  const k43=Nai/(26.44+Nai),k41=ex(-0.4315*V/(2*RT)),k32=ex(0.4315*V/(2*RT));
+  const dO=1+(Cao/3.663)*(1+1)+(Nao/1628)*(1+(Nao/561.4)*(1+Nao/4.663));
+  const k23=((Nao/1628)*Nao/561.4*(1+Nao/4.663)*k41)/dO,k21=((Cao/3.663))/dO;
+  const x1=k41*K.k34*(k23+k21)+k21*k32*(k43+k41);
+  const di=1+(s.Cas/0.0207)*(1+ex(-0.1369*V/RT)+Nai/26.44)+(Nai/395.3)*(1+(Nai/2.289)*(1+Nai/26.44));
+  const k12=((s.Cas/0.0207)*ex(-0.1369*V/RT))/di,k14=((Nai/395.3)*Nai/2.289*(1+Nai/26.44)*k32)/di;
+  const x2=k32*k43*(k14+k12)+k41*k12*(K.k34+k32),x3=k14*k43*(k23+k21)+k12*k23*(k43+k41),x4=k23*K.k34*(k14+k12)+k14*k21*(K.k34+k32);
+  const iNaCa=K.KNaCa*(x2*k21-x1*k12)/(x1+x2+x3+x4);
+  const itot=iF+iKr+iKs+ito+iNaK+iNaCa+iNa+iCaL+iCaT+iKACh+iKur;
+  // Ca: RyR y buffers
+  const kCaSR=15-14/(1+Math.pow(0.45/s.Cjsr,2.5)),koS=10000/kCaSR,kiS=500*kCaSR,Cs2=s.Cas*s.Cas;
+  const rR=koS*Cs2*s.R-660*s.O,rO=kiS*s.Cas*s.O-5*s.I,rI=660*s.I-koS*Cs2*s.RI,rRI=5*s.RI-kiS*s.Cas*s.R;
+  const dR=5*s.RI-kiS*s.Cas*s.R-rR,dOo=rR-rO,dI=rO-rI,dRI=rI-rRI;
+  const jrel=K.ks*s.O*(s.Cjsr-s.Cas),jdif=(s.Cas-s.Cai)/5.469e-5,jup=K.Pup/(1+ex((-s.Cai+0.000286113)/5e-5)),jtr=(s.Cnsr-s.Cjsr)/0.04;
+  const dfTMM=2277*2.5*(1-(s.fTMC+s.fTMM))-751*s.fTMM,dfCMs=1.642e6*s.Cas*(1-s.fCMs)-542*s.fCMs,dfTC=88800*s.Cai*(1-s.fTC)-446*s.fTC;
+  const dfTMC=227700*s.Cai*(1-(s.fTMC+s.fTMM))-7.51*s.fTMC,dfCQ=175.4*s.Cjsr*(1-s.fCQ)-445*s.fCQ,dfCMi=1.642e6*s.Cai*(1-s.fCMi)-542*s.fCMi;
+  const dCas=jrel*Vjsr/Vsub-((siCa+iCaT-2*iNaCa)/(2*FA*Vsub)+jdif+0.045*dfCMs);
+  const dCai=(jdif*Vsub-jup*Vnsr)/Vi-(0.045*dfCMi+0.031*dfTC+0.062*dfTMC);
+  const dCn=jup-jtr*Vjsr/Vnsr,dCj=jtr-(jrel+10*dfCQ);
+  const dV=-itot/Cm;
+  // actualizar
+  s.y=rl(s.y,yinf,tauy,dt);s.fL=rl(s.fL,fLinf,taufL,dt);s.dL=rl(s.dL,dLinf,taudL,dt);s.fCa=rl(s.fCa,fCainf,taufCa,dt);
+  s.dT=rl(s.dT,dTinf,taudT,dt);s.fT=rl(s.fT,fTinf,taufT,dt);s.rK=rl(s.rK,rKinf,taurK,dt);s.sK=rl(s.sK,sKinf,tausK,dt);
+  s.q=rl(s.q,qinf,tauq,dt);s.r=rl(s.r,rinf,taur,dt);s.paS=rl(s.paS,painf,tauS,dt);s.paF=rl(s.paF,painf,tauF,dt);s.piy=rl(s.piy,piinf,taupi,dt);
+  s.a=rl(s.a,ainf,taua,dt);s.h=rl(s.h,hinf,tauh,dt);s.m=rl(s.m,minf,taum,dt);s.n=rl(s.n,ninf,taun,dt);
+  s.R+=dt*dR;s.O+=dt*dOo;s.I+=dt*dI;s.RI+=dt*dRI;
+  s.fTMM+=dt*dfTMM;s.fCMs+=dt*dfCMs;s.fTC+=dt*dfTC;s.fTMC+=dt*dfTMC;s.fCQ+=dt*dfCQ;s.fCMi+=dt*dfCMi;
+  s.Cas+=dt*dCas;s.Cai+=dt*dCai;s.Cnsr+=dt*dCn;s.Cjsr+=dt*dCj;
+  s.V+=dt*dV;s.t+=dt;
+  I.If=iF;I.ICaL=iCaL;I.ICaT=iCaT;I.IKr=iKr;I.IKs=iKs;I.INaCa=iNaCa;I.INa=iNa;I.IKACh=iKACh;I.Ito=ito;I.INaK=iNaK;
+}
+prep();
+
+const defs=[
+ ["If","Conductancia I_f",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["CaL","Permeabilidad I_CaL",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["CaT","Permeabilidad I_CaT",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["Kr","Conductancia I_Kr",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["Ks","Conductancia I_Ks",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["NaCa","Intercambiador I_NaCa",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["Up","Recaptación SERCA",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["Rel","Liberación del RS (RyR)",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["Na","Conductancia I_Na",0,2,.05,v=>Math.round(v*100)+" %"],
+ ["ACh","Acetilcolina (vagal)",0,50,1,v=>v+" nM"],
+ ["Ko","[K⁺] extracelular",3,8,.1,v=>v.toFixed(1)+" mM"],
+ ["spd","Velocidad objetivo",.1,1.5,.1,v=>"×"+v.toFixed(1)]
+];
+const ctl=document.getElementById("ctl"),outs={};
+defs.forEach(([k,n,mn,mx,st,fmt])=>{
+  const l=document.createElement("label");
+  l.innerHTML=n+'<span></span><input type="range" min="'+mn+'" max="'+mx+'" step="'+st+'">';
+  const i=l.querySelector("input"),s=l.querySelector("span");
+  const upd=()=>{s.textContent=fmt(P[k]);};
+  i.value=P[k];upd();
+  i.oninput=()=>{P[k]=+i.value;upd();prep();};
+  outs[k]=()=>{i.value=P[k];upd();};
+  ctl.appendChild(l);
+});
+const isoBox=document.getElementById("iso");
+isoBox.onchange=()=>{P.Iso=isoBox.checked?1:0;prep();};
+
+// medidas (cruce ascendente de -20 mV)
+let pv,mn,mx,tPrev,fr,mdpS,pkS;
+function mReset(){pv=S.V;mn=1e9;mx=-1e9;tPrev=NaN;fr=NaN;mdpS=NaN;pkS=NaN;}
+function measure(){
+  const V=S.V;if(V<mn)mn=V;if(V>mx)mx=V;
+  if(pv<-20&&V>=-20){
+    if(!isNaN(tPrev)){fr=60/(S.t-tPrev);mdpS=mn;pkS=mx;}
+    tPrev=S.t;mn=1e9;mx=-1e9;
+  }
+  pv=V;
+}
+const DT=1e-5,EVERY=50,WIN=3000; // paso 10 µs; muestreo cada 0,5 ms; ventana 3 s
+let buf,cnt=0,run=true,effSpd=1;
+function clearBuf(){buf={t:[],V:[],If:[],ICaL:[],ICaT:[],IKr:[],IKs:[],INaCa:[],IKACh:[],Cai:[],Cas:[],Cj:[]};}
+function sample(){
+  buf.t.push(S.t*1000);buf.V.push(S.V);
+  for(const k of ["If","ICaL","ICaT","IKr","IKs","INaCa","IKACh"])buf[k].push(I[k]*1000); // nA -> pA
+  buf.Cai.push(S.Cai*1e6);buf.Cas.push(S.Cas*1e6);buf.Cj.push(S.Cjsr);
+}
+function advance(simS,budgetMs){
+  const t0=performance.now();let n=Math.round(simS/DT),done=0;
+  while(n>0){
+    const chunk=Math.min(n,200);
+    for(let i=0;i<chunk;i++){step(DT);measure();if(++cnt>=EVERY){cnt=0;sample();}}
+    n-=chunk;done+=chunk;
+    if(performance.now()-t0>budgetMs)break;
+  }
+  const ex=buf.t.length-Math.round(WIN/(EVERY*DT*1000));
+  if(ex>0)for(const k in buf)buf[k].splice(0,ex);
+  return done*DT;
+}
+function reset(){S=init();prep();mReset();clearBuf();cnt=0;}
+
+const cv=document.getElementById("cv"),cx=cv.getContext("2d"),cv2=document.getElementById("cv2"),cx2=cv2.getContext("2d");
+const sel=document.getElementById("sel"),unit=document.getElementById("unit");
+const units={If:"pA",ICaL:"pA",ICaT:"pA",IKr:"pA",IKs:"pA",INaCa:"pA",IKACh:"pA",Cai:"nM",Cas:"nM",Cj:"mM"};
+sel.onchange=()=>{unit.textContent=units[sel.value];};sel.onchange();
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function fit(c){const r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;
+  if(c.width!==Math.round(r.width*d)){c.width=Math.round(r.width*d);c.height=Math.round(r.height*d);}return d;}
+function plot(c,x,arr,ymin,ymax,col,ticks,fmt){
+  const d=fit(c),W=c.width,H=c.height,pl=50*d,pr=8*d,pt=8*d,pb=20*d;
+  x.clearRect(0,0,W,H);x.font=(11*d)+"px system-ui";x.fillStyle=css("--mut");x.strokeStyle=css("--line");x.lineWidth=d;
+  ticks.forEach(t=>{const y=pt+(1-(t-ymin)/(ymax-ymin))*(H-pt-pb);x.beginPath();x.moveTo(pl,y);x.lineTo(W-pr,y);x.stroke();x.textAlign="right";x.fillText(fmt(t),pl-4*d,y+4*d);});
+  const T=buf.t;if(T.length<2)return;
+  const t1=T[T.length-1],t0=t1-WIN;x.textAlign="center";
+  for(let tt=Math.ceil(t0/500)*500;tt<=t1;tt+=500){x.fillText(Math.round(tt)+" ms",pl+(tt-t0)/WIN*(W-pl-pr),H-5*d);}
+  x.strokeStyle=col;x.lineWidth=2*d;x.beginPath();
+  for(let i=0;i<T.length;i++){
+    const xx=pl+(T[i]-t0)/WIN*(W-pl-pr),yy=pt+(1-(arr[i]-ymin)/(ymax-ymin))*(H-pt-pb);
+    i?x.lineTo(xx,yy):x.moveTo(xx,yy);}
+  x.stroke();
+}
+function draw(){
+  plot(cv,cx,buf.V,-80,40,css("--ap"),[-60,-30,0,30],v=>v+" mV");
+  const a=buf[sel.value];let lo=Infinity,hi=-Infinity;
+  for(const v of a){if(v<lo)lo=v;if(v>hi)hi=v;}
+  if(!isFinite(lo)){lo=-1;hi=1;}
+  const pad=(hi-lo)*.1||1e-6;lo-=pad;hi+=pad;
+  const r=hi-lo,dg=r<0.05?3:r<3?2:r<30?1:0;
+  plot(cv2,cx2,a,lo,hi,css("--tr"),[lo+r*.2,lo+r*.5,lo+r*.8],v=>v.toFixed(dg));
+  document.getElementById("rV").textContent=S.V.toFixed(1);
+  document.getElementById("rF").textContent=isNaN(fr)?"–":fr.toFixed(0);
+  document.getElementById("rR").textContent=isNaN(mdpS)?"–":mdpS.toFixed(1);
+  document.getElementById("rP").textContent=isNaN(pkS)?"–":pkS.toFixed(1);
+  document.getElementById("rC").textContent=(S.Cai*1e6).toFixed(0);
+}
+let last=performance.now();
+function loop(now){
+  const dtw=Math.min(now-last,50);last=now;
+  if(run){const target=dtw/1000*P.spd,got=advance(target,11);effSpd=effSpd*0.9+0.1*(got/(dtw/1000||1));
+    document.getElementById("eff").textContent="Velocidad real: ×"+effSpd.toFixed(2);}
+  draw();requestAnimationFrame(loop);
+}
+document.getElementById("bp").onclick=e=>{run=!run;e.target.textContent=run?"Pausar":"Continuar";};
+document.getElementById("br").onclick=reset;
+document.getElementById("bz").onclick=()=>{P={...DEF};for(const k in outs)outs[k]();isoBox.checked=false;reset();};
+reset();
+requestAnimationFrame(t=>{last=t;loop(t);});
+</script>
+</body>
+</html>

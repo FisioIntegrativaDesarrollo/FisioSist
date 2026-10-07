@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modelo de intercambio capilar</title>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f2;--panel:#fff;--ink:#1c2a31;--mute:#5d6c73;--line:#d5dcd8;--hyd:#2457a6;--onc:#b8741a;--out:#2457a6;--in:#c2571a;--plasma:#c9605a;--endo:#3f6f6a;--tissue:#ece6d2;--sol:#2f7d4f;--warn:#b3261e;--lym:#7a4fa0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12191c;--panel:#1a2428;--ink:#e6ecea;--mute:#9aaaa9;--line:#2c3a3f;--hyd:#7aa7ee;--onc:#e6a550;--out:#7aa7ee;--in:#f0935c;--plasma:#a8433f;--endo:#6fb0a8;--tissue:#2b2a22;--sol:#6fcf95;--warn:#ff8a80;--lym:#c3a0e8}}
+:root[data-theme="dark"]{--bg:#12191c;--panel:#1a2428;--ink:#e6ecea;--mute:#9aaaa9;--line:#2c3a3f;--hyd:#7aa7ee;--onc:#e6a550;--out:#7aa7ee;--in:#f0935c;--plasma:#a8433f;--endo:#6fb0a8;--tissue:#2b2a22;--sol:#6fcf95;--warn:#ff8a80;--lym:#c3a0e8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Instrument Sans",system-ui,sans-serif}
+h1,h2{font-family:Newsreader,Georgia,serif;font-weight:600;margin:0}
+h1{font-size:1.9rem;line-height:1.15}
+h2{font-size:1.1rem;margin-bottom:.5rem}
+header{max-width:1180px;margin:0 auto;padding:22px 18px 6px}
+header p{margin:.4rem 0 0;color:var(--mute);max-width:70ch}
+main{max-width:1180px;margin:0 auto;padding:12px 18px 40px;display:grid;grid-template-columns:320px 1fr;gap:18px}
+@media(max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+label{display:flex;justify-content:space-between;font-size:.88rem;margin-top:8px}
+label b{font-variant-numeric:tabular-nums;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--endo)}
+select{width:100%;padding:7px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+.chk{display:flex;gap:8px;align-items:flex-start;margin-top:7px;font-size:.88rem;cursor:pointer}
+.chk input{margin-top:3px;accent-color:var(--endo)}
+.chk small{display:block;color:var(--mute)}
+svg{width:100%;height:auto;display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border-left:3px solid var(--endo);padding:2px 10px}
+.kpi span{display:block;font-size:.78rem;color:var(--mute)}
+.kpi strong{font-family:Newsreader,serif;font-size:1.35rem;font-variant-numeric:tabular-nums}
+#alert{margin-top:10px;padding:8px 12px;border-radius:6px;font-size:.9rem;background:color-mix(in srgb,var(--endo) 14%,transparent)}
+#alert.bad{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.note{color:var(--mute);font-size:.85rem;margin:.4rem 0 0}
+text{font-family:"Instrument Sans",sans-serif;fill:var(--ink)}
+.ax{fill:var(--mute);font-size:11px}
+:focus-visible{outline:2px solid var(--hyd);outline-offset:2px}
+.pre{display:flex;flex-wrap:wrap;gap:6px}
+.pre button{font:inherit;font-size:.82rem;padding:5px 9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;cursor:pointer}
+.pre button:hover,.pre button[aria-pressed=true]{border-color:var(--endo);background:color-mix(in srgb,var(--endo) 16%,transparent)}
+#pdesc{margin:.6rem 0 0;font-size:.85rem;color:var(--mute)}
+.hint{font-size:.78rem;color:var(--mute);margin-top:2px}
+.eqrow{padding:8px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.eqrow:first-child{border-top:0}
+.eqrow small{display:block;color:var(--mute)}
+.eqrow b.f{color:var(--out)}.eqrow b.r{color:var(--in)}
+details.def{border-top:1px solid var(--line);padding:8px 0}
+details.def summary{cursor:pointer;font-weight:600}
+details.def summary i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px}
+details.def dl{margin:.5rem 0 0;display:grid;grid-template-columns:130px 1fr;gap:4px 12px;font-size:.88rem}
+details.def dt{color:var(--mute)}
+details.def dd{margin:0}
+@media(max-width:560px){details.def dl{grid-template-columns:1fr}}
+ol.q{padding-left:1.2rem;margin:.4rem 0 0;font-size:.9rem}
+ol.q li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<header>
+<h1>Intercambio de moléculas a nivel capilar</h1>
+<p>Modelo de Starling (presiones hidrostática y oncótica) combinado con difusión de Fick para solutos, con un endotelio cuya permeabilidad se modifica por mediadores y con el drenaje linfático, que cierra el balance y fija la presión del intersticio. Mueva los controles y observe cómo cambian los flujos a lo largo del capilar.</p>
+</header>
+<main>
+<aside>
+<div class="card">
+<h2>Casos para explorar</h2>
+<div class="pre" id="presets"></div>
+<p id="pdesc"></p>
+</div>
+<div class="card">
+<h2>Presiones (mmHg)</h2>
+<label>Hidrostática capilar, extremo arteriolar (Pc,a)<b id="vPa"></b></label><input id="Pa" type="range" min="20" max="55" value="35">
+<label>Hidrostática capilar, extremo venular (Pc,v)<b id="vPv"></b></label><input id="Pv" type="range" min="5" max="35" value="15">
+<label>Hidrostática tisular (Pi)<b id="vPi"></b></label><input id="Pi" type="range" min="-8" max="25" value="-2">
+<label>Oncótica plasmática (πc)<b id="vPc"></b></label><input id="pic" type="range" min="10" max="35" value="25">
+<label>Oncótica intersticial (πi)<b id="vPt"></b></label><input id="pii" type="range" min="0" max="20" value="6">
+</div>
+<div class="card">
+<h2>Endotelio y permeabilidad</h2>
+<label>Tipo de capilar</label>
+<select id="tipo">
+<option value="cont">Continuo (músculo, piel)</option>
+<option value="fen">Fenestrado (intestino, riñón)</option>
+<option value="sin">Sinusoidal (hígado, médula)</option>
+<option value="bhe">Continuo con uniones estrechas (barrera hematoencefálica)</option>
+</select>
+<label class="chk"><input type="checkbox" id="hist"><span>Histamina<small>Contrae las células endoteliales y abre las uniones intercelulares</small></span></label>
+<label class="chk"><input type="checkbox" id="brad"><span>Bradicinina<small>Vía NO/Ca²⁺ que aumenta la permeabilidad</small></span></label>
+<label class="chk"><input type="checkbox" id="vegf"><span>VEGF / TNF-α (inflamación)<small>Desestabilizan la cadherina VE y las uniones</small></span></label>
+<label class="chk"><input type="checkbox" id="stab"><span>S1P / Ang-1 / AMPc<small>Estabilizan el citoesqueleto y refuerzan las uniones</small></span></label>
+<label class="chk"><input type="checkbox" id="glx"><span>Glucocálix dañado<small>Pierde la barrera de carga: baja σ y sube la fuga proteica</small></span></label>
+</div>
+<div class="card">
+<h2>Soluto</h2>
+<select id="sol">
+<option value="o2">O₂ (liposoluble, gradiente a favor del tejido)</option>
+<option value="co2">CO₂ (liposoluble, del tejido al plasma)</option>
+<option value="glu">Glucosa (hidrófila, por poros)</option>
+<option value="na">Na⁺ (hidrófilo, uniones)</option>
+<option value="alb">Albúmina (macromolécula, vesículas)</option>
+</select>
+<label>Concentración tisular (Ci), % del valor basal<b id="vCi"></b></label><input id="Ci" type="range" min="0" max="200" value="100">
+</div>
+<div class="card">
+<h2>Sistema linfático</h2>
+<label>Actividad de bombeo linfático<b id="vPump"></b></label><input id="pump" type="range" min="20" max="200" value="100">
+<label class="chk"><input type="checkbox" id="fb" checked><span>Calcular Pi por equilibrio linfático<small>La presión tisular se ajusta hasta que el drenaje iguala la filtración neta (desactive para fijar Pi a mano)</small></span></label>
+<label class="chk"><input type="checkbox" id="obs"><span>Obstrucción linfática (linfedema)<small>Reduce la capacidad máxima de drenaje a ~12 %</small></span></label>
+</div>
+</aside>
+<section>
+<div class="card">
+<h2>Corte longitudinal del capilar</h2>
+<svg id="sch" viewBox="0 0 760 330" role="img" aria-label="Esquema del capilar con flechas de filtración, reabsorción y difusión de solutos"></svg>
+<p class="note">Flechas superiores: flujo de agua (azul = filtración, naranja = reabsorción). Flechas inferiores: difusión del soluto elegido (verde). Arriba a la derecha: capilar linfático de extremo ciego con válvulas; sus flechas (violeta) crecen con el flujo linfático. La longitud es proporcional a la magnitud.</p>
+</div>
+<div class="card">
+<div class="kpis" id="kpis"></div>
+<div id="alert"></div>
+</div>
+<div class="card">
+<h2>Ecuación con los valores actuales</h2>
+<div id="eq"></div>
+<svg id="c4" viewBox="0 0 760 215" role="img" aria-label="Fuerzas hacia fuera y hacia dentro del capilar en ambos extremos"></svg>
+<p class="note">Hay filtración cuando la barra de fuerzas hacia fuera es más larga que la de fuerzas hacia dentro. Las presiones hidrostáticas son azules y las oncóticas naranjas (ya multiplicadas por σ). Una Pi negativa suma a las fuerzas hacia fuera.</p>
+</div>
+<div class="card">
+<h2>Fuerzas de Starling a lo largo del capilar</h2>
+<svg id="c1" viewBox="0 0 760 270" role="img" aria-label="Gráfico de presiones netas"></svg>
+<p class="note">Jv = Kf · [(Pc − Pi) − σ(πc − πi)]. Donde la curva hidrostática neta cruza la oncótica efectiva, el flujo neto es cero. πc aumenta un poco hacia el extremo venular porque el plasma se concentra al perder agua.</p>
+</div>
+<div class="card">
+<h2>Gradiente de concentración del soluto</h2>
+<svg id="c2" viewBox="0 0 760 250" role="img" aria-label="Gradiente de concentración"></svg>
+<p class="note">Ley de Fick: J = PS · (Cp − Ci). El gradiente se disipa a lo largo del capilar a una velocidad k = PS/Q; en los solutos hidrófilos PS crece con la permeabilidad endotelial, y en los liposolubles casi no depende de ella.</p>
+</div>
+<div class="card">
+<h2>Equilibrio entre filtración y drenaje linfático</h2>
+<svg id="c3" viewBox="0 0 760 250" role="img" aria-label="Curvas de filtración neta y drenaje linfático según la presión tisular"></svg>
+<p class="note">La filtración neta baja cuando sube Pi; el flujo linfático sube con Pi hasta una meseta. Su cruce es la Pi de equilibrio. Si no se cruzan, el líquido se acumula sin límite (edema progresivo). Los factores de seguridad contra el edema son: el aumento de Pi, el aumento del flujo linfático y el lavado de proteínas del intersticio, que baja πi.</p>
+</div>
+<div class="card">
+<h2>Glosario de presiones y parámetros</h2>
+<div id="gloss"></div>
+</div>
+<div class="card">
+<h2>Nota docente: modelo clásico y modelo revisado</h2>
+<p class="note" style="margin-top:0">Este simulador usa el modelo clásico de Starling, en el que el extremo venular reabsorbe líquido. Estudios posteriores indican que el glucocálix crea bajo el endotelio una zona con muy pocas proteínas, de modo que la fuerza oncótica efectiva depende de la diferencia entre πc y la presión oncótica de esa zona subglucocálix, que es menor que la del intersticio general. Con ello, en estado estable la reabsorción sostenida es mínima en muchos lechos y la mayor parte del filtrado vuelve por la linfa. Se mantiene el modelo clásico por claridad didáctica; el papel del drenaje linfático sí está representado.</p>
+</div>
+<div class="card">
+<h2>Preguntas para discutir</h2>
+<ol class="q">
+<li>¿Por qué aparece edema en los tobillos tras estar mucho tiempo de pie? Pruebe el caso de insuficiencia cardiaca y compare qué presión cambia.</li>
+<li>Si Pi pasa de negativa a positiva, ¿qué ocurre con la filtración? ¿Qué factor de seguridad se está perdiendo?</li>
+<li>¿Por qué una caída de σ produce edema aunque πc sea normal?</li>
+<li>Compare el capilar sinusoidal y el de la barrera hematoencefálica. ¿Qué consecuencias fisiológicas tiene su diferente Kf y σ?</li>
+<li>En el gráfico de gradientes, ¿qué pasaría con el aporte de O₂ si el edema alejara las células del capilar?</li>
+</ol>
+</div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const TIPOS={cont:{sig:.9,kf:1},fen:{sig:.7,kf:6},sin:{sig:.1,kf:25},bhe:{sig:1,kf:.1}};
+const SOL={
+ o2:{n:'O₂',cp:100,ci:20,k:1.3,tipo:'lip',u:'mmHg'},
+ co2:{n:'CO₂',cp:46,ci:60,k:2.2,tipo:'lip',u:'mmHg'},
+ glu:{n:'Glucosa',cp:5,ci:3,k:.5,tipo:'hid',u:'mmol/L'},
+ na:{n:'Na⁺',cp:140,ci:140,k:.9,tipo:'hid',u:'mmol/L'},
+ alb:{n:'Albúmina',cp:.6,ci:.15,k:.03,tipo:'mac',u:'mmol/L'}
+};
+const f1=v=>v.toFixed(1), N=101;
+const J0=8.6,LMAX0=24.5;
+function lymph(s,Pi){let t=Math.max(0,Math.min(1,(Pi+6)/10));t=t*t*(3-2*t);return s.pump*s.lmax*t}
+function piiEff(s,Jl){return s.pii*Math.min(2.5,Math.pow(J0/Math.max(Jl,.3),.4))}
+function solveLymph(s0){
+ if(!s0.fb){return Object.assign({},s0,{Jl:lymph(s0,s0.Pi),noeq:false})}
+ const F=P=>{const jl=lymph(s0,P);return calc(Object.assign({},s0,{Pi:P,pii:piiEff(s0,jl)})).net-jl};
+ let lo=-8,hi=25,noeq=false;
+ if(F(hi)>0){lo=hi;noeq=true}else if(F(lo)<=0){hi=lo}else for(let i=0;i<40;i++){const m=(lo+hi)/2;F(m)>0?lo=m:hi=m}
+ const P=(lo+hi)/2,Jl=lymph(s0,P);
+ return Object.assign({},s0,{Pi:P,pii:piiEff(s0,Jl),Jl,noeq});
+}
+function g(){
+ const s={Pa:+$('Pa').value,Pv:+$('Pv').value,Pi:+$('Pi').value,pic:+$('pic').value,pii:+$('pii').value,tipo:TIPOS[$('tipo').value],sol:SOL[$('sol').value],Cipct:+$('Ci').value};
+ let kf=s.tipo.kf,sig=s.tipo.sig;
+ if($('hist').checked){kf*=2.5;sig-=.15}
+ if($('brad').checked){kf*=2;sig-=.1}
+ if($('vegf').checked){kf*=3;sig-=.2}
+ if($('stab').checked){kf*=.6;sig+=.05}
+ if($('glx').checked){kf*=1.8;sig-=.25}
+ s.kf=kf;s.sig=Math.max(0,Math.min(1,sig));s.pump=+$('pump').value/100;s.obs=$('obs').checked;s.fb=$('fb').checked;s.lmax=LMAX0*(s.obs?.12:1);return s;
+}
+function calc(s){
+ const xs=[],hy=[],on=[],nfp=[],cp=[];
+ let fil=0,rea=0;
+ const so=s.sol,ci=so.ci*s.Cipct/100;
+ // en solutos hidrófilos el paso crece con la permeabilidad (raíz para suavizar)
+ const k=so.k*(so.tipo==='lip'?1:Math.sqrt(s.kf)*(so.tipo==='mac'?1.4:1));
+ for(let i=0;i<N;i++){
+  const x=i/(N-1);xs.push(x);
+  const Pc=s.Pa-(s.Pa-s.Pv)*x, pic=s.pic*(1+.12*x);
+  const h=Pc-s.Pi, o=s.sig*(pic-s.pii), n=h-o;
+  hy.push(h);on.push(o);nfp.push(n);
+  if(n>0)fil+=n*s.kf/(N-1);else rea+=n*s.kf/(N-1);
+  cp.push(ci+(so.cp-ci)*Math.exp(-k*x));
+ }
+ return{xs,hy,on,nfp,cp,ci,k,fil,rea,net:fil+rea};
+}
+const X=(x,a,b)=>a+x*(b-a);
+function path(xs,ys,sx,sy){return xs.map((x,i)=>(i?'L':'M')+sx(x).toFixed(1)+' '+sy(ys[i]).toFixed(1)).join('')}
+function chart(el,W,H,xs,series,ymin,ymax,ylab,fills,xl){
+ const m={l:48,r:20,t:14,b:34},sx=x=>m.l+x*(W-m.l-m.r),sy=y=>H-m.b-(y-ymin)/(ymax-ymin)*(H-m.t-m.b);
+ let o='';
+ const step=(ymax-ymin)>60?20:(ymax-ymin)>12?10:(ymax-ymin)>3?1:.5;
+ for(let v=Math.ceil(ymin/step)*step;v<=ymax;v+=step){o+=`<line x1="${m.l}" x2="${W-m.r}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--line)"/><text class="ax" x="${m.l-6}" y="${sy(v)+4}" text-anchor="end">${+v.toFixed(2)}</text>`}
+ o+=`<text class="ax" x="${m.l}" y="${H-8}">${(xl||['Extremo arteriolar','Extremo venular'])[0]}</text><text class="ax" x="${W-m.r}" y="${H-8}" text-anchor="end">${(xl||['','Extremo venular'])[1]}</text><text class="ax" transform="translate(12 ${H/2}) rotate(-90)" text-anchor="middle">${ylab}</text>`;
+ (fills||[]).forEach(f=>{o+=`<path d="${path(xs,f.a,sx,sy)}L${path(xs.slice().reverse(),f.b.slice().reverse(),sx,sy).slice(1)}Z" fill="${f.c}" opacity=".18"/>`});
+ series.forEach(s=>{o+=`<path d="${path(xs,s.y,sx,sy)}" fill="none" stroke="${s.c}" stroke-width="2.4" ${s.d?'stroke-dasharray="6 4"':''}/>`;
+  const i=s.li??80;o+=`<text x="${sx(xs[i])}" y="${sy(s.y[i])-7}" text-anchor="middle" font-size="12" font-weight="600" style="fill:${s.c}">${s.t}</text>`});
+ el.innerHTML=o;return{sx,sy};
+}
+function render(){
+ const s0=g(),s=solveLymph(s0),r=calc(s),so=s.sol;
+ $('Pi').disabled=s0.fb;if(s0.fb)$('Pi').value=Math.max(-8,Math.min(25,Math.round(s.Pi)));
+ $('vPump').textContent=Math.round(s.pump*100)+'%';
+ $('vPa').textContent=s.Pa;$('vPv').textContent=s.Pv;$('vPi').textContent=(s.fb?f1(s.Pi):s.Pi)+(s.fb?' (calculada)':'');$('vPc').textContent=s.pic;$('vPt').textContent=s.pii;$('vCi').textContent=s.Cipct+'%';
+ // gráfico 1
+ const c1=$('c1');
+ const hy=r.hy,on=r.on;
+ chart(c1,760,270,r.xs,[{y:hy,c:'var(--hyd)',t:'Pc − Pi',li:12},{y:on,c:'var(--onc)',t:'σ(πc − πi)',li:85}],-10,Math.max(45,Math.ceil(Math.max(...hy)/10)*10),'mmHg',[{a:hy,b:on,c:'var(--out)'}]);
+ // cruce
+ let xc=null;for(let i=1;i<N;i++){if(r.nfp[i-1]>0&&r.nfp[i]<=0||r.nfp[i-1]<0&&r.nfp[i]>=0){xc=r.xs[i];break}}
+ if(xc!==null){const W=760,m={l:48,r:20},px=m.l+xc*(W-m.l-m.r);c1.insertAdjacentHTML('beforeend',`<line x1="${px}" x2="${px}" y1="14" y2="236" stroke="var(--mute)" stroke-dasharray="3 3"/><text class="ax" x="${px+4}" y="26">equilibrio (${Math.round(xc*100)}% del trayecto)</text>`)}
+ // gráfico 2
+ const lo=Math.min(...r.cp,r.ci),hi=Math.max(...r.cp,r.ci),pad=(hi-lo||hi||1)*.15;
+ const ci=r.xs.map(()=>r.ci);
+ chart($('c2'),760,250,r.xs,[{y:r.cp,c:'var(--plasma)',t:'Plasma (Cp)',li:8},{y:ci,c:'var(--sol)',t:'Tejido (Ci)',d:1,li:60}],Math.max(0,lo-pad),hi+pad,so.n+' ('+so.u+')',[{a:r.cp,b:ci,c:'var(--sol)'}]);
+ // KPIs
+ const nA=r.nfp[0],nV=r.nfp[N-1];
+ const ext=(1-Math.exp(-r.k))*100;
+ const dir=so.cp===so.ci?'solo convección':(r.cp[0]>r.ci?'plasma → tejido':'tejido → plasma');
+ $('kpis').innerHTML=[['Presión neta, extremo arteriolar',f1(nA)+' mmHg'],['Presión neta, extremo venular',f1(nV)+' mmHg'],['Filtrado total (Kf·NFP)',f1(r.fil)],['Reabsorbido total',f1(-r.rea)],['Filtración neta a drenar',f1(r.net)],['Flujo linfático',f1(s.Jl)],['Reserva de drenaje','×'+f1(s.pump*s.lmax/Math.max(s.Jl,.1))],['σ efectivo / Kf relativo',f1(s.sig*1)+' / ×'+f1(s.kf)],[so.n+': dirección',dir],[so.n+': gradiente disipado',so.cp===so.ci?'—':f1(ext)+' %']].map(a=>`<div class="kpi"><span>${a[0]}</span><strong>${a[1]}</strong></div>`).join('');
+ const al=$('alert'),exc=r.net-s.Jl;
+ if(s.fb&&s.noeq){al.className='bad';al.textContent='El drenaje linfático no alcanza a compensar la filtración y no hay equilibrio: el líquido se acumula, Pi sigue subiendo y el edema es progresivo.'}
+ else if(s.fb&&s.Pi>0){al.className='bad';al.textContent='Hay equilibrio, pero con Pi > 0 mmHg: edema estable. Se agotaron los factores de seguridad (aumento de Pi, del flujo linfático y lavado de proteínas).'}
+ else if(!s.fb&&exc>.5){al.className='bad';al.textContent='Con esta Pi fija, la filtración supera al drenaje linfático: el líquido se acumula y la Pi real subiría (active el cálculo por equilibrio linfático).'}
+ else if(r.net<-1){al.className='';al.textContent='Predomina la reabsorción: el capilar recupera líquido del intersticio.'}
+ else{al.className='';al.textContent=s.obs?'Equilibrio compensado a pesar del drenaje reducido; casi no queda reserva.':'La linfa drena el filtrado neto y la presión tisular se mantiene negativa o cercana a cero.'}
+ const P=[],NF=[],LF=[];
+ for(let i=0;i<=66;i++){const p=-8+33*i/66,jl=lymph(s,p);P.push(i/66);NF.push(calc(Object.assign({},s,{Pi:p,pii:s.fb?piiEff(s,jl):s.pii})).net);LF.push(jl)}
+ const cc=chart($('c3'),760,250,P,[{y:NF,c:'var(--hyd)',t:'Filtración neta',li:6},{y:LF,c:'var(--lym)',t:'Drenaje linfático',li:56}],Math.min(0,...NF),Math.max(10,...NF,...LF)*1.05,'unidades del modelo',null,['Pi −8 mmHg','Pi +25 mmHg']);
+ const ex=cc.sx((s.Pi+8)/33);$('c3').insertAdjacentHTML('beforeend',`<line x1="${ex}" x2="${ex}" y1="14" y2="216" stroke="var(--mute)" stroke-dasharray="3 3"/><circle cx="${ex}" cy="${cc.sy(s.Jl)}" r="5" fill="var(--ink)"/><text class="ax" x="${ex+8}" y="26">${s.noeq?'sin equilibrio':'Pi de equilibrio = '+f1(s.Pi)+' mmHg'}</text>`);
+ teach(s,r);
+ schem(s,r);
+}
+function schem(s,r){
+ const W=760,x0=70,x1=700,yt=135,yb=205,mid=170;let o='';
+ o+=`<rect x="0" y="0" width="${W}" height="${yt-22}" fill="var(--tissue)"/><rect x="0" y="${yb+22}" width="${W}" height="${330-yb-22}" fill="var(--tissue)"/>`;
+ o+=`<rect x="${x0}" y="${yt}" width="${x1-x0}" height="${yb-yt}" fill="var(--plasma)" opacity=".25"/>`;
+ const gap=Math.min(26,3+Math.log2(1+s.kf)*3.6),cells=7,cw=(x1-x0)/cells;
+ for(let i=0;i<cells;i++){
+  const a=x0+i*cw+gap/2,w=cw-gap;
+  o+=`<rect x="${a}" y="${yt-16}" width="${w}" height="16" rx="7" fill="var(--endo)"/><rect x="${a+(i%2?cw*.3:0)}" y="${yb}" width="${w}" height="16" rx="7" fill="var(--endo)"/>`;
+ }
+ const gl=$('glx').checked?.15:.9;
+ for(let i=0;i<90;i++){const x=x0+8+i*(x1-x0-16)/89;o+=`<line x1="${x}" x2="${x+2}" y1="${yt}" y2="${yt+8}" stroke="var(--onc)" opacity="${gl}"/><line x1="${x}" x2="${x+2}" y1="${yb}" y2="${yb-8}" stroke="var(--onc)" opacity="${gl}"/>`}
+ for(let i=0;i<7;i++){const cx=x0+40+i*88+(i%2)*12,cy=mid+(i%3-1)*14;o+=`<ellipse cx="${cx}" cy="${cy}" rx="11" ry="7" fill="var(--plasma)"/>`}
+ o+=`<text x="${x0}" y="${mid+4}" text-anchor="end" font-size="11" class="ax">arteriola →</text><text x="${x1+6}" y="${mid+4}" font-size="11" class="ax">→ vénula</text>`;
+ o+=`<text x="${x0}" y="20" font-size="12" class="ax">Intersticio</text><text x="${x0}" y="${yb+36}" font-size="12" class="ax">Endotelio con glucocálix sobre la luz</text>`;
+ const n=8,so=s.sol;let gmax=Math.max(...r.cp.map(c=>Math.abs(c-r.ci)),1e-9);
+ for(let j=0;j<n;j++){
+  const x=x0+(j+.5)*(x1-x0)/n,i=Math.round((j+.5)/n*(N-1)),v=r.nfp[i];
+  const L=Math.min(50,Math.abs(v)*1.6);
+  if(Math.abs(v)>.3){const up=v>0,c=up?'var(--out)':'var(--in)',a=up?yt-18:yt-18-L,b=up?yt-18-L:yt-18;
+   o+=`<line x1="${x}" x2="${x}" y1="${up?yt-14:yt-18-L}" y2="${up?yt-14-L:yt-14}" stroke="${c}" stroke-width="3"/><path d="M${x-5} ${up?yt-14-L+8:yt-14-8}L${x} ${up?yt-14-L:yt-14}L${x+5} ${up?yt-14-L+8:yt-14-8}" fill="none" stroke="${c}" stroke-width="3"/>`}
+  const d=r.cp[i]-r.ci,L2=Math.min(46,Math.abs(d)/gmax*46*Math.min(1,Math.abs(r.cp[0]-r.ci)/gmax));
+  if(L2>2){const dn=d>0,y0=yb+18,ya=dn?y0+L2:y0+4;
+   o+=`<line x1="${x}" x2="${x}" y1="${dn?y0:y0+L2}" y2="${dn?y0+L2:y0}" stroke="var(--sol)" stroke-width="3"/><path d="M${x-5} ${dn?y0+L2-8:y0+8}L${x} ${dn?y0+L2:y0}L${x+5} ${dn?y0+L2-8:y0+8}" fill="none" stroke="var(--sol)" stroke-width="3"/>`}
+ }
+ const lf=Math.min(1,s.Jl/(LMAX0*1.1)),LL=8+38*lf;
+ o+=`<path d="M484 14H745V42H484A14 14 0 0 1 484 14Z" fill="var(--lym)" fill-opacity=".14" stroke="var(--lym)" stroke-width="2"/><text class="ax" x="490" y="10" font-size="11">Capilar linfático</text>`;
+ [540,622,700].forEach(x=>{o+=`<path d="M${x-8} 42L${x} 35L${x+8} 42" fill="none" stroke="var(--lym)" stroke-width="2"/><line x1="${x}" x2="${x}" y1="100" y2="${100-LL-8}" stroke="var(--lym)" stroke-width="3"/><path d="M${x-5} ${100-LL}L${x} ${100-LL-8}L${x+5} ${100-LL}" fill="none" stroke="var(--lym)" stroke-width="3"/>`});
+ o+=`<line x1="580" x2="${580+LL*3}" y1="28" y2="28" stroke="var(--lym)" stroke-width="3"/><path d="M${580+LL*3-7} 22L${580+LL*3} 28L${580+LL*3-7} 34" fill="none" stroke="var(--lym)" stroke-width="3"/>`;
+ $('sch').innerHTML=o;
+}
+const HINTS={Pa:'Normal: 30 a 40 mmHg. Favorece la filtración.',Pv:'Normal: 10 a 15 mmHg. Sube en la insuficiencia cardiaca derecha.',Pi:'Normal: -3 a 0 mmHg. Una Pi mayor que 0 indica edema.',pic:'Normal: 25 a 28 mmHg. Depende sobre todo de la albúmina.',pii:'Normal: 5 a 8 mmHg. Son las proteínas que escapan al intersticio.',pump:'100 % es el bombeo normal.'};
+Object.entries(HINTS).forEach(([id,txt])=>{const d=document.createElement('div');d.className='hint';d.textContent=txt;$(id).after(d)});
+const NORM={Pa:35,Pv:15,Pi:-2,pic:25,pii:6,tipo:'cont',sol:'o2',Ci:100,pump:100},NC={hist:0,brad:0,vegf:0,stab:0,glx:0,obs:0,fb:1};
+const PRE=[
+{n:'Normal',d:'Estado de referencia. Filtra en el extremo arteriolar y hay una pequeña reabsorción en el venular; la linfa drena el exceso y Pi se mantiene cerca de -2 mmHg.',v:{},c:{}},
+{n:'Insuficiencia cardiaca derecha',d:'Sube la presión venosa y con ella Pc en todo el capilar. Se pierde la reabsorción venular, aumenta la filtración y Pi debe subir para que la linfa compense. Observe la reserva de drenaje.',v:{Pa:38,Pv:28},c:{}},
+{n:'Hipoalbuminemia',d:'En el síndrome nefrótico, la cirrosis o la desnutrición baja πc. Disminuye la fuerza que retiene agua en el capilar: se filtra más y se reabsorbe menos.',v:{pic:14},c:{}},
+{n:'Inflamación aguda',d:'Aumentan Kf, baja σ y sube πi por la fuga de proteínas. Pasa más líquido y proteína al intersticio y el drenaje linfático se acerca a su límite.',v:{pii:10},c:{hist:1,vegf:1,glx:1}},
+{n:'Linfedema',d:'El capilar es normal, pero el drenaje está obstruido. Se pierde el factor de seguridad linfático y Pi aumenta hasta un nuevo equilibrio con edema.',v:{},c:{obs:1}},
+{n:'Vasodilatación precapilar',d:'Una arteriola dilatada transmite más presión al capilar: suben Pc,a y Pc,v y aumenta la filtración.',v:{Pa:45,Pv:20},c:{}},
+{n:'Hemorragia',d:'La vasoconstricción y la caída de presión bajan Pc. Predomina la reabsorción, que repone volumen plasmático (autotransfusión).',v:{Pa:20,Pv:6},c:{}},
+{n:'Sinusoide hepático',d:'Con σ cercana a 0 y Kf muy alto, las proteínas atraviesan la pared y casi no hay diferencia oncótica efectiva. El líquido y las proteínas pasan con facilidad al espacio de Disse.',v:{tipo:'sin'},c:{}},
+{n:'Barrera hematoencefálica',d:'Con uniones estrechas, σ cercana a 1 y Kf muy bajo, casi no hay filtración. Los solutos pasan sobre todo por transportadores o por difusión si son liposolubles.',v:{tipo:'bhe'},c:{}}
+];
+const pb=$('presets');
+PRE.forEach((p,i)=>{const b=document.createElement('button');b.type='button';b.textContent=p.n;b.setAttribute('aria-pressed',i===0);
+ b.onclick=()=>{Object.entries({...NORM,...p.v}).forEach(([k,v])=>{$(k).value=v});Object.entries({...NC,...p.c}).forEach(([k,v])=>{$(k).checked=!!v});
+  $('pdesc').textContent=p.d;[...pb.children].forEach(x=>x.setAttribute('aria-pressed',x===b));render()};pb.appendChild(b)});
+$('pdesc').textContent=PRE[0].d;
+const DEFS=[
+{n:'Presión hidrostática capilar',s:'Pc',c:'var(--hyd)',d:'Presión que ejerce la sangre sobre la pared del capilar. Es la fuerza que empuja agua y solutos pequeños hacia fuera a través del endotelio.',v:'Aprox. 30 a 40 mmHg en el extremo arteriolar y 10 a 15 mmHg en el venular. Varía según el lecho; en el glomérulo renal es mucho mayor.',t:'Presión arterial, tono arteriolar y presión venosa. Pc sube si la arteriola se dilata o si aumenta la presión venosa, y baja si la arteriola se contrae.',e:'Favorece la filtración: el líquido sale del capilar.',k:'La insuficiencia cardiaca derecha, la trombosis venosa y estar mucho tiempo de pie aumentan Pc y producen edema.'},
+{n:'Presión hidrostática intersticial',s:'Pi',c:'var(--hyd)',d:'Presión del líquido libre en el espacio intersticial. Si es positiva se opone a la filtración; si es negativa, la favorece.',v:'Ligeramente negativa, aprox. -3 a 0 mmHg, por la succión que genera el drenaje linfático.',t:'Volumen de líquido intersticial, distensibilidad del tejido y actividad linfática. Con exceso de líquido el tejido se vuelve poco distensible y Pi sube con rapidez.',e:'Al subir hacia valores positivos se opone a la filtración. Es un factor de seguridad contra el edema.',k:'Cuando Pi supera 0 mmHg el edema se hace evidente clínicamente, por ejemplo con el signo de la fóvea.'},
+{n:'Presión oncótica plasmática',s:'πc',c:'var(--onc)',d:'Presión osmótica que generan las proteínas plasmáticas, que no cruzan con facilidad el endotelio. Retiene agua dentro del capilar.',v:'Aprox. 25 a 28 mmHg. La mayor parte la aporta la albúmina; el resto, otras proteínas y el efecto Donnan.',t:'Concentración de albúmina y otras proteínas, y efecto Donnan (cationes retenidos por las proteínas, que tienen carga negativa). Aumenta algo a lo largo del capilar al perderse agua.',e:'Favorece la reabsorción: atrae agua hacia el capilar.',k:'La hipoalbuminemia (síndrome nefrótico, cirrosis, desnutrición) baja πc y produce edema generalizado.'},
+{n:'Presión oncótica intersticial',s:'πi',c:'var(--onc)',d:'Presión osmótica de las proteínas que escapan al intersticio. Atrae agua hacia fuera del capilar.',v:'Aprox. 5 a 8 mmHg.',t:'Fuga de proteínas por el endotelio (depende de σ) y su eliminación por la linfa. Más flujo linfático diluye las proteínas intersticiales y baja πi (lavado).',e:'Favorece la filtración.',k:'En la inflamación la fuga de proteínas sube πi y perpetúa el edema. El linfedema crónico retiene proteínas.'},
+{n:'Coeficiente de reflexión',s:'σ',c:'var(--endo)',d:'Fracción de la presión oncótica que se ejerce realmente a través de la pared. σ = 1 indica una pared impermeable a las proteínas y σ = 0, una pared que las deja pasar libremente.',v:'Aprox. 0,9 en capilares continuos, 0,7 en fenestrados y 0,1 o menos en sinusoides hepáticos.',t:'Estructura del endotelio (uniones, fenestras) y glucocálix, que actúa como filtro de tamaño y de carga. Los mediadores inflamatorios y el daño del glucocálix lo reducen.',e:'Multiplica los términos oncóticos. Si σ baja, las fuerzas oncóticas pierden efecto y aumenta la filtración neta.',k:'La sepsis, las quemaduras y la anafilaxia reducen σ y producen edema con pérdida de proteínas.'},
+{n:'Coeficiente de filtración',s:'Kf',c:'var(--endo)',d:'Conductividad hidráulica de la pared multiplicada por el área de intercambio. Indica cuánto líquido pasa por cada mmHg de presión neta.',v:'Aprox. 0,01 mL/min por mmHg por 100 g de tejido, con gran variación entre lechos. En el modelo se usa un valor relativo (×1 en el capilar continuo).',t:'Número de uniones y poros, fenestras, área capilar perfundida y tono endotelial. Histamina, bradicinina y VEGF lo aumentan; S1P y Ang-1 lo reducen.',e:'No cambia el sentido del flujo sino su magnitud: amplifica la filtración o la reabsorción que producen las presiones.',k:'En la inflamación aguda Kf puede multiplicarse varias veces; en la barrera hematoencefálica es muy bajo.'},
+{n:'Presión neta de filtración y flujo de volumen',s:'NFP, Jv',c:'var(--out)',d:'Suma algebraica de las fuerzas de Starling: NFP = (Pc - Pi) - σ(πc - πi). El flujo de volumen es Jv = Kf · NFP.',v:'Aprox. +20 mmHg en el extremo arteriolar y entre 0 y -3 mmHg en el venular, según el modelo clásico.',t:'Las cuatro presiones, σ y Kf.',e:'NFP positiva: filtración. NFP negativa: reabsorción. NFP = 0: equilibrio.',k:'Según el modelo clásico se filtran unos 20 L/día, se reabsorben unos 17 L y la linfa devuelve unos 3 L. El modelo revisado atribuye más peso a la linfa.'},
+{n:'Flujo linfático',s:'Jl',c:'var(--lym)',d:'Volumen de líquido y proteínas que los capilares linfáticos recogen del intersticio y devuelven a la sangre venosa.',v:'Aprox. 2 a 4 L/día en todo el organismo; puede aumentar muchas veces si crece el filtrado.',t:'Pi (el flujo sube con ella hasta una meseta), bombeo intrínseco de los vasos, válvulas y movimiento muscular.',e:'Reduce Pi y πi, lo que protege contra el edema, y devuelve las proteínas filtradas a la circulación.',k:'La obstrucción linfática (cirugía, radioterapia, filariasis) causa linfedema.'},
+{n:'Difusión de solutos (ley de Fick)',s:'J = PS · (Cp - Ci)',c:'var(--sol)',d:'Los solutos pequeños cruzan por difusión a favor de su gradiente. PS es el producto de la permeabilidad por la superficie de intercambio.',v:'Depende del soluto. La PO₂ capilar es de unos 100 mmHg en el extremo arteriolar, y la del tejido en reposo es mucho menor.',t:'Los liposolubles (O₂, CO₂) atraviesan las membranas celulares. Los hidrófilos (glucosa, Na⁺) usan poros y uniones. Las macromoléculas cruzan por vesículas o poros grandes.',e:'Mueve solutos sin necesidad de flujo de volumen, en el sentido que marca el gradiente.',k:'Si el edema aumenta la distancia de difusión, llega menos O₂ al tejido.'}
+];
+$('gloss').innerHTML=DEFS.map(d=>`<details class="def"><summary><i style="background:${d.c}"></i>${d.n} (${d.s})</summary><dl><dt>Definición</dt><dd>${d.d}</dd><dt>Valor normal</dt><dd>${d.v}</dd><dt>Determinantes</dt><dd>${d.t}</dd><dt>Efecto en el flujo</dt><dd>${d.e}</dd><dt>Correlato clínico</dt><dd>${d.k}</dd></dl></details>`).join('');
+function teach(s,r){
+ const sg=s.sig.toFixed(2);
+ $('eq').innerHTML=`<div class="eqrow"><b>Jv = Kf · NFP</b>, con NFP = (Pc − Pi) − σ · (πc − πi)<small>Aquí σ = ${sg} y Kf relativo = ×${f1(s.kf)}. Presiones en mmHg.</small></div>`+[[0,'Extremo arteriolar'],[1,'Extremo venular']].map(([x,l])=>{
+  const Pc=s.Pa-(s.Pa-s.Pv)*x,pc=s.pic*(1+.12*x),h=Pc-s.Pi,o=s.sig*(pc-s.pii),n=h-o;
+  return `<div class="eqrow"><b>${l}:</b> (${f1(Pc)} − (${f1(s.Pi)})) − ${sg} · (${f1(pc)} − ${f1(s.pii)}) = ${f1(h)} − ${f1(o)} = <b class="${n>0?'f':'r'}">${n>0?'+':''}${f1(n)} mmHg</b><small>${n>.05?'NFP positiva: sale líquido del capilar (filtración).':n<-.05?'NFP negativa: entra líquido al capilar (reabsorción).':'NFP cercana a 0: punto de equilibrio.'}</small></div>`}).join('');
+ const W=760,L=150,Rm=70,ends=[0,1].map(x=>{const Pc=s.Pa-(s.Pa-s.Pv)*x,pc=s.pic*(1+.12*x);
+  return{out:[[Pc,'var(--hyd)','Pc',1],[s.sig*s.pii,'var(--onc)','σπi',1],[Math.max(0,-s.Pi),'var(--hyd)','−Pi',.55]],inn:[[s.sig*pc,'var(--onc)','σπc',1],[Math.max(0,s.Pi),'var(--hyd)','Pi',.55]]}});
+ const sum=a=>a.reduce((u,v)=>u+v[0],0),mx=Math.max(...ends.flatMap(e=>[sum(e.out),sum(e.inn)]))*1.05,k=(W-L-Rm)/mx;
+ let o='';
+ ends.forEach((e,i)=>{const y0=i*105+6;o+=`<text x="${L}" y="${y0+12}" font-size="12" font-weight="600">${i?'Extremo venular':'Extremo arteriolar'}</text>`;
+  [['Hacia fuera',e.out,y0+20],['Hacia dentro',e.inn,y0+54]].forEach(([lab,segs,y])=>{
+   o+=`<text class="ax" x="${L-8}" y="${y+17}" text-anchor="end">${lab}</text>`;let x=L;
+   segs.forEach(([v,c,l,op])=>{const w=v*k;if(w<.5)return;o+=`<rect x="${x}" y="${y}" width="${w}" height="24" fill="${c}" opacity="${op}"/>`+(w>52?`<text x="${x+w/2}" y="${y+16}" text-anchor="middle" font-size="12" style="fill:var(--panel)">${l} ${f1(v)}</text>`:'');x+=w});
+   o+=`<text x="${x+6}" y="${y+16}" font-size="12" font-weight="600">${f1(sum(segs))}</text>`})});
+ $('c4').innerHTML=o;
+}
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',render));
+render();
+</script>
+</body>
+</html>

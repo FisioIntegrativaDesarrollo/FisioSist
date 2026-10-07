@@ -1,0 +1,223 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ECG y bucle presión-volumen</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fafaf8;--fg:#1f1f1c;--mut:#6b6b66;--card:#fff;--bd:#d8d8d2;--grid:#e6e6e0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17171a;--fg:#ecece6;--mut:#9a9a93;--card:#222226;--bd:#38383d;--grid:#32323a}}
+:root[data-theme="dark"]{--bg:#17171a;--fg:#ecece6;--mut:#9a9a93;--card:#222226;--bd:#38383d;--grid:#32323a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px;max-width:1150px;margin-inline:auto}
+h1{font-size:20px;margin:0 0 4px}p.s{color:var(--mut);margin:0 0 14px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 16px;margin-bottom:12px}
+.ctl label{font-size:12px;color:var(--mut);display:flex;justify-content:space-between}
+.ctl input[type=range]{width:100%}
+button{background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:6px 12px;cursor:pointer}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+canvas{width:100%;height:420px;display:block}
+.ro{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:12px 0}
+.ro div{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 10px}
+.ro b{display:block;font-size:19px}.ro span{font-size:11px;color:var(--mut)}
+.lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;margin:6px 0 12px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.he{display:grid;grid-template-columns:minmax(220px,320px) 1fr;gap:14px;align-items:center;margin-bottom:12px}
+@media(max-width:700px){.he{grid-template-columns:1fr}}
+.he svg{width:100%;max-height:360px}
+.f{fill:var(--grid);stroke:var(--bd);stroke-width:1.5}.g{fill:none;stroke:none}
+.l{fill:none;stroke:var(--mut);stroke-opacity:.45;stroke-width:3;stroke-linecap:round}
+#hn{font-size:18px;font-weight:600;margin:0 0 6px}.he p{margin:5px 0;font-size:13.5px}
+h2{font-size:15px;margin:16px 0 6px}
+.tw{overflow-x:auto;margin-bottom:12px}table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px}
+td,th{border-bottom:1px solid var(--bd);padding:6px 8px;text-align:left;vertical-align:top}th{color:var(--mut);font-weight:600}
+</style></head><body>
+<h1>Modelo del ECG asociado al bucle presión-volumen</h1>
+<p class="s">El ECG (suma de gaussianas P-Q-R-S-T) dispara la elastancia variable del VI; las válvulas y la aorta (Windkessel) cierran el ciclo.</p>
+<div class="card ctl" id="ctl"></div>
+<div class="grid"><div class="card"><canvas id="ts"></canvas></div><div class="card"><canvas id="pv"></canvas></div></div>
+<div class="lg" id="lg"></div>
+<div class="ro" id="ro"></div>
+<h2>Propagación de la despolarización (en vivo)</h2>
+<div class="card he">
+<svg viewBox="0 0 300 330" id="heart" role="img" aria-label="Esquema del sistema de conducción cardíaco">
+<path id="a_rv" class="f" d="M55 150 Q48 250 150 312 L150 150 Z"/>
+<path id="a_lv" class="f" d="M150 150 L150 312 Q272 262 258 150 Z"/>
+<ellipse id="a_ra" class="f" cx="92" cy="98" rx="44" ry="48"/>
+<ellipse id="a_la" class="f" cx="208" cy="92" rx="42" ry="42"/>
+<rect id="a_sep" class="f" x="143" y="150" width="14" height="140"/>
+<rect id="a_base" class="g" x="55" y="150" width="205" height="30" rx="10"/>
+<path id="a_bach" class="l" d="M82 52 Q150 28 205 62"/>
+<path id="a_int" class="l" d="M82 52 Q86 104 124 138"/>
+<path id="a_his" class="l" d="M124 140 L148 158"/>
+<path id="a_rbb" class="l" d="M147 158 L145 276"/>
+<path id="a_lbb" class="l" d="M153 158 L155 276"/>
+<path id="a_pkr" class="l" d="M145 276 Q76 258 62 176"/>
+<path id="a_pkl" class="l" d="M155 276 Q246 258 252 176"/>
+<circle id="a_sa" class="f" cx="82" cy="52" r="8"/>
+<circle id="a_av" class="f" cx="124" cy="140" r="7"/>
+<g font-size="10" style="fill:var(--mut)">
+<text x="68" y="40" text-anchor="end">Nodo SA</text><text x="150" y="30" text-anchor="middle">Bachmann</text>
+<text x="112" y="162" text-anchor="end">Nodo AV</text><text x="166" y="162">His</text>
+<text x="92" y="102" text-anchor="middle">AD</text><text x="208" y="96" text-anchor="middle">AI</text>
+<text x="95" y="225" text-anchor="middle">VD</text><text x="208" y="225" text-anchor="middle">VI</text>
+<text x="136" y="210" text-anchor="end">Rama D</text><text x="164" y="210">Rama I</text>
+<text x="150" y="326" text-anchor="middle">Ápex · Purkinje</text></g>
+</svg>
+<div><p id="hn"></p><p id="hs"></p><p id="hd"></p><p id="hm" style="color:var(--mut)"></p></div></div>
+<h2>Fases del ECG y estructura anatómica</h2>
+<div class="card tw"><table>
+<tr><th>Fase del ECG</th><th>Duración normal</th><th>Estructura por la que se propaga</th><th>Evento eléctrico</th></tr>
+<tr><td>Onda P</td><td>0,08–0,10 s</td><td>Nodo SA → haces internodales y Bachmann → aurículas D e I</td><td>Despolarización auricular; positiva en DII</td></tr>
+<tr><td>Segmento PR (intervalo PR 0,12–0,20 s)</td><td>≈0,04–0,06 s</td><td>Nodo AV → haz de His</td><td>Retraso de conducción; sin deflexión en superficie</td></tr>
+<tr><td>Onda Q (QRS: 0,06–0,10 s)</td><td>&lt;0,04 s</td><td>Rama izquierda → septo interventricular</td><td>Activación septal de izquierda a derecha</td></tr>
+<tr><td>Onda R</td><td>≈0,04 s</td><td>Ramas D e I → Purkinje → paredes libres de VD y VI</td><td>Endocardio → epicardio, ápex → base; predomina el VI</td></tr>
+<tr><td>Onda S</td><td>≈0,02–0,04 s</td><td>Región posterobasal del VI, cono pulmonar, base septal</td><td>Últimas zonas ventriculares en despolarizarse</td></tr>
+<tr><td>Segmento ST</td><td>≈0,08–0,12 s</td><td>Todo el miocardio ventricular</td><td>Meseta (fase 2): sin gradiente, isoeléctrico</td></tr>
+<tr><td>Onda T (intervalo QT 0,35–0,44 s)</td><td>≈0,16 s</td><td>Miocardio ventricular</td><td>Repolarización epicardio → endocardio</td></tr>
+<tr><td>Línea TP</td><td>variable</td><td>Nodo SA (fase 4)</td><td>Reposo; la repolarización auricular queda oculta en el QRS</td></tr>
+</table></div>
+<h2>Fases del ciclo en el bucle presión-volumen</h2>
+<div class="card tw"><table>
+<tr><th>Fase</th><th>Mitral / Aórtica</th><th>Volumen del VI</th><th>Presión del VI</th><th>Momento en el ECG</th></tr>
+<tr><td>Contracción isovolumétrica</td><td>Cerrada / cerrada</td><td>Constante (VFD)</td><td>Sube rápido hasta superar la presión aórtica</td><td>Complejo QRS</td></tr>
+<tr><td>Eyección</td><td>Cerrada / abierta</td><td>Disminuye hasta el VFS</td><td>Alcanza el máximo y desciende un poco</td><td>Segmento ST hasta el ápice de la T</td></tr>
+<tr><td>Relajación isovolumétrica</td><td>Cerrada / cerrada</td><td>Constante (VFS)</td><td>Cae rápido hasta quedar bajo la presión auricular</td><td>Final de la onda T</td></tr>
+<tr><td>Llenado rápido</td><td>Abierta / cerrada</td><td>Aumenta con rapidez</td><td>Muy baja, casi sin cambios</td><td>Después de la T</td></tr>
+<tr><td>Llenado lento (diástasis)</td><td>Abierta / cerrada</td><td>Aumenta poco</td><td>Casi igual a la presión auricular</td><td>Línea TP</td></tr>
+<tr><td>Sístole auricular</td><td>Abierta / cerrada</td><td>Aporta ~15-20 % del llenado</td><td>Ligero aumento</td><td>Onda P</td></tr>
+</table></div>
+<h2>Correlación electromecánica</h2>
+<div class="card tw"><table>
+<tr><th>Evento ECG</th><th>Evento mecánico</th><th>Punto del bucle</th></tr>
+<tr><td>Onda P (despolarización auricular)</td><td>Sístole auricular: aporta ~15-20 % del llenado</td><td>Final del llenado, ligero ascenso hasta VFD</td></tr>
+<tr><td>Complejo QRS (despolarización ventricular)</td><td>Se activa la elastancia: sube Plv, cierra la mitral (S1)</td><td>1 → 2: contracción isovolumétrica (vertical)</td></tr>
+<tr><td>Segmento ST – ápice de T</td><td>Eyección: Plv supera la presión aórtica</td><td>2 → 3: el volumen cae hasta el VFS</td></tr>
+<tr><td>Final de la onda T (repolarización)</td><td>Relajación: cierre aórtico (S2), luego abre la mitral</td><td>3 → 4: relajación isovolumétrica y nuevo llenado</td></tr>
+</table></div>
+<script>
+const $=id=>document.getElementById(id);
+const P={hr:70,emax:2.4,pla:8,R:1.2,speed:1};
+const V0=10,A=0.35,B=0.03,Rav=0.01,Rmv=0.004,C=1.5,Q0=0.16,N=750,DT=0.0005;
+const COL=['#378ADD','#BA7517','#D85A30','#7F77DD','#1D9E75','#6FB6E8'];
+const SG=[
+{n:'Línea isoeléctrica (TP)',c:'#888780',act:['sa'],dep:[],s:'Nodo sinusal (SA) en fase 4',d:'Reposo eléctrico: el nodo SA alcanza su umbral por despolarización diastólica lenta; el resto del miocardio está repolarizado.'},
+{n:'Onda P',c:'#1D9E75',act:['sa','bach','int','ra','la'],dep:[],s:'Nodo SA → haces internodales y haz de Bachmann → aurículas',d:'Despolarización auricular: primero la aurícula derecha y luego la izquierda (vía Bachmann). Vector hacia abajo y a la izquierda.'},
+{n:'Segmento PR',c:'#BA7517',act:['av','his'],dep:['sa','bach','int','ra','la'],s:'Nodo AV → haz de His',d:'Retraso fisiológico del nodo AV (conducción lenta): permite terminar el llenado ventricular. No hay deflexión visible porque la masa activada es mínima.'},
+{n:'Onda Q (septal)',c:'#378ADD',act:['sep','lbb'],dep:['ra','la','av','his'],s:'Rama izquierda → septo interventricular',d:'El septo se activa de izquierda a derecha: vector inicial pequeño, negativo en derivaciones izquierdas.'},
+{n:'Onda R',c:'#D85A30',act:['rbb','lbb','pkr','pkl','rv','lv'],dep:['sep','ra','la'],s:'Ramas D e I → red de Purkinje → paredes libres de VD y VI',d:'Despolarización de endocardio a epicardio y de ápex a base. Predomina la masa del VI: vector grande hacia la izquierda y abajo.'},
+{n:'Onda S',c:'#D4537E',act:['base'],dep:['rv','lv','sep','pkr','pkl','rbb','lbb'],s:'Porción posterobasal del VI, cono pulmonar y base del septo',d:'Últimas zonas ventriculares en activarse; vector hacia arriba y atrás, deflexión negativa.'},
+{n:'Segmento ST',c:'#639922',act:[],dep:['rv','lv','sep','base'],s:'Todo el miocardio ventricular',d:'Meseta (fase 2 del potencial de acción): ventrículos despolarizados, sin gradiente de potencial, de ahí la línea isoeléctrica.'},
+{n:'Onda T',c:'#7F77DD',act:['rv','lv','sep','base'],dep:[],s:'Miocardio ventricular (repolarización)',d:'Repolarización de epicardio a endocardio (sentido opuesto a la despolarización), por eso la T es positiva. Coincide con el final de la eyección.'}];
+const IDS=['rv','lv','ra','la','sep','base','bach','int','his','rbb','lbb','pkr','pkl','sa','av'];
+let lastSg=-1,lastPh=-1;
+function seg(t){const T=T_(),tT=Q0+.03+Ts()*.9,te=tT+.09;
+ if(te>T&&t<te-T)return 7;
+ if(t<.01)return 0;if(t<.10)return 1;if(t<.15)return 2;if(t<.181)return 3;if(t<.2)return 4;if(t<.235)return 5;if(t<tT-.09)return 6;if(t<te)return 7;return 0}
+function paint(i){const s=SG[i];IDS.forEach(k=>{$('a_'+k).style.cssText=''});
+ const ap=(k,o)=>{const e=$('a_'+k);if(e.classList.contains('l')){e.style.stroke=s.c;e.style.strokeOpacity=o}else{e.style.fill=s.c;e.style.fillOpacity=o;e.style.stroke=s.c}};
+ s.dep.forEach(k=>ap(k,.3));s.act.forEach(k=>ap(k,1));
+ $('hn').textContent=s.n;$('hn').style.color=s.c;$('hs').innerHTML='<b>Estructura:</b> '+s.s;$('hd').innerHTML='<b>Qué ocurre:</b> '+s.d}
+const NAM=['Llenado rápido','Contracción isovolumétrica','Eyección','Relajación isovolumétrica','Sístole auricular','Llenado lento (diástasis)'];
+let V=120,Pao=80,tau=0,ejected=false,paused=false,buf=[],acc=0,ns=0;
+let mx={vmax:0,vmin:999,pl:0,pa:0,pi:999};
+const g=(x,m,s)=>Math.exp(-0.5*((x-m)/s)**2);
+const T_=()=>60/P.hr,Ts=()=>0.32*Math.sqrt(T_());
+function ecg(t){const q=Q0;return .12*g(t,q-.11,.022)-.1*g(t,q+.012,.008)+g(t,q+.03,.01)-.22*g(t,q+.05,.01)+.3*g(t,q+.03+Ts()*.9,.045)}
+function el1(t){const ts=Ts(),u=t-(Q0+.03);if(u<0||u>1.5*ts)return 0;return u<ts?.5*(1-Math.cos(Math.PI*u/ts)):.5*(1+Math.cos(Math.PI*(u-ts)/(.5*ts)))}
+let cur={};
+function step(){
+ const T=T_(),e=el1(tau)+el1(tau+T),x=V-V0;
+ const Plv=e*P.emax*x+(1-e)*A*(Math.exp(B*x)-1);
+ const kick=g(tau,.12,.03),Pla=P.pla+5*kick;
+ const Qa=Plv>Pao?(Plv-Pao)/Rav:0,Qm=Pla>Plv?(Pla-Plv)/Rmv:0;
+ V+=(Qm-Qa)*DT;Pao+=(Qa-Pao/P.R)/C*DT;
+ if(Qa>0)ejected=true;
+ const ph=Qa>0?2:Qm>0?(kick>.3?4:(Qm>100?0:5)):ejected?3:(e>.02?1:4);
+ mx.vmax=Math.max(mx.vmax,V);mx.vmin=Math.min(mx.vmin,V);mx.pl=Math.max(mx.pl,Plv);mx.pa=Math.max(mx.pa,Pao);mx.pi=Math.min(mx.pi,Pao);
+ cur={ecg:ecg(tau),plv:Plv,pao:Pao,pla:Pla,v:V,ph,sg:seg(tau)};
+ tau+=DT;
+ if(tau>=T){tau-=T;ejected=false;endBeat()}
+}
+function endBeat(){
+ const sv=mx.vmax-mx.vmin;
+ const d={edv:mx.vmax,esv:mx.vmin,sv,ef:100*sv/mx.vmax,co:sv*P.hr/1000,ps:mx.pa,pd:mx.pi,pl:mx.pl};
+ for(const k in d)if($('r_'+k))$('r_'+k).textContent=d[k].toFixed(k=='co'||k=='ef'?1:0);
+ mx={vmax:0,vmin:999,pl:0,pa:0,pi:999};
+}
+// UI
+[['hr','Frecuencia (lpm)',40,130,1],['emax','Contractilidad Emax',1,4,.1],['pla','Precarga (P aurícula, mmHg)',4,20,.5],['R','Poscarga (resistencia)',.6,2,.05],['speed','Velocidad de simulación',.1,1,.05]].forEach(([k,l,a,b,s])=>{
+ const d=document.createElement('div');d.innerHTML=`<label>${l}<b id="v_${k}">${P[k]}</b></label><input type="range" min="${a}" max="${b}" step="${s}" value="${P[k]}">`;
+ d.querySelector('input').oninput=e=>{P[k]=+e.target.value;$('v_'+k).textContent=P[k]};$('ctl').appendChild(d)});
+const pb=document.createElement('button');pb.textContent='Pausar';pb.onclick=()=>{paused=!paused;pb.textContent=paused?'Reanudar':'Pausar'};$('ctl').appendChild(pb);
+$('lg').innerHTML=COL.map((c,i)=>`<span><i style="background:${c}"></i>${NAM[i]}</span>`).join('');
+$('ro').innerHTML=[['edv','VFD (mL)'],['esv','VFS (mL)'],['sv','Volumen sistólico (mL)'],['ef','FE (%)'],['co','Gasto cardíaco (L/min)'],['ps','P aórtica máx (mmHg)'],['pd','P aórtica mín (mmHg)'],['pl','P VI máx (mmHg)']].map(([k,l])=>`<div><b id="r_${k}">–</b><span>${l}</span></div>`).join('');
+// canvases
+let cT,cP;
+function fit(c){const r=c.getBoundingClientRect(),d=devicePixelRatio||1;c.width=r.width*d;c.height=r.height*d;const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);return[x,r.width,r.height]}
+function fitAll(){cT=fit($('ts'));cP=fit($('pv'))}
+addEventListener('resize',fitAll);
+const css=()=>{const s=getComputedStyle(document.documentElement);return{fg:s.getPropertyValue('--fg').trim(),mut:s.getPropertyValue('--mut').trim(),grid:s.getPropertyValue('--grid').trim()}};
+function line(x,pts,col,w){x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.strokeStyle=col;x.lineWidth=w;x.lineJoin='round';x.stroke()}
+function drawT(){
+ const[x,w,h]=cT,c=css(),n=buf.length;x.clearRect(0,0,w,h);if(n<2)return;
+ const X=i=>w-(n-1-i)*w/(N-1);
+ for(let i=1;i<n;i++){x.globalAlpha=.16;x.fillStyle=COL[buf[i].ph];x.fillRect(X(i-1),0,X(i)-X(i-1)+1,h)}
+ x.globalAlpha=1;x.font='11px system-ui';x.fillStyle=c.mut;
+ const rows=[[h*.02,h*.26],[h*.33,h*.72],[h*.79,h*.97]];
+ ['ECG','Presión (mmHg): VI, aorta, aurícula','Volumen del VI (mL)'].forEach((t,i)=>{x.fillText(t,6,rows[i][0]+11)});
+ rows.forEach(r=>{x.strokeStyle=c.grid;x.lineWidth=1;x.beginPath();x.moveTo(0,r[1]);x.lineTo(w,r[1]);x.stroke()});
+ const ye=v=>rows[0][1]-(v+.35)/1.9*(rows[0][1]-rows[0][0]-34);
+ const yp=v=>rows[1][1]-v/160*(rows[1][1]-rows[1][0]-14);
+ const yv=v=>rows[2][1]-(v-30)/120*(rows[2][1]-rows[2][0]-12);
+ const L=(f,k)=>buf.map((s,i)=>[X(i),f(s[k])]);
+ line(x,L(ye,'ecg'),c.fg,1.6);
+ const LB={1:['P',0],2:['PR',1],3:['QRS',0],6:['ST',1],7:['T',0]};
+ x.font='600 11px system-ui';
+ for(let i=1;i<n;i++){const b=buf[i].sg;if(buf[i-1].sg!==b){
+  if(b!==4&&b!==5){x.setLineDash([2,3]);x.strokeStyle=c.mut;x.globalAlpha=.5;x.beginPath();x.moveTo(X(i),rows[0][0]+4);x.lineTo(X(i),rows[0][1]);x.stroke();x.setLineDash([]);x.globalAlpha=1}
+  const t=LB[b];if(t){x.fillStyle=SG[b].c;x.fillText(t[0],X(i)+2,rows[0][0]+14+t[1]*12)}}}
+ line(x,L(yp,'pla'),'#1D9E75',1.4);line(x,L(yp,'pao'),'#378ADD',1.8);line(x,L(yp,'plv'),'#D85A30',1.8);
+ line(x,L(yv,'v'),'#7F77DD',1.8);
+}
+function drawP(){
+ const[x,w,h]=cP,c=css();x.clearRect(0,0,w,h);
+ const m={l:44,r:12,t:12,b:36},W=w-m.l-m.r,H=h-m.t-m.b;
+ const X=v=>m.l+(v-30)/120*W,Y=p=>m.t+H-((p+14)/174)*H;
+ x.font='11px system-ui';x.fillStyle=c.mut;x.strokeStyle=c.grid;x.lineWidth=1;
+ for(let p=0;p<=160;p+=40){x.beginPath();x.moveTo(m.l,Y(p));x.lineTo(w-m.r,Y(p));x.stroke();x.fillText(p,m.l-26,Y(p)+4)}
+ for(let v=30;v<=150;v+=30){x.fillText(v,X(v)-8,h-m.b+14)}
+ x.fillText('Volumen VI (mL)',m.l+W/2-40,h-6);x.save();x.translate(12,m.t+H/2+40);x.rotate(-Math.PI/2);x.fillText('Presión VI (mmHg)',0,0);x.restore();
+ x.setLineDash([4,4]);
+ line(x,[[X(V0),Y(0)],[X(V0+160/P.emax),Y(160)]],c.mut,1);
+ const ed=[];for(let v=V0;v<=150;v+=2){const p=A*(Math.exp(B*(v-V0))-1);if(p<=160)ed.push([X(v),Y(p)])}line(x,ed,c.mut,1);x.setLineDash([]);
+ x.fillText('ESPVR',X(V0+150/P.emax)+4,Y(150));x.fillText('EDPVR',X(132),Y(30));
+ const n=Math.min(buf.length,Math.ceil(T_()/.004)+2);if(n<3)return;const s0=buf.length-n;
+ const tr=[];
+ for(let i=s0+1;i<buf.length;i++){const a=buf[i-1],b=buf[i];x.beginPath();x.moveTo(X(a.v),Y(a.plv));x.lineTo(X(b.v),Y(b.plv));x.strokeStyle=COL[b.ph];x.lineWidth=2.6;x.stroke();
+  if(a.ph!=b.ph){const k=a.ph==2&&b.ph==3?3:b.ph==1?1:b.ph==2?2:a.ph==3&&b.ph!=1&&b.ph!=2?4:0;if(k)tr.push([k,X(b.v),Y(b.plv)])}}
+ const lab=['','1 Cierre mitral','2 Apertura aórtica','3 Cierre aórtico','4 Apertura mitral'];
+ tr.forEach(t=>{x.beginPath();x.arc(t[1],t[2],4,0,7);x.fillStyle=c.fg;x.fill();x.fillStyle=c.fg;x.fillText(lab[t[0]],t[1]+(t[0]==1||t[0]==2?-70:7),t[2]+(t[0]==2?-8:4))});
+ const best={};let s=s0;
+ for(let i=s0;i<=buf.length;i++){if(i==buf.length||buf[i].ph!==buf[s].ph){const p=buf[s].ph;if(!best[p]||i-s>best[p][1]-best[p][0])best[p]=[s,i-1];s=i}}
+ const PL={0:['Llenado\nrápido',0,18,'middle'],5:['Llenado lento',0,30,'middle'],4:['Sístole\nauricular',10,6,'start'],1:['Contracción\nisovolumétrica',9,0,'start'],2:['Eyección',0,-12,'middle'],3:['Relajación\nisovolumétrica',-9,0,'end']};
+ x.font='600 11px system-ui';
+ for(const p in best){const r=best[p],q=buf[Math.floor((r[0]+r[1])/2)],d=PL[p];x.fillStyle=COL[p];x.textAlign=d[3];
+  d[0].split('\n').forEach((t,k)=>x.fillText(t,X(q.v)+d[1],Y(q.plv)+d[2]+k*12))}
+ x.textAlign='start';
+ const l=buf[buf.length-1];x.beginPath();x.arc(X(l.v),Y(l.plv),6,0,7);x.fillStyle=COL[l.ph];x.fill();x.strokeStyle=c.fg;x.lineWidth=2;x.stroke();
+ x.fillStyle=COL[l.ph];x.font='600 12px system-ui';x.fillText(NAM[l.ph],m.l+8,m.t+14);
+}
+// warm-up
+fitAll();
+for(let i=0;i<14*T_()/DT;i++)step();
+let last=performance.now();
+function frame(t){
+ const dt=Math.min((t-last)/1000,.05);last=t;
+ if(!paused){const n=Math.ceil(dt*P.speed/DT);
+  for(let i=0;i<n;i++){step();if(++ns%8==0){buf.push(cur);if(buf.length>N)buf.shift()}}}
+ if(cur.sg!==lastSg){lastSg=cur.sg;paint(cur.sg)}
+ if(cur.ph!==lastPh){lastPh=cur.ph;$('hm').textContent='Fase mecánica simultánea: '+NAM[cur.ph]}
+ drawT();drawP();requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script></body></html>
