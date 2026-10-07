@@ -98,6 +98,7 @@ td,th{border-bottom:1px solid var(--bd);padding:6px 8px;text-align:left;vertical
 <script>
 const $=id=>document.getElementById(id);
 const P={hr:70,emax:2.4,pla:8,R:1.2,speed:1};
+const DEF={...P},INP={};
 const V0=10,A=0.35,B=0.03,Rav=0.01,Rmv=0.004,C=1.5,Q0=0.16,N=750,DT=0.0005;
 const COL=['#378ADD','#BA7517','#D85A30','#7F77DD','#1D9E75','#6FB6E8'];
 const SG=[
@@ -109,9 +110,12 @@ const SG=[
 {n:'Onda S',c:'#D4537E',act:['base'],dep:['rv','lv','sep','pkr','pkl','rbb','lbb'],s:'Porción posterobasal del VI, cono pulmonar y base del septo',d:'Últimas zonas ventriculares en activarse; vector hacia arriba y atrás, deflexión negativa.'},
 {n:'Segmento ST',c:'#639922',act:[],dep:['rv','lv','sep','base'],s:'Todo el miocardio ventricular',d:'Meseta (fase 2 del potencial de acción): ventrículos despolarizados, sin gradiente de potencial, de ahí la línea isoeléctrica.'},
 {n:'Onda T',c:'#7F77DD',act:['rv','lv','sep','base'],dep:[],s:'Miocardio ventricular (repolarización)',d:'Repolarización de epicardio a endocardio (sentido opuesto a la despolarización), por eso la T es positiva. Coincide con el final de la eyección.'}];
+SG.push({n:'Fibrilación auricular',c:'#BA7517',act:['ra','la'],dep:[],s:'Aurículas (múltiples frentes de reentrada)',d:'Actividad auricular caótica a 350-600/min: no hay onda P ni sístole auricular coordinada (se pierde ~15-20 % del llenado). El nodo AV filtra los impulsos y los ventrículos responden con un ritmo irregularmente irregular.'});
+SG.push({n:'Fibrilación ventricular',c:'#E24B4A',act:['rv','lv','sep','base','pkr','pkl','rbb','lbb'],dep:['ra','la'],s:'Miocardio ventricular (reentradas múltiples)',d:'Activación caótica y desorganizada: no hay QRS ni onda T identificables. Sin contracción coordinada no se abre la válvula aórtica, cesa el gasto cardíaco y la presión arterial cae; requiere desfibrilación.'});
 const IDS=['rv','lv','ra','la','sep','base','bach','int','his','rbb','lbb','pkr','pkl','sa','av'];
 let lastSg=-1,lastPh=-1;
-function seg(t){const T=T_(),tT=Q0+.03+Ts()*.9,te=tT+.09;
+function seg(t){const r=seg0(t);return rhythm==='vf'?9:(rhythm==='af'&&r<=2?8:r)}
+function seg0(t){const T=prevT(),tT=Q0+.03+Ts()*.9,te=tT+.09;
  if(te>T&&t<te-T)return 7;
  if(t<.01)return 0;if(t<.10)return 1;if(t<.15)return 2;if(t<.181)return 3;if(t<.2)return 4;if(t<.235)return 5;if(t<tT-.09)return 6;if(t<te)return 7;return 0}
 function paint(i){const s=SG[i];IDS.forEach(k=>{$('a_'+k).style.cssText=''});
@@ -119,25 +123,50 @@ function paint(i){const s=SG[i];IDS.forEach(k=>{$('a_'+k).style.cssText=''});
  s.dep.forEach(k=>ap(k,.3));s.act.forEach(k=>ap(k,1));
  $('hn').textContent=s.n;$('hn').style.color=s.c;$('hs').innerHTML='<b>Estructura:</b> '+s.s;$('hd').innerHTML='<b>Qué ocurre:</b> '+s.d}
 const NAM=['Llenado rápido','Contracción isovolumétrica','Eyección','Relajación isovolumétrica','Sístole auricular','Llenado lento (diástasis)'];
+let need=false,inst=true,rhythm='sinus',tabs=0,tv0=0,Tb=.857,Tp=.857;
 let V=120,Pao=80,tau=0,ejected=false,paused=false,buf=[],acc=0,ns=0;
 let mx={vmax:0,vmin:999,pl:0,pa:0,pi:999};
 const g=(x,m,s)=>Math.exp(-0.5*((x-m)/s)**2);
 const T_=()=>60/P.hr,Ts=()=>0.32*Math.sqrt(T_());
-function ecg(t){const q=Q0;return .12*g(t,q-.11,.022)-.1*g(t,q+.012,.008)+g(t,q+.03,.01)-.22*g(t,q+.05,.01)+.3*g(t,q+.03+Ts()*.9,.045)}
+function ecg(t){const q=Q0;return (rhythm==='sinus'?.12*g(t,q-.11,.022):0)-.1*g(t,q+.012,.008)+g(t,q+.03,.01)-.22*g(t,q+.05,.01)+.3*g(t,q+.03+Ts()*.9,.045)}
+const curT=()=>rhythm==='af'?Tb:T_(),prevT=()=>rhythm==='af'?Tp:T_();
+const newRR=()=>Math.max(.4,T_()*(.6+.8*Math.random()));
+const TWO=2*Math.PI;
+function ecgNow(){
+ if(rhythm==='vf'){const t=tabs,u=tabs-tv0,k=Math.min(1,u/.5),amp=.35+.65*Math.exp(-u/45);
+  const a=.5*Math.sin(TWO*4.3*t+2*Math.sin(TWO*.31*t))+.3*Math.sin(TWO*6.2*t+1.5*Math.sin(TWO*.23*t+1))+.35*Math.sin(TWO*2.9*t+1.2*Math.sin(TWO*.17*t+2));
+  return k*amp*.6*a*(.65+.35*Math.sin(TWO*.4*t+.7))}
+ let v=ecg(tau)+ecg(tau+prevT());
+ if(rhythm==='af')v+=.03*Math.sin(TWO*6.5*tabs)+.02*Math.sin(TWO*8.7*tabs+1)+.015*Math.sin(TWO*5.1*tabs+2);
+ return v}
+function setRhythm(r){
+ const was=rhythm;rhythm=r;tv0=tabs;
+ if(r==='sinus'&&was!=='sinus')tau=0;
+ if(r==='af'){Tp=T_();Tb=Math.max(T_(),tau+.05)}
+ bAF.textContent=r==='af'?'Terminar FA (cardioversión)':'Inducir fibrilación auricular';
+ bVF.textContent=r==='vf'?'Desfibrilar (volver a ritmo sinusal)':'Inducir fibrilación ventricular';
+ bAF.style.borderColor=r==='af'?'#BA7517':'';bAF.style.fontWeight=r==='af'?600:'';
+ bVF.style.borderColor=r==='vf'?'#E24B4A':'';bVF.style.fontWeight=r==='vf'?600:'';
+ rh.textContent='Ritmo: '+{sinus:'sinusal normal',af:'fibrilación auricular (RR irregular, sin onda P ni contracción auricular)',vf:'fibrilación ventricular (sin eyección: paro circulatorio)'}[r];
+ rh.style.color=r==='af'?'#BA7517':r==='vf'?'#E24B4A':'var(--mut)';
+ lastSg=-1;lastPh=-1}
 function el1(t){const ts=Ts(),u=t-(Q0+.03);if(u<0||u>1.5*ts)return 0;return u<ts?.5*(1-Math.cos(Math.PI*u/ts)):.5*(1+Math.cos(Math.PI*(u-ts)/(.5*ts)))}
 let cur={};
 function step(){
- const T=T_(),e=el1(tau)+el1(tau+T),x=V-V0;
+ const T=curT(),Tq=prevT(),vf=rhythm==='vf',af=rhythm==='af';
+ const e=vf?.01+.01*Math.sin(TWO*5*tabs)*Math.sin(TWO*3.3*tabs):el1(tau)+el1(tau+Tq),x=V-V0;
  const Plv=e*P.emax*x+(1-e)*A*(Math.exp(B*x)-1);
- const kick=g(tau,.12,.03),Pla=P.pla+5*kick;
- const Qa=Plv>Pao?(Plv-Pao)/Rav:0,Qm=Pla>Plv?(Pla-Plv)/Rmv:0;
- V+=(Qm-Qa)*DT;Pao+=(Qa-Pao/P.R)/C*DT;
+ const kick=rhythm==='sinus'?g(tau,.12,.03):0,Pla=P.pla+5*kick+(af?.4*Math.sin(TWO*7*tabs):0);
+ const Qa=!vf&&Plv>Pao?(Plv-Pao)/Rav:0,Qm=Pla>Plv?(Pla-Plv)/Rmv:0;
+ // en FV no hay eyección y la aorta se vacía lentamente hacia ~10 mmHg
+ const Pms=vf?10:0,Rl=vf?P.R*2.5:P.R;
+ V+=(Qm-Qa)*DT;Pao+=(Qa-(Pao-Pms)/Rl)/C*DT;
  if(Qa>0)ejected=true;
- const ph=Qa>0?2:Qm>0?(kick>.3?4:(Qm>100?0:5)):ejected?3:(e>.02?1:4);
+ const ph=vf?5:Qa>0?2:Qm>0?(kick>.3?4:(Qm>100?0:5)):ejected?3:(e>.02?1:(af?5:4));
  mx.vmax=Math.max(mx.vmax,V);mx.vmin=Math.min(mx.vmin,V);mx.pl=Math.max(mx.pl,Plv);mx.pa=Math.max(mx.pa,Pao);mx.pi=Math.min(mx.pi,Pao);
- cur={ecg:ecg(tau),plv:Plv,pao:Pao,pla:Pla,v:V,ph,sg:seg(tau)};
- tau+=DT;
- if(tau>=T){tau-=T;ejected=false;endBeat()}
+ cur={ecg:ecgNow(),plv:Plv,pao:Pao,pla:Pla,v:V,ph,sg:seg(tau)};
+ tau+=DT;tabs+=DT;
+ if(tau>=T){tau-=T;ejected=false;if(af){Tp=Tb;Tb=newRR()}endBeat()}
 }
 function endBeat(){
  const sv=mx.vmax-mx.vmin;
@@ -148,8 +177,17 @@ function endBeat(){
 // UI
 [['hr','Frecuencia (lpm)',40,130,1],['emax','Contractilidad Emax',1,4,.1],['pla','Precarga (P aurícula, mmHg)',4,20,.5],['R','Poscarga (resistencia)',.6,2,.05],['speed','Velocidad de simulación',.1,1,.05]].forEach(([k,l,a,b,s])=>{
  const d=document.createElement('div');d.innerHTML=`<label>${l}<b id="v_${k}">${P[k]}</b></label><input type="range" min="${a}" max="${b}" step="${s}" value="${P[k]}">`;
- d.querySelector('input').oninput=e=>{P[k]=+e.target.value;$('v_'+k).textContent=P[k]};$('ctl').appendChild(d)});
+ (INP[k]=d.querySelector('input')).oninput=e=>{P[k]=+e.target.value;$('v_'+k).textContent=P[k];if(k!=='speed')need=true};$('ctl').appendChild(d)});
 const pb=document.createElement('button');pb.textContent='Pausar';pb.onclick=()=>{paused=!paused;pb.textContent=paused?'Reanudar':'Pausar'};$('ctl').appendChild(pb);
+const lb=document.createElement('label');lb.style.cssText='flex-direction:row;align-items:center;gap:6px;justify-content:flex-start';
+lb.innerHTML='<input type="checkbox" checked> Actualizar al instante';lb.title='Activado: las gráficas se recalculan en estado estable al mover un parámetro. Desactivado: se ve la transición gradual latido a latido.';
+lb.querySelector('input').onchange=e=>{inst=e.target.checked};$('ctl').appendChild(lb);
+const rh=document.createElement('div');rh.style.cssText='font-size:13px;font-weight:600;grid-column:1/-1';$('ctl').appendChild(rh);
+const mk=(fn)=>{const b=document.createElement('button');b.onclick=fn;$('ctl').appendChild(b);return b};
+const bReset=mk(()=>{for(const k in DEF){P[k]=DEF[k];INP[k].value=DEF[k];$('v_'+k).textContent=DEF[k]}setRhythm('sinus');if(inst)resync()});
+bReset.textContent='Restablecer parámetros';
+const bAF=mk(()=>setRhythm(rhythm==='af'?'sinus':'af')),bVF=mk(()=>setRhythm(rhythm==='vf'?'sinus':'vf'));
+setRhythm('sinus');
 $('lg').innerHTML=COL.map((c,i)=>`<span><i style="background:${c}"></i>${NAM[i]}</span>`).join('');
 $('ro').innerHTML=[['edv','VFD (mL)'],['esv','VFS (mL)'],['sv','Volumen sistólico (mL)'],['ef','FE (%)'],['co','Gasto cardíaco (L/min)'],['ps','P aórtica máx (mmHg)'],['pd','P aórtica mín (mmHg)'],['pl','P VI máx (mmHg)']].map(([k,l])=>`<div><b id="r_${k}">–</b><span>${l}</span></div>`).join('');
 // canvases
@@ -172,7 +210,7 @@ function drawT(){
  const yv=v=>rows[2][1]-(v-30)/120*(rows[2][1]-rows[2][0]-12);
  const L=(f,k)=>buf.map((s,i)=>[X(i),f(s[k])]);
  line(x,L(ye,'ecg'),c.fg,1.6);
- const LB={1:['P',0],2:['PR',1],3:['QRS',0],6:['ST',1],7:['T',0]};
+ const LB={1:['P',0],2:['PR',1],3:['QRS',0],6:['ST',1],7:['T',0],8:['FA',0],9:['FV',0]};
  x.font='600 11px system-ui';
  for(let i=1;i<n;i++){const b=buf[i].sg;if(buf[i-1].sg!==b){
   if(b!==4&&b!==5){x.setLineDash([2,3]);x.strokeStyle=c.mut;x.globalAlpha=.5;x.beginPath();x.moveTo(X(i),rows[0][0]+4);x.lineTo(X(i),rows[0][1]);x.stroke();x.setLineDash([]);x.globalAlpha=1}
@@ -208,16 +246,24 @@ function drawP(){
  const l=buf[buf.length-1];x.beginPath();x.arc(X(l.v),Y(l.plv),6,0,7);x.fillStyle=COL[l.ph];x.fill();x.strokeStyle=c.fg;x.lineWidth=2;x.stroke();
  x.fillStyle=COL[l.ph];x.font='600 12px system-ui';x.fillText(NAM[l.ph],m.l+8,m.t+14);
 }
-// warm-up
-fitAll();
-for(let i=0;i<14*T_()/DT;i++)step();
+// Lleva el modelo al estado estable con los parámetros actuales y rellena
+// toda la ventana temporal (3 s) para que ECG, presiones y volumen reflejen el cambio.
+function resync(){
+ const wu=Math.max(14*T_(),6*P.R*C);
+ for(let i=0;i<wu/DT;i++)step();
+ mx={vmax:0,vmin:999,pl:0,pa:0,pi:999};
+ buf=[];ns=0;
+ for(let i=0;i<N*8;i++){step();if(++ns%8==0)buf.push(cur)}
+}
+fitAll();resync();
 let last=performance.now();
 function frame(t){
  const dt=Math.min((t-last)/1000,.05);last=t;
+ if(need){need=false;if(inst&&rhythm!=='vf')resync()}
  if(!paused){const n=Math.ceil(dt*P.speed/DT);
   for(let i=0;i<n;i++){step();if(++ns%8==0){buf.push(cur);if(buf.length>N)buf.shift()}}}
  if(cur.sg!==lastSg){lastSg=cur.sg;paint(cur.sg)}
- if(cur.ph!==lastPh){lastPh=cur.ph;$('hm').textContent='Fase mecánica simultánea: '+NAM[cur.ph]}
+ if(cur.ph!==lastPh){lastPh=cur.ph;$('hm').textContent=rhythm==='vf'?'Sin ciclo mecánico efectivo: no hay eyección ni gasto cardíaco':'Fase mecánica simultánea: '+NAM[cur.ph]}
  drawT();drawP();requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 </script></body></html>
