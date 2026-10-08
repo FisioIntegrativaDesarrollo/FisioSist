@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modelo integrado de fisiología glomerular</title>
+<style>
+:root{--bg:#fff;--fg:#1f1e1c;--mut:#5f5e5a;--card:#f4f3ef;--bd:#d3d1c7;--acc:#185FA5;--accbg:#E6F1FB;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1c1a;--fg:#ececea;--mut:#a9a8a1;--card:#2a2a27;--bd:#4a4a45;--acc:#85B7EB;--accbg:#0C447C}}
+:root[data-theme="dark"]{--bg:#1c1c1a;--fg:#ececea;--mut:#a9a8a1;--card:#2a2a27;--bd:#4a4a45;--acc:#85B7EB;--accbg:#0C447C}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0 auto;max-width:760px;padding:16px;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5}
+h1{font-size:20px;font-weight:600;margin:0 0 4px}h2{font-size:14px;font-weight:500;color:var(--mut);margin:18px 0 6px}
+p.s{margin:0 0 12px;color:var(--mut);font-size:14px}
+button{font:inherit;font-size:13px;color:var(--fg);background:transparent;border:1px solid var(--bd);border-radius:8px;padding:6px 10px;cursor:pointer}
+.g{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.card{background:var(--card);border-radius:8px;padding:8px 10px}
+.m{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin:6px 0 12px}.m .k{font-size:12px;color:var(--mut)}.m .v{font-size:17px;font-weight:500}
+.sl{display:grid;grid-template-columns:140px 1fr 70px;gap:8px 10px;align-items:center;font-size:14px;margin-bottom:8px}.sl label{color:var(--mut)}.sl b{text-align:right;font-weight:500}
+.ck{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;margin-bottom:12px}.ck label{display:flex;gap:6px;align-items:center}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+svg{display:block;max-width:100%}
+.q{display:inline-block;width:16px;height:16px;line-height:16px;text-align:center;border:1px solid var(--bd);border-radius:50%;font-size:11px;color:var(--mut);cursor:pointer}
+#main text,#ins text,#raas text{cursor:pointer}
+</style></head><body>
+<h1>Modelo integrado de fisiología glomerular</h1>
+<p class="s">Los valores son aproximaciones didácticas. Activa moléculas y cambia las presiones o la glucosa para ver el efecto sobre las arteriolas, la TFG, la cascada renina-angiotensina y la barrera de filtración.</p>
+<div id="main"></div>
+<div class="m" id="mt"></div>
+<div class="card" id="def" style="font-size:14px;margin-bottom:8px;color:var(--mut)">Pulsa cualquier variable, etiqueta de los esquemas o signo ? para ver su definición.</div>
+<details style="margin-bottom:12px"><summary style="cursor:pointer;font-weight:500">Glosario completo de variables</summary><div class="two" id="gl" style="margin-top:8px"></div></details>
+<div class="sl"><label>Presión arterial media</label><input type="range" id="pa" min="60" max="180" step="5" value="100"><b id="pa-o"></b>
+<label>Presión en Bowman</label><input type="range" id="pbs" min="5" max="40" step="1" value="15"><b id="pbs-o"></b>
+<label>Diámetro aferente (manual)</label><input type="range" id="dra" min="60" max="140" step="5" value="100"><b id="dra-o"></b>
+<label>Diámetro eferente (manual)</label><input type="range" id="dre" min="60" max="140" step="5" value="100"><b id="dre-o"></b>
+<label>Glucosa plasmática</label><input type="range" id="glu" min="60" max="600" step="10" value="90"><b id="glu-o"></b>
+<label>Intensidad del evento</label><input type="range" id="sev" min="10" max="100" step="10" value="50"><b id="sev-o"></b></div>
+<div class="ck"><label><input type="checkbox" id="auto" checked>Autorregulación</label><span class="q" data-k="Autorregulación" title="Ver definición">?</span><label><input type="checkbox" id="nef">Lesión podocitaria (síndrome nefrótico)</label><span class="q" data-k="Lesión podocitaria" title="Ver definición">?</span><label><input type="checkbox" id="defs" checked>Mostrar definiciones breves en las tarjetas</label></div>
+<h2>Eventos fisiológicos</h2><div class="g" id="g-e"></div>
+<h2>Vasoconstrictores</h2><div class="g" id="g-c"></div>
+<h2>Vasodilatadores</h2><div class="g" id="g-d"></div>
+<div class="g" style="align-items:stretch"><button id="reset">Restablecer</button><div class="card" id="info" style="flex:1;min-width:240px;font-size:14px;color:var(--mut)">Selecciona una molécula para ver su mecanismo.</div></div>
+<div class="card" id="why" style="font-size:14px;margin-bottom:8px"></div>
+<div id="flags" style="font-size:14px;margin-bottom:8px"></div>
+<h2>Cascada renina-angiotensina (la intensidad indica la actividad actual)</h2><div id="raas"></div>
+<h2>A. Ampliación de la pared del capilar glomerular</h2><div id="ins"></div>
+<div class="two" id="cards" style="margin-top:10px"></div>
+<h2>Cómo cambia la TFG según el calibre de cada arteriola</h2>
+<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:13px;min-width:520px">
+<tr style="color:var(--mut);text-align:left"><th style="padding:6px">Arteriola y cambio</th><th>PGC</th><th>Flujo sanguíneo</th><th>TFG</th></tr>
+<tr style="border-top:1px solid var(--bd)"><td style="padding:6px">Aferente contraída</td><td>baja</td><td>baja</td><td>baja</td></tr>
+<tr style="border-top:1px solid var(--bd)"><td style="padding:6px">Aferente dilatada</td><td>sube</td><td>sube</td><td>sube</td></tr>
+<tr style="border-top:1px solid var(--bd)"><td style="padding:6px">Eferente contraída (leve)</td><td>sube</td><td>baja</td><td>sube, con mayor fracción de filtración</td></tr>
+<tr style="border-top:1px solid var(--bd)"><td style="padding:6px">Eferente contraída (intensa)</td><td>sube</td><td>baja mucho</td><td>baja: la presión oncótica sube y el flujo plasmático es mínimo</td></tr>
+<tr style="border-top:1px solid var(--bd)"><td style="padding:6px">Eferente dilatada</td><td>baja</td><td>sube</td><td>baja</td></tr></table></div>
+<div class="two" style="margin-top:8px">
+<div><h2>Variar el diámetro aferente (% del normal)</h2><div id="c3"></div></div>
+<div><h2>Variar el diámetro eferente (% del normal)</h2><div id="c4"></div></div></div>
+<div style="font-size:12px;color:var(--mut)"><span style="color:#378ADD">&#9632;</span> TFG &nbsp; <span style="color:#D85A30">&#9632;</span> Flujo sanguíneo renal. Con la autorregulación activada las curvas se aplanan; desactívala para ver el efecto directo del calibre.</div>
+<h2>Mecanismos celulares de la vasoconstricción y la vasodilatación</h2>
+<div class="two">
+<div class="card"><div style="font-weight:500;margin-bottom:3px">Vasoconstricción</div><div style="font-size:13px;color:var(--mut)">
+• Gq → fosfolipasa C → IP3 → Ca²⁺ intracelular ↑ → Ca²⁺-calmodulina → cinasa de la cadena ligera de miosina → contracción (angiotensina II, endotelina-1, tromboxano A2, noradrenalina α1).<br>
+• RhoA y Rho-cinasa inhiben la fosfatasa de la miosina y aumentan la sensibilidad al Ca²⁺.<br>
+• Respuesta miogénica: el estiramiento abre canales catiónicos, despolariza la célula y abre canales de Ca²⁺ tipo L en la aferente.<br>
+• Retroalimentación tubuloglomerular: ATP y adenosina (receptor A1) contraen la aferente.</div></div>
+<div class="card"><div style="font-weight:500;margin-bottom:3px">Vasodilatación</div><div style="font-size:13px;color:var(--mut)">
+• Óxido nítrico → guanilato ciclasa → GMPc → proteína cinasa G → baja el Ca²⁺ y activa la fosfatasa de la miosina.<br>
+• Prostaglandinas (EP2, EP4, IP) y dopamina D1 → AMPc → proteína cinasa A → inhibe la cinasa de la cadena ligera de miosina.<br>
+• Péptido natriurético auricular → receptor NPR-A → GMPc.<br>
+• Bradicinina B2 → libera óxido nítrico y prostaglandinas del endotelio.</div></div>
+<div class="card"><div style="font-weight:500;margin-bottom:3px">Arteriola aferente</div><div style="font-size:13px;color:var(--mut)">Depende de canales de Ca²⁺ tipo L. Produce mucho óxido nítrico y prostaglandinas. Es el sitio de la respuesta miogénica y de la retroalimentación tubuloglomerular.</div></div>
+<div class="card"><div style="font-weight:500;margin-bottom:3px">Arteriola eferente</div><div style="font-size:13px;color:var(--mut)">Es más sensible a la angiotensina II y no participa en la respuesta miogénica. Su dilatación reduce la presión glomerular, y su contracción la eleva.</div></div>
+</div>
+<h2>Manejo renal de la glucosa (eje horizontal: glucosa plasmática en mg/dL)</h2><div id="c5"></div>
+<div style="font-size:12px;color:var(--mut);margin-bottom:6px"><span style="color:#378ADD">&#9632;</span> Filtrada &nbsp; <span style="color:#1D9E75">&#9632;</span> Reabsorbida &nbsp; <span style="color:#D85A30">&#9632;</span> Excretada. La curva usa la TFG actual y un transporte máximo con dispersión entre nefronas.</div>
+<div class="two" style="margin-top:6px">
+<div><h2>Presión neta de filtración a lo largo del capilar (mmHg)</h2><div id="c1"></div></div>
+<div><h2>Autorregulación: flujo y TFG (% del normal)</h2><div id="c2"></div><div style="font-size:12px;color:var(--mut)"><span style="color:#378ADD">&#9632;</span> TFG &nbsp; <span style="color:#D85A30">&#9632;</span> Flujo sanguíneo renal</div></div></div>
+<script>
+const $=i=>document.getElementById(i),cl=(x,a,b)=>Math.min(b,Math.max(a,x)),pi=C=>2.1*C+.16*C*C+.009*C*C*C;
+const D={
+ang:{n:'Angiotensina II',t:'c',v:[.93,.85,.85],i:'Receptor AT1: contrae ambas arteriolas, más la eferente, y el mesangio (baja el Kf). Eleva la PGC y mantiene la TFG cuando la perfusión cae.'},
+nor:{n:'Noradrenalina',t:'c',v:[.75,.92,.95],i:'Receptor α1: contrae sobre todo la aferente. Por receptores β1 estimula la liberación de renina.'},
+et:{n:'Endotelina-1',t:'c',v:[.82,.82,.8],i:'Receptor ETA: contrae ambas arteriolas y el mesangio; reduce flujo y Kf.'},
+tx:{n:'Tromboxano A2',t:'c',v:[.85,.95,.9],i:'Contrae preferentemente la aferente y el mesangio. Aumenta en la inflamación glomerular.'},
+ado:{n:'Adenosina',t:'c',v:[.82,1,1],i:'Receptor A1 de la aferente: la contrae. Es el mediador principal de la retroalimentación tubuloglomerular.'},
+pg:{n:'Prostaglandinas PGE2 y PGI2',t:'d',v:[1.15,1.05,1],i:'Dilatan la aferente y protegen la TFG frente a vasoconstrictores. También estimulan la liberación de renina.'},
+no:{n:'Óxido nítrico',t:'d',v:[1.15,1.1,1.1],i:'Dilata ambas arteriolas, relaja el mesangio y contrarresta la angiotensina II.'},
+bk:{n:'Bradicinina',t:'d',v:[1.1,1.15,1.05],i:'Receptor B2: libera óxido nítrico y prostaglandinas. Dilata ambas arteriolas, algo más la eferente. La ECA la degrada.'},
+anp:{n:'Péptido natriurético auricular',t:'d',v:[1.15,.92,1.15],i:'Dilata la aferente, contrae la eferente y relaja el mesangio: sube la PGC y el Kf, y aumenta la TFG.'},
+dop:{n:'Dopamina (dosis baja)',t:'d',v:[1.1,1.1,1],i:'Receptores D1: dilatan ambas arteriolas y aumentan el flujo sanguíneo renal.'}};
+const P={ang:'AT1 (Gq) → fosfolipasa C → IP3 → Ca²⁺ ↑ → contracción; actúa más sobre la eferente.',nor:'Receptor α1 (Gq) → IP3 → Ca²⁺ ↑ → contracción, sobre todo de la aferente.',et:'ETA (Gq) → IP3 → Ca²⁺ ↑ → contracción; el ETB endotelial libera óxido nítrico y puede dilatar.',tx:'Receptor TP (Gq) → IP3 → Ca²⁺ ↑ → contracción.',ado:'A1 en la aferente → Ca²⁺ ↑ → contracción.',pg:'EP2, EP4 e IP (Gs) → adenilato ciclasa → AMPc → proteína cinasa A → relajación.',no:'Guanilato ciclasa soluble → GMPc → proteína cinasa G → Ca²⁺ ↓ → relajación.',bk:'B2 endotelial → óxido nítrico y prostaglandina I2 → GMPc y AMPc → relajación.',anp:'NPR-A → guanilato ciclasa → GMPc → relajación de la aferente.',dop:'D1 (Gs) → AMPc → proteína cinasa A → relajación.'};
+let MA=1,ME=1,GL=90,SCN=null,PE=100,SC={dP:0,rb:0,pc:7,hct:.45,a:1,e:1};
+const EV={hem:{n:'Hemorragia',i:'Cae el volumen circulante y la presión arterial. El simpático contrae la aferente y activa la renina por receptores β1; la angiotensina II contrae la eferente para sostener la PGC. Con caídas grandes la presión sale del rango de autorregulación y la TFG cae.'},des:{n:'Deshidratación',i:'Cae el volumen plasmático y la presión baja de forma moderada. Aumentan el hematocrito y las proteínas plasmáticas, lo que eleva la presión oncótica, y se activa la renina. La TFG baja y sube la fracción de filtración. El modelo no incluye la hormona antidiurética.'}};
+function setScen(k,sv){k=k===undefined?SCN:k;sv=sv===undefined?(+$('sev').value/100):sv;SC=k=='hem'?{dP:-45*sv,rb:.45*sv,pc:7,hct:.45,a:1-.18*sv,e:1-.14*sv}:k=='des'?{dP:-15*sv,rb:.3*sv,pc:7*(1+.18*sv),hct:.45+.06*sv,a:1-.02*sv,e:1-.12*sv}:{dP:0,rb:0,pc:7,hct:.45,a:1,e:1};}
+function evEff(k){const au=$('auto').checked,nf=$('nef').checked,pb=+$('pa').value,PBS=+$('pbs').value;setScen(null);const b=solve(pb,PBS,au,nf);setScen(k);const w=solve(Math.max(40,pb+SC.dP),PBS,au,nf);setScen();return 'Efecto en la situación actual: PAM '+pb+' a '+Math.round(Math.max(40,pb+SC.dP))+' mmHg, PGC '+Math.round(b.P)+' a '+Math.round(w.P)+' mmHg, flujo '+Math.round(b.RBF)+' a '+Math.round(w.RBF)+' mL/min, TFG '+Math.round(b.G)+' a '+Math.round(w.G)+' mL/min.';}
+function gluH(G,c){const Tm=375,load=G*c/100,reab=load>0?load*Tm/Math.pow(Math.pow(load,6)+Math.pow(Tm,6),1/6):0;return{load,reab,exc:load-reab};}
+const sg=n=>(n>0?'+':'')+n;
+function eff(k){const Pa=PE,PBS=+$('pbs').value,au=$('auto').checked,nf=$('nef').checked,sv=new Set(act);act.clear();const b=solve(Pa,PBS,au,nf);act.add(k);const w=solve(Pa,PBS,au,nf);act.clear();sv.forEach(x=>act.add(x));const d=(x,y)=>Math.round((y/x-1)*100);return 'Efecto aislado en la situación actual: aferente '+sg(d(b.a,w.a))+'%, eferente '+sg(d(b.e,w.e))+'%, PGC '+Math.round(b.P)+' a '+Math.round(w.P)+' mmHg, flujo '+sg(d(b.RBF,w.RBF))+'%, TFG '+Math.round(b.G)+' a '+Math.round(w.G)+' mL/min.';}
+function sweep(w,Pa,PBS,au,nf){const o=[MA,ME],G=[],Q=[];for(let d=60;d<=140;d+=10){if(w=='a')MA=d/100;else ME=d/100;const q=solve(Pa,PBS,au,nf);G.push([d,q.G/1.25]);Q.push([d,q.RBF/11]);}MA=o[0];ME=o[1];return [G,Q];}
+const act=new Set(),G2={c:'g-c',d:'g-d'},INFO0='Selecciona una molécula para ver su mecanismo.';
+Object.keys(D).forEach(k=>{const b=document.createElement('button');b.textContent=D[k].n;b.dataset.k=k;b.onclick=()=>{act.has(k)?act.delete(k):act.add(k);$('info').textContent=D[k].n+': '+D[k].i+' Vía: '+P[k]+' '+eff(k);upd();};$(G2[D[k].t]).appendChild(b);});
+Object.keys(EV).forEach(k=>{const b=document.createElement('button');b.textContent=EV[k].n;b.dataset.k=k;b.onclick=()=>{SCN=SCN===k?null:k;$('info').textContent=EV[k].n+': '+EV[k].i+(SCN?' '+evEff(k):'');upd();};$('g-e').appendChild(b);});
+function solve(Pa,PBS,auto,nef){
+let ra=MA*SC.a,re=ME*SC.e,km=1;
+act.forEach(k=>{ra*=D[k].v[0];re*=D[k].v[1];km*=D[k].v[2];});
+const myo=auto?Math.pow(100/cl(Pa,80,180),.32):1;
+let tgf=1,G=125,r={};
+for(let it=0;it<70;it++){
+const gu=gluH(G,GL),nacl=G/125*(1-.12*(gu.reab/112-1)),sens=nacl;
+tgf+=.5*((auto?cl(1-.3*(sens-1),.8,1.2):1)-tgf);
+let renin=.4*Math.max(0,(100-Pa)/40)+.4*Math.max(0,1-sens)+(act.has('nor')?.35:0)+SC.rb;
+renin=cl(renin,0,1);
+let angII=cl(.15+.85*renin,0,1);if(act.has('ang'))angII=Math.max(angII,.8);
+const at1=angII;
+const a=cl(ra*myo*tgf,.5,1.5),e=cl(re*(1-.12*(at1-.15)),.5,1.5);
+const Ra=9/a**4,Re=7/e**4,P=Pa-(Pa-20)*Ra/(Ra+Re),RBF=220*(Pa-20)/(Ra+Re),RPF=(1-SC.hct)*RBF;
+const kf=13.6*km*(nef?.75:1);let g=0;const prof=[];
+for(let i=0;i<40;i++){const C=SC.pc*RPF/Math.max(RPF-g,1),n=P-PBS-pi(C);prof.push(n);if(n>0)g+=kf/40*n;}
+G+=.5*(g-G);r={a,e,P,G:g,RBF,RPF,ff:g/RPF,renin,nacl,prof,kf,sens,angII,at1};}
+r.pipt=pi(SC.pc/Math.max(1-r.ff,.05));r.gu=gluH(r.G,GL);return r;}
+const FG='var(--fg)',MU='var(--mut)';
+function T(x,y,s,a,w,c,fs,o){return '<text x="'+x+'" y="'+y+'" text-anchor="'+(a||'middle')+'" font-size="'+(fs||12)+'" font-weight="'+(w||400)+'" fill="'+(c||MU)+'"'+(o!=null?' opacity="'+o+'"':'')+'>'+s+'</text>';}
+function dot(x,y,r,f,o){return '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+f+'"'+(o?' opacity="'+o+'"':'')+'/>';}
+function L(x1,y1,x2,y2,c,w,d){return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+(c||MU)+'" stroke-width="'+(w||0.8)+'"'+(d?' stroke-dasharray="'+d+'"':'')+' stroke-linecap="round"/>';}
+const MK='<defs><marker id="m1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>';
+const pct='M230 262 L230 300 Q230 330 270 330 Q310 330 310 300 Q310 270 350 270 Q390 270 390 300 Q390 330 430 330 L560 330';
+let m='<svg viewBox="0 -14 680 410" width="100%" role="img"><title>Glomérulo y recorrido del filtrado</title><desc>Cápsula de Bowman con ovillo capilar y podocitos; el filtrado sale por el polo urinario hacia el túbulo contorneado proximal</desc>'+MK;
+m+='<rect x="218" y="0" width="24" height="64" rx="4" fill="#5DCAA5" opacity="0.5"/><rect id="md" x="216" y="54" width="28" height="18" rx="3" fill="#1D9E75"/>';
+m+='<path id="aff" d="M50 50 Q140 50 196 92" fill="none" stroke="#E24B4A" stroke-width="14" opacity="0.85"/><path id="eff" d="M264 92 Q320 50 410 50" fill="none" stroke="#E24B4A" stroke-width="12" opacity="0.85"/>';
+m+='<g id="jg"><circle cx="206" cy="82" r="5" fill="#EF9F27"/><circle cx="200" cy="72" r="4" fill="#EF9F27"/></g>';
+m+='<circle cx="230" cy="175" r="100" fill="#1D9E75" opacity="0.1"/><circle cx="230" cy="175" r="100" fill="none" stroke="#888780" stroke-width="2"/><circle cx="230" cy="175" r="72" fill="#E24B4A" opacity="0.2" stroke="#E24B4A"/>'+T(230,170,'Capilares')+T(230,186,'glomerulares');
+[0,60,120,-30,-150].forEach(a=>{const c=Math.cos(a*Math.PI/180),s=Math.sin(a*Math.PI/180);m+='<line x1="'+(230+72*c).toFixed(1)+'" y1="'+(175+72*s).toFixed(1)+'" x2="'+(230+94*c).toFixed(1)+'" y2="'+(175+94*s).toFixed(1)+'" stroke="#0F6E56" stroke-width="2" marker-end="url(#m1)"/>';});
+m+='<rect x="292" y="168" width="34" height="34" rx="4" fill="none" stroke="'+MU+'" stroke-dasharray="4 3"/>'+T(342,190,'A','start',500,FG,13);
+m+='<path d="'+pct+'" fill="none" stroke="#5DCAA5" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/><path id="pct" d="'+pct+'" fill="none" stroke="#0F6E56" stroke-dasharray="4 4" marker-end="url(#m1)"/>';
+[-.5,-2.3,-4.1,-5.9,-7.7].forEach(b=>{m+='<circle r="3.5" fill="#0F6E56"><animateMotion class="fl" dur="9s" begin="'+b+'s" repeatCount="indefinite"><mpath href="#pct"/></animateMotion></circle>';});
+m+='<g id="alb">'+[-1,-5].map(b=>'<circle r="5" fill="#D85A30"><animateMotion class="fl" dur="9s" begin="'+b+'s" repeatCount="indefinite"><mpath href="#pct"/></animateMotion></circle>').join('')+'</g>';
+m+=T(230,-2,'Túbulo distal')+T(40,28,'Arteriola aferente','start')+T(420,34,'Arteriola eferente','start')+L(244,62,298,30)+T(304,28,'Mácula densa','start');
+m+=T(118,172,'Cápsula de Bowman','end')+T(118,188,'(capa parietal)','end')+L(160,126,122,112)+T(118,106,'Podocitos','end')+T(118,122,'(capa visceral)','end');
+m+=L(320,150,358,142)+T(364,142,'Espacio de Bowman','start')+T(364,158,'(recibe el ultrafiltrado)','start')+L(214,270,150,322)+T(144,330,'Polo urinario','end');
+m+='<g id="glr"><line x1="270" y1="344" x2="270" y2="362" stroke="#BA7517" stroke-width="2" marker-end="url(#m1)"/></g>'+T(270,378,'Glucosa reabsorbida (SGLT2 y SGLT1)')+T(568,318,'Glucosuria','start',500,FG)+'<text id="gv" x="568" y="334" font-size="12" fill="var(--mut)">0 g/día</text>';
+m+=T(440,352,'Túbulo contorneado proximal','start')+T(440,368,'continúa hacia el asa de Henle','start')+'</svg>';
+$('main').innerHTML=m;
+function B(id,x,y,w,h,c,t1,t2){return '<g id="'+id+'"><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="6" fill="'+c+'" fill-opacity="0.2" stroke="'+c+'" stroke-width="0.8"/><text x="'+(x+w/2)+'" y="'+(y+(t2?h/2-5:h/2+5))+'" text-anchor="middle" font-size="14" font-weight="500" fill="'+FG+'">'+t1+'</text>'+(t2?'<text x="'+(x+w/2)+'" y="'+(y+h/2+12)+'" text-anchor="middle" font-size="12" fill="'+MU+'">'+t2+'</text>':'')+'</g>';}
+function AR(x1,y1,x2,y2){return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+MU+'" stroke-width="1.2" marker-end="url(#m1)"/>';}
+const GR='#888780',PU='#7F77DD',RD='#E24B4A',TE='#1D9E75';
+$('raas').innerHTML='<svg viewBox="0 0 680 330" width="100%" role="img"><title>Cascada renina-angiotensina</title><desc>Estímulos activan las células yuxtaglomerulares, que liberan renina; se forma angiotensina II, que actúa sobre AT1 con efectos en la eferente, la aldosterona y el mesangio</desc>'+MK
++B('s1',40,10,150,40,GR,'Presión baja','Barorreceptor')+B('s2',215,10,150,40,GR,'NaCl bajo','Mácula densa')+B('s3',390,10,150,40,GR,'Estímulo β1','Simpático')
++AR(115,52,115,68)+AR(290,52,290,68)+AR(465,52,465,68)+B('jr',40,70,600,34,GR,'Células yuxtaglomerulares: renina')
++AR(231,106,231,146)+B('a0',40,126,170,44,PU,'Angiotensinógeno')+B('a1',255,126,170,44,PU,'Angiotensina I')+B('a2',470,126,170,44,PU,'Angiotensina II')+AR(212,148,253,148)+AR(427,148,468,148)
++T(231,188,'Renina')+T(447,188,'ECA')
++AR(555,172,555,240)+B('at',40,242,600,32,PU,'Receptor AT1')+AR(125,276,125,286)+AR(340,276,340,286)+AR(555,276,555,286)
++B('e1',40,288,170,36,TE,'Contrae eferente')+B('e2',255,288,170,36,TE,'Aldosterona')+B('e3',470,288,170,36,TE,'Contrae mesangio')+'</svg>';
+function ins(n){
+const y0=34;let s='';
+s+='<rect x="40" y="'+y0+'" width="110" height="126" fill="#E24B4A" opacity="0.12"/><rect x="336" y="'+y0+'" width="304" height="126" fill="#1D9E75" opacity="0.08"/>';
+[[0,20],[36,56],[72,92],[108,126]].forEach(g=>{s+='<rect x="150" y="'+(y0+g[0])+'" width="40" height="'+(g[1]-g[0])+'" fill="#85B7EB"/>';});
+[28,64,100].forEach(y=>{s+=T(143,y0+y+5,'\u2212',null,500,'#7F77DD',14,n?0.25:1);});
+s+='<rect x="196" y="'+y0+'" width="100" height="126" rx="4" fill="#AFA9EC" opacity="0.55"/>';
+[[212,24],[240,52],[268,22],[282,70],[218,86],[252,104],[276,112],[230,66]].forEach(q=>{s+=T(q[0],y0+q[1]+5,'\u2212',null,500,'#7F77DD',14,n?0.2:1);});
+const F=n?[[0,26],[60,86],[100,126]]:[[0,34],[46,80],[92,126]],fw=n?16:34,fx=302+fw;
+F.forEach((f,i)=>{s+=L(fx,y0+(f[0]+f[1])/2,420,y0+[40,63,86][i],'#5DCAA5',9);});
+s+='<ellipse cx="450" cy="'+(y0+63)+'" rx="36" ry="46" fill="#5DCAA5" opacity="0.9"/>'+dot(450,y0+63,14,'#0F6E56',.5);
+F.forEach(f=>{s+='<rect x="302" y="'+(y0+f[0])+'" width="'+fw+'" height="'+(f[1]-f[0])+'" rx="6" fill="#5DCAA5"/>';});
+if(!n)[[34,46],[80,92]].forEach(g=>{[308,319,330].forEach(x=>{s+=L(x,y0+g[0],x,y0+g[1],'#0F6E56',1.5);});});
+const sm='#0F6E56',al='#D85A30';
+[[70,40],[100,100],[126,30],[170,28],[170,100],[246,64],[370,40],[530,60],[560,100],[500,20]].forEach(p=>{s+=dot(p[0],y0+p[1],4,sm);});
+(n?[[310,43],[310,93]]:[[324,40],[324,86]]).forEach(p=>{s+=dot(p[0],y0+p[1],4,sm);});
+s+=dot(100,y0+64,7,al)+dot(170,y0+65,7,al);
+if(n)[[246,65],[310,43],[385,43],[540,80]].forEach(p=>{s+=dot(p[0],y0+p[1],7,al);});
+else s+='<path d="M203 '+(y0+58)+'l10 14m0-14l-10 14" stroke="#E24B4A" stroke-width="2.5" stroke-linecap="round"/>';
+s+=T(319,8,'Pedicelos')+T(450,8,'Cuerpo del podocito')+T(95,22,'Luz capilar')+T(168,22,'Endotelio')+T(250,22,'Membrana basal')+T(580,22,'Espacio de Bowman')+T(319,y0+144,n?'Diafragma de hendidura ausente':'Diafragma de hendidura (nefrina)');
+s+=dot(60,208,4,sm)+T(70,212,'Agua, iones, glucosa','start')+dot(250,208,6,al)+T(262,212,'Albúmina','start')+T(380,212,'\u2212 carga negativa (glicocálix y heparán sulfato)','start');
+return '<svg viewBox="0 0 680 222" width="100%" role="img"><title>Ampliación de la barrera de filtración</title><desc>Endotelio fenestrado, membrana basal con carga negativa y pedicelos con diafragma de hendidura</desc>'+s+'</svg>';}
+const K=[['Diafragma de hendidura','Une los pedicelos con una malla de nefrina, podocina y CD2AP. Sus poros miden pocos nanómetros: retiene proteínas grandes y limita a la albúmina.'],['Carga negativa','La podocalixina del podocito y el heparán sulfato de la membrana basal repelen proteínas aniónicas como la albúmina.'],['Membrana basal','Endotelio y podocitos sintetizan colágeno IV y laminina, y los podocitos mantienen esa matriz.'],['Soporte y señales','La actina de los pedicelos resiste la presión capilar. El VEGF-A podocitario mantiene fenestrado al endotelio.']];
+$('cards').innerHTML=K.map(k=>'<div class="card"><div style="font-weight:500;margin-bottom:3px">'+k[0]+'</div><div style="font-size:13px;color:var(--mut)">'+k[1]+'</div></div>').join('');
+function plot(W,H,xs,ys,series,xt,yt,band,vx){
+const l=34,rr=8,t=8,b=22,sx=x=>l+(x-xs[0])/(xs[1]-xs[0])*(W-l-rr),sy=y=>t+(ys[1]-y)/(ys[1]-ys[0])*(H-t-b);
+let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img"><title>Gráfica</title>';
+if(band)s+='<rect x="'+sx(band[0])+'" y="'+t+'" width="'+(sx(band[1])-sx(band[0]))+'" height="'+(H-t-b)+'" fill="#378ADD" opacity="0.08"/>';
+yt.forEach(v=>{s+='<line x1="'+l+'" x2="'+(W-rr)+'" y1="'+sy(v)+'" y2="'+sy(v)+'" stroke="'+MU+'" stroke-width="0.4" opacity="0.5"/>'+T(l-5,sy(v)+4,v,'end');});
+xt.forEach(v=>{s+=T(sx(v[0]),H-6,v[1]);});
+if(vx!=null)s+=L(sx(vx),t,sx(vx),H-b,MU,0.8,'3 3');
+series.forEach(q=>{s+='<path d="'+q.p.map((p,i)=>(i?'L':'M')+sx(p[0]).toFixed(1)+' '+sy(cl(p[1],ys[0],ys[1])).toFixed(1)).join('')+'" fill="none" stroke="'+q.c+'" stroke-width="2"/>';if(q.d)s+=dot(sx(q.d[0]),sy(cl(q.d[1],ys[0],ys[1])),4,q.c);});
+return s+'</svg>';}
+const DEF={
+'Presión arterial media':{u:'cerca de 100 mmHg',d:'Presión promedio de la sangre que llega al riñón durante el ciclo cardíaco.',r:'Entre 80 y 180 mmHg la autorregulación mantiene estables el flujo y la TFG; fuera de ese rango siguen a la presión.'},
+'PAM efectiva':{u:'mmHg',d:'Presión arterial media que llega al riñón después de aplicar el evento activo (hemorragia o deshidratación).',r:'Es la presión que usa el cálculo. Si cae por debajo de 80 mmHg se pierde la autorregulación y baja la TFG.'},
+'Presión en Bowman':{u:'PBS, cerca de 15 mmHg',d:'Presión hidrostática del líquido dentro del espacio de Bowman. Se opone a la filtración.',r:'Sube con la obstrucción de la vía urinaria y reduce la presión neta de filtración.'},
+'PGC':{u:'presión hidrostática glomerular, cerca de 55 mmHg',d:'Presión de la sangre dentro del capilar glomerular. Es la fuerza que empuja el plasma hacia el espacio de Bowman.',r:'Es la única fuerza que favorece la filtración. Sube al dilatar la aferente o contraer la eferente, y baja en el sentido contrario.'},
+'Presión oncótica glomerular (πGC)':{u:'cerca de 25 mmHg a la entrada y 37 mmHg al final del capilar',d:'Presión que ejercen las proteínas del plasma y que retiene el agua dentro del capilar. Se opone a la filtración.',r:'Aumenta a lo largo del capilar porque el agua sale y las proteínas se concentran. Sube con la deshidratación.'},
+'Presión neta de filtración':{u:'cerca de 10 mmHg en promedio',d:'PGC − PBS − πGC: suma de las fuerzas de Starling que determinan cuánto plasma se filtra.',r:'Si llega a cero antes del extremo eferente se alcanza el equilibrio de filtración y la TFG depende del flujo plasmático.'},
+'Kf':{u:'coeficiente de ultrafiltración, cerca de 13,6 mL/min/mmHg en el modelo',d:'Permeabilidad de la barrera de filtración multiplicada por la superficie filtrante.',r:'Baja con la contracción del mesangio (angiotensina II, endotelina-1) y con la lesión podocitaria; sube con óxido nítrico y péptido natriurético auricular.'},
+'TFG (inulina)':{u:'tasa de filtración glomerular, cerca de 125 mL/min',d:'Volumen de plasma que filtran todos los glomérulos por minuto. Se mide con el aclaramiento de inulina y es el mejor indicador de la función renal.',r:'TFG = Kf × presión neta de filtración. Sube con la dilatación aferente y baja con su contracción.'},
+'Ø aferente':{u:'100 % es el calibre basal',d:'Diámetro de la arteriola aferente respecto al normal. Regula cuánta sangre entra al glomérulo.',r:'Contracción: bajan flujo, PGC y TFG. Dilatación: suben los tres. La resistencia varía con la cuarta potencia del radio.'},
+'Ø eferente':{u:'100 % es el calibre basal',d:'Diámetro de la arteriola eferente respecto al normal. Regula la salida de sangre y mantiene la presión dentro del ovillo.',r:'Contracción leve: sube la PGC y la TFG y baja el flujo. Contracción intensa: la TFG cae. Dilatación: bajan la PGC y la TFG.'},
+'Diámetro aferente (manual)':{u:'60 a 140 % del normal',d:'Control para fijar el calibre de la aferente sin usar moléculas.',r:'Se multiplica con el efecto de las moléculas, de los eventos y de la autorregulación.'},
+'Diámetro eferente (manual)':{u:'60 a 140 % del normal',d:'Control para fijar el calibre de la eferente sin usar moléculas.',r:'Permite ver la respuesta en dos fases de la TFG al contraer la eferente.'},
+'Flujo sanguíneo renal':{u:'cerca de 1100 mL/min, un 20 % del gasto cardíaco',d:'Volumen de sangre que atraviesa los riñones por minuto.',r:'Depende de la presión de perfusión y de las resistencias de las dos arteriolas. Se muestra en la gráfica de autorregulación.'},
+'FPR (PAH)':{u:'flujo plasmático renal efectivo, cerca de 550 mL/min en el modelo',d:'Parte líquida del flujo sanguíneo renal, estimada con el aclaramiento de PAH (ácido paraaminohipúrico), que casi se elimina en una sola pasada.',r:'Flujo plasmático = flujo sanguíneo × (1 − hematocrito).'},
+'Fracción de filtración':{u:'cerca de 20 %',d:'TFG dividida por el flujo plasmático renal: proporción del plasma que se filtra.',r:'Sube cuando la eferente se contrae o cae el flujo plasmático. Aumenta la presión oncótica peritubular y la reabsorción proximal.'},
+'π peritubular':{u:'presión oncótica peritubular, cerca de 37 mmHg',d:'Presión oncótica del plasma que sale del glomérulo hacia los capilares peritubulares.',r:'Favorece la reabsorción de líquido desde el túbulo proximal. Sube con la fracción de filtración.'},
+'Hematocrito':{u:'cerca de 45 %',d:'Fracción del volumen sanguíneo que ocupan los glóbulos rojos.',r:'Define el flujo plasmático a partir del flujo sanguíneo. Sube en la deshidratación.'},
+'Proteínas plasmáticas':{u:'cerca de 7 g/dL',d:'Concentración de proteínas del plasma, sobre todo albúmina.',r:'Determinan la presión oncótica que se opone a la filtración. Aumentan en la deshidratación.'},
+'Autorregulación':{u:'rango de 80 a 180 mmHg',d:'Capacidad del riñón de mantener casi constantes el flujo y la TFG cuando cambia la presión arterial.',r:'Combina la respuesta miogénica y la retroalimentación tubuloglomerular, y actúa sobre todo en la aferente.'},
+'Respuesta miogénica':{u:'rápida, en segundos',d:'Contracción de la aferente cuando la presión la estira.',r:'Abre canales catiónicos y de Ca²⁺ tipo L; protege al glomérulo de picos de presión.'},
+'Retroalimentación tubuloglomerular':{u:'más lenta, en segundos a minutos',d:'La mácula densa mide el NaCl que llega al túbulo distal y ajusta el calibre de la aferente.',r:'Mucho NaCl: ATP y adenosina contraen la aferente. Poco NaCl: se dilata y se libera renina.'},
+'Equilibrio de filtración':{d:'Punto del capilar donde la presión neta llega a cero y la filtración se detiene.',r:'Si ocurre antes del extremo eferente, la TFG depende del flujo plasmático más que de la presión.'},
+'Renina':{u:'escala cualitativa de 0 a 100 %',d:'Enzima que liberan las células yuxtaglomerulares y que inicia la cascada renina-angiotensina.',r:'Sube con baja presión de perfusión, poco NaCl en la mácula densa y estímulo β1 de la noradrenalina.'},
+'Angiotensina II':{u:'escala cualitativa de 0 a 100 %',d:'Péptido vasoactivo que actúa sobre los receptores AT1.',r:'Contrae sobre todo la eferente y el mesangio (baja el Kf) y estimula la aldosterona. Mantiene la PGC cuando cae la perfusión.'},
+'Glucosa plasmática':{u:'cerca de 90 mg/dL, 5 mmol/L',d:'Concentración de glucosa en la sangre.',r:'Determina la carga filtrada. Sobre 180–200 mg/dL aparece glucosuria, y la hiperglucemia aumenta la TFG por menor NaCl en la mácula densa.'},
+'Glucosa filtrada':{u:'cerca de 112 mg/min con 90 mg/dL',d:'Carga filtrada: TFG × glucosa plasmática. La glucosa pasa libremente al filtrado.',r:'Aumenta con la glucemia y con la TFG.'},
+'Glucosa reabsorbida':{u:'máximo de unos 375 mg/min',d:'Glucosa que el túbulo proximal recupera mediante los cotransportadores SGLT2 y SGLT1.',r:'Se satura: sobre el transporte máximo, el excedente se excreta. La saturación es gradual porque las nefronas difieren.'},
+'Glucosuria':{u:'cerca de 0 g/día con glucemia normal',d:'Glucosa que se elimina en la orina por día.',r:'Aparece al superar el umbral renal. Arrastra agua y produce diuresis osmótica.'},
+'Intensidad del evento':{u:'10 a 100 %',d:'Gravedad de la hemorragia o de la deshidratación activa.',r:'A mayor intensidad cae más la presión y se activan más la renina y el simpático.'},
+'Lesión podocitaria':{d:'Daño de los podocitos con borramiento de los pedicelos, pérdida del diafragma de hendidura y de la carga negativa de la barrera.',r:'Reduce el Kf y deja pasar albúmina al filtrado (proteinuria), como en el síndrome nefrótico.'},
+'Mácula densa':{u:'extremo del túbulo distal, junto a la arteriola aferente',d:'Grupo de células epiteliales densamente agrupadas en la pared del túbulo distal (final del asa gruesa ascendente), que toca la aferente y las células yuxtaglomerulares en el polo vascular. Mide el NaCl del líquido tubular mediante el cotransportador Na⁺-K⁺-2Cl⁻ (NKCC2).',r:'Con mucho NaCl libera ATP y adenosina, que contraen la aferente y bajan la TFG. Con poco NaCl libera prostaglandinas y óxido nítrico, que dilatan la aferente, y estimula la liberación de renina. Así mantiene estable la TFG de cada nefrona (retroalimentación tubuloglomerular). En la hiperglucemia llega menos NaCl, porque el túbulo proximal reabsorbe más sodio junto con la glucosa.'},
+'Túbulo distal':{d:'Segmento de la nefrona que regresa al polo vascular del glomérulo; su extremo forma la mácula densa.',r:'Informa al glomérulo sobre la carga de NaCl que le llega.'},
+'Arteriola aferente':{u:'entra al glomérulo por el polo vascular; calibre basal 100 %',d:'Vaso que lleva la sangre desde la arteria interlobulillar hasta el ovillo capilar. Tiene músculo liso grueso y, en su tramo final, las células yuxtaglomerulares que liberan renina. Es la principal resistencia anterior al glomérulo, por lo que fija el flujo y la presión de entrada.',r:'Contracción: bajan el flujo, la PGC y la TFG. Dilatación: suben los tres. Se contrae con el estiramiento (respuesta miogénica), con la adenosina y el ATP de la retroalimentación tubuloglomerular, y con noradrenalina, endotelina-1 y tromboxano A2. Se dilata con prostaglandinas, óxido nítrico, péptido natriurético auricular y dopamina. Depende de canales de Ca²⁺ tipo L y produce mucho óxido nítrico y prostaglandinas, que la protegen frente a los vasoconstrictores. La angiotensina II la contrae menos que a la eferente.'},
+'Arteriola eferente':{u:'sale del glomérulo hacia los capilares peritubulares; calibre basal 100 %',d:'Vaso que recoge la sangre del ovillo capilar y la lleva a los capilares peritubulares (y a los vasa recta en las nefronas yuxtamedulares). Su resistencia mantiene la presión dentro del glomérulo, por lo que regula a la vez la PGC, el flujo plasmático y la fracción de filtración.',r:'Contracción leve: sube la PGC y la TFG, y baja el flujo. Contracción intensa: la TFG cae porque el flujo plasmático es mínimo y la presión oncótica sube. Dilatación: bajan la PGC y la TFG, y sube el flujo. Es la más sensible a la angiotensina II (receptor AT1); también se contrae con endotelina-1 y noradrenalina, y se dilata con bradicinina, óxido nítrico y prostaglandinas. Tiene pocos canales de Ca²⁺ tipo L y no participa directamente en la respuesta miogénica ni en la retroalimentación tubuloglomerular. Su contracción aumenta la fracción de filtración y la presión oncótica peritubular, lo que favorece la reabsorción proximal.'},
+'Capilares glomerulares':{d:'Ovillo de capilares fenestrados donde se filtra el plasma.',r:'Su presión (PGC) es la fuerza que impulsa la filtración.'},
+'Cápsula de Bowman':{d:'Copa de epitelio que rodea el ovillo capilar. Tiene una capa parietal externa y una capa visceral formada por los podocitos.',r:'Recoge el ultrafiltrado y lo conduce al túbulo proximal.'},
+'Podocitos':{u:'capa visceral de la cápsula de Bowman',d:'Células epiteliales especializadas. De cada cuerpo salen procesos primarios y pedicelos que se entrelazan y cubren por fuera los capilares glomerulares; entre pedicelos vecinos queda el diafragma de hendidura.',r:'Forman la capa final de la barrera de filtración: el diafragma (nefrina, podocina, CD2AP) retiene las proteínas grandes y la carga negativa de la podocalixina repele la albúmina. Además sintetizan componentes de la membrana basal, secretan VEGF-A que mantiene fenestrado al endotelio y su actina resiste la presión capilar. Tienen poca capacidad de regenerarse: su pérdida o el borramiento de los pedicelos produce proteinuria, como en el síndrome nefrótico.'},
+'Espacio de Bowman':{d:'Espacio entre las capas visceral y parietal donde se reúne el ultrafiltrado.',r:'Su presión (PBS) se opone a la filtración.'},
+'Polo urinario':{d:'Extremo de la cápsula donde se continúa con el túbulo proximal. Es opuesto al polo vascular.',r:'Por aquí sale el filtrado.'},
+'Túbulo contorneado proximal':{d:'Primer segmento del túbulo. Reabsorbe cerca de dos tercios del agua y del sodio filtrados y casi toda la glucosa.',r:'La glucosa se recupera con SGLT2 y SGLT1; su reabsorción está acoplada a la de sodio.'},
+'Glucosa reabsorbida (SGLT2 y SGLT1)':{d:'SGLT2 y SGLT1 son cotransportadores de sodio y glucosa del túbulo proximal.',r:'Su capacidad es limitada y define el transporte máximo de glucosa.'},
+'Luz capilar':{d:'Interior del capilar glomerular por donde circula la sangre.',r:'De aquí sale el plasma que se filtra.'},
+'Endotelio':{d:'Capa de células fenestradas del capilar. Sus poros dejan pasar agua y solutos, pero no células sanguíneas; su glicocálix tiene carga negativa.',r:'Es la primera capa de la barrera de filtración.'},
+'Membrana basal':{u:'unos 300 nm de grosor, entre el endotelio y los podocitos',d:'Matriz extracelular formada por colágeno IV, laminina, nidógeno y proteoglucanos de heparán sulfato, producida por el endotelio y por los podocitos.',r:'Filtra por tamaño, con una malla que deja pasar agua y solutos pequeños, y por carga: el heparán sulfato aporta carga negativa que repele proteínas aniónicas como la albúmina. También sostiene mecánicamente los capilares. Las alteraciones del colágeno IV (como en el síndrome de Alport) o la pérdida de carga producen hematuria o proteinuria.'},
+'Pedicelos':{d:'Prolongaciones finas de los podocitos que se entrelazan sobre la membrana basal.',r:'Entre ellos queda el diafragma de hendidura; en la lesión podocitaria se aplanan.'},
+'Cuerpo del podocito':{d:'Parte central de la célula, con el núcleo, de la que salen los procesos primarios y los pedicelos.',r:'Sintetiza componentes de la membrana basal y señales como el VEGF-A.'},
+'Diafragma de hendidura':{d:'Malla proteica (nefrina, podocina, CD2AP) que une los pedicelos vecinos.',r:'Sus poros retienen las proteínas grandes y limitan la albúmina; se pierde en el síndrome nefrótico.'},
+'Albúmina':{d:'Principal proteína del plasma, de unos 67 kDa y con carga negativa.',r:'La barrera casi no la deja pasar; su aparición en la orina indica daño de la barrera.'},
+'Presión baja':{d:'Caída de la presión de perfusión detectada por barorreceptores de la aferente.',r:'Estimula la liberación de renina.'},
+'NaCl bajo':{d:'Poco NaCl llega a la mácula densa.',r:'Dilata la aferente y estimula la liberación de renina.'},
+'Estímulo β1':{d:'Activación simpática: la noradrenalina actúa sobre receptores β1 de las células yuxtaglomerulares.',r:'Estimula la liberación de renina.'},
+'Células yuxtaglomerulares':{d:'Células modificadas del músculo liso de la aferente que almacenan y liberan renina.',r:'Responden a la presión, al NaCl de la mácula densa y al simpático.'},
+'Angiotensinógeno':{d:'Proteína producida en el hígado; es el sustrato de la renina.',r:'La renina lo convierte en angiotensina I.'},
+'Angiotensina I':{d:'Péptido inactivo formado por la acción de la renina.',r:'La ECA lo convierte en angiotensina II.'},
+'ECA':{d:'Enzima convertidora de angiotensina: forma angiotensina II y degrada la bradicinina.',r:'Está en la superficie del endotelio, sobre todo en el pulmón.'},
+'Receptor AT1':{d:'Receptor de la angiotensina II acoplado a Gq.',r:'Su activación sube el Ca²⁺ intracelular y contrae el músculo liso y el mesangio.'},
+'Aldosterona':{d:'Hormona suprarrenal que aumenta la reabsorción de sodio en el túbulo colector.',r:'Ayuda a recuperar el volumen circulante.'},
+'Solutos pequeños':{d:'Agua, iones y glucosa: moléculas pequeñas que cruzan la barrera libremente con el ultrafiltrado.',r:'No las retiene ni el tamaño ni la carga de la barrera.'},
+'Carga negativa':{d:'Cargas aniónicas del glicocálix endotelial, de la podocalixina y del heparán sulfato de la membrana basal.',r:'Repelen las proteínas aniónicas como la albúmina; se pierden en la lesión podocitaria.'},
+'Asa de Henle':{d:'Segmento de la nefrona que sigue al túbulo proximal y concentra la orina.',r:'Recibe el filtrado ya reabsorbido en parte por el túbulo proximal.'}};
+const ALIAS={'Agua, iones, glucosa':'Solutos pequeños','− carga negativa (glicocálix y heparán sulfato)':'Carga negativa','continúa hacia el asa de Henle':'Asa de Henle','Capilares':'Capilares glomerulares','glomerulares':'Capilares glomerulares','(capa parietal)':'Cápsula de Bowman','(capa visceral)':'Podocitos','(recibe el ultrafiltrado)':'Espacio de Bowman','Diafragma de hendidura (nefrina)':'Diafragma de hendidura','Diafragma de hendidura ausente':'Diafragma de hendidura','Glucosa reabsorbida (SGLT2 y SGLT1)':'Glucosa reabsorbida (SGLT2 y SGLT1)','Células yuxtaglomerulares: renina':'Células yuxtaglomerulares','Contrae eferente':'Arteriola eferente','Contrae mesangio':'Kf','Polo urinario':'Polo urinario'};
+const sh=k=>{const e=DEF[k];return e?e.d.split('. ')[0].replace(/\.$/,'')+'.':'';};
+function rd(e){const t=e.target.closest('text');if(!t)return;let k=t.textContent;k=ALIAS[k]||k;if(DEF[k])showDef(k);}
+['main','ins','raas'].forEach(i=>$(i).addEventListener('click',rd));
+document.addEventListener('click',e=>{const q=e.target.closest('.q');if(q)showDef(q.dataset.k);});
+function showDef(k){const e=DEF[k];if(!e)return;$('def').innerHTML='<b style="color:var(--fg)">'+k+'</b>'+(e.u?' <span>('+e.u+')</span>':'')+'<br>'+e.d+(e.r?'<br><span>Relación: '+e.r+'</span>':'');}
+$('mt').onclick=e=>{const c=e.target.closest('[data-k]');if(c)showDef(c.dataset.k);};
+document.querySelectorAll('.sl label').forEach(l=>{l.style.cursor='pointer';l.title='Pulsa para ver la definición';l.onclick=()=>showDef(l.textContent);});
+$('gl').innerHTML=Object.keys(DEF).map(k=>{const e=DEF[k];return '<div class="card"><div style="font-weight:500">'+k+'</div>'+(e.u?'<div style="font-size:12px;color:var(--mut)">'+e.u+'</div>':'')+'<div style="font-size:13px;margin-top:3px">'+e.d+'</div><div style="font-size:13px;color:var(--mut);margin-top:3px">'+e.r+'</div></div>';}).join('');
+let lastNef=null;
+function upd(){
+const Pb=+$('pa').value;setScen();const Pa=Math.max(40,Pb+SC.dP),PBS=+$('pbs').value,auto=$('auto').checked,nef=$('nef').checked;
+$('pa-o').textContent=Pb+' mmHg';PE=Pa;$('sev-o').textContent=$('sev').value+'%';$('pbs-o').textContent=PBS+' mmHg';
+MA=+$('dra').value/100;ME=+$('dre').value/100;$('dra-o').textContent=Math.round(MA*100)+'%';$('dre-o').textContent=Math.round(ME*100)+'%';GL=+$('glu').value;$('glu-o').textContent=GL+' mg/dL';
+const r=solve(Pa,PBS,auto,nef);
+const st=(v)=>v<.97?'contraída ('+Math.round(v*100)+'%)':v>1.03?'dilatada ('+Math.round(v*100)+'%)':'sin cambio relevante';
+$('why').textContent='Aferente '+st(r.a)+'; eferente '+st(r.e)+'. '+(r.a<.97?'La aferente contraída reduce el flujo y la PGC. ':r.a>1.03?'La aferente dilatada aumenta el flujo y la PGC. ':'')+(r.e<.97?'La eferente contraída eleva la PGC y la fracción de filtración, y reduce el flujo. ':r.e>1.03?'La eferente dilatada reduce la PGC y aumenta el flujo. ':'')+'Resultado: PGC '+Math.round(r.P)+' mmHg y TFG '+Math.round(r.G)+' mL/min ('+sg(Math.round((r.G/125-1)*100))+'% respecto al valor normal).';
+$('aff').setAttribute('stroke-width',(14*r.a).toFixed(1));$('eff').setAttribute('stroke-width',(12*r.e).toFixed(1));
+$('jg').setAttribute('opacity',(.35+.65*r.renin).toFixed(2));$('md').setAttribute('opacity',cl(.3+.5*r.nacl,.3,1).toFixed(2));
+const dur=cl(9*125/Math.max(r.G,20),4,40).toFixed(1)+'s';document.querySelectorAll('.fl').forEach(a=>{if(a.getAttribute('dur')!=dur)a.setAttribute('dur',dur);});
+$('alb').style.display=nef?'':'none';
+if(lastNef!==nef){$('ins').innerHTML=ins(nef);lastNef=nef;}
+const lv={s1:cl((100-Pa)/40,0,1),s2:cl(1-r.sens,0,1),s3:act.has('nor')?1:0,jr:r.renin,a0:.6,a1:cl(.15+.85*r.renin,0,1),a2:r.angII,at:r.at1,e1:r.at1,e2:r.at1,e3:r.at1};
+Object.keys(lv).forEach(k=>$(k).style.opacity=(.3+.7*cl(lv[k],0,1)).toFixed(2));
+const M=[['Ø aferente',Math.round(r.a*100)+'%'],['Ø eferente',Math.round(r.e*100)+'%'],['PGC',Math.round(r.P)+' mmHg'],['Kf',r.kf.toFixed(1)],['TFG (inulina)',Math.round(r.G)+' mL/min'],['FPR (PAH)',Math.round(r.RPF*.9)+' mL/min'],['Fracción de filtración',Math.round(r.ff*100)+'%'],['π peritubular',Math.round(r.pipt)+' mmHg'],['Renina',Math.round(r.renin*100)+'%'],['Angiotensina II',Math.round(r.angII*100)+'%'],['Glucosa filtrada',Math.round(r.gu.load)+' mg/min'],['Glucosa reabsorbida',Math.round(r.gu.reab)+' mg/min'],['Glucosuria',Math.round(r.gu.exc*1.44)+' g/día'],['PAM efectiva',Math.round(Pa)+' mmHg'],['Hematocrito',Math.round(SC.hct*100)+'%'],['Proteínas plasmáticas',SC.pc.toFixed(1)+' g/dL']];
+const dfo=$('defs').checked;$('mt').style.gridTemplateColumns=dfo?'repeat(auto-fit,minmax(220px,1fr))':'';$('mt').innerHTML=M.map(q=>'<div class="card" data-k="'+q[0]+'" style="cursor:pointer"><div class="k">'+q[0]+'</div><div class="v">'+q[1]+'</div>'+(dfo?'<div style="font-size:11px;color:var(--mut);margin-top:2px">'+sh(q[0])+'</div>':'')+'</div>').join('');
+const F=[];
+if(SCN=='hem')F.push('Hemorragia: la presión media efectiva cae a '+Math.round(Pa)+' mmHg. El simpático contrae la aferente y la renina sube; la angiotensina II contrae la eferente para sostener la PGC.');
+if(SCN=='des')F.push('Deshidratación: hay hemoconcentración (hematocrito '+Math.round(SC.hct*100)+'%, proteínas '+SC.pc.toFixed(1)+' g/dL), por lo que sube la presión oncótica y la fracción de filtración, y se activa la renina.');
+if(auto&&(Pa<80||Pa>180))F.push('Fuera del rango de autorregulación: flujo y TFG siguen la presión.');
+if(!auto)F.push('Sin autorregulación: la TFG y el flujo dependen directamente de la presión arterial.');
+if(r.prof[39]<1&&r.G>5)F.push('Equilibrio de filtración: la presión neta llega a cero antes del extremo eferente y la TFG depende del flujo plasmático.');
+if(r.G<5)F.push('Presión neta nula: no hay filtración (anuria).');else if(r.G<60)F.push('TFG por debajo de 60 mL/min, rango de enfermedad renal crónica.');
+if(r.ff>.24)F.push('Fracción de filtración alta: aumenta la reabsorción proximal por mayor presión oncótica peritubular.');
+if(PBS>=25)F.push('Presión retrógrada alta (obstrucción de la vía urinaria): reduce la presión neta de filtración.');
+if(nef)F.push('Lesión podocitaria: se pierden pedicelos, diafragma y carga negativa; el Kf baja y aparece albúmina en el filtrado (proteinuria).');
+if(r.renin>.4)F.push('Liberación alta de renina por baja presión de perfusión, poco NaCl en la mácula densa o estímulo β1.');
+if(r.gu.exc>5)F.push('Glucosuria: se superó el umbral renal de reabsorción (cerca de 180-200 mg/dL en condiciones normales). Se pierden unos '+Math.round(r.gu.exc*1.44)+' g/día de glucosa y aumenta la diuresis osmótica, de forma aproximada en '+Math.round(r.gu.exc*1.44*15)+' mL/día.');
+if(auto&&GL>=130)F.push('Hiperglucemia: se reabsorbe más sodio junto con la glucosa en el túbulo proximal, llega menos NaCl a la mácula densa y la retroalimentación dilata la aferente. La TFG aumenta (hiperfiltración).');
+if(GL<70)F.push('Glucemia baja: la carga filtrada de glucosa es pequeña y se reabsorbe casi toda.');
+$('flags').innerHTML=F.map(f=>'<div>• '+f+'</div>').join('');
+$('c1').innerHTML=plot(330,170,[0,1],[-5,20],[{p:r.prof.map((v,i)=>[i/39,v]),c:'#1D9E75'},{p:[[0,0],[1,0]],c:'#888780'}],[[0,'aferente'],[1,'eferente']],[0,10,20]);
+const AC=[],AG=[];for(let p=60;p<=180;p+=10){const q=solve(p,PBS,auto,nef);AC.push([p,q.RBF/11]);AG.push([p,q.G/1.25]);}
+$('c2').innerHTML=plot(330,170,[60,180],[0,200],[{p:AC,c:'#D85A30',d:[Pa,r.RBF/11]},{p:AG,c:'#378ADD',d:[Pa,r.G/1.25]}],[[60,'60'],[100,'100'],[140,'140'],[180,'180']],[0,100,200],auto?[80,180]:null,Pa);
+[['a','c3',MA],['e','c4',ME]].forEach(q=>{const sw=sweep(q[0],Pa,PBS,auto,nef),vx=q[2]*100;$(q[1]).innerHTML=plot(330,170,[60,140],[0,300],[{p:sw[0],c:'#378ADD',d:[vx,r.G/1.25]},{p:sw[1],c:'#D85A30',d:[vx,r.RBF/11]}],[[60,'60'],[80,'80'],[100,'100'],[120,'120'],[140,'140']],[0,100,200,300],null,vx);});
+const GS=[[],[],[]];for(let c=0;c<=600;c+=20){const h=gluH(r.G,c);GS[0].push([c,h.load]);GS[1].push([c,h.reab]);GS[2].push([c,h.exc]);}
+$('c5').innerHTML=plot(680,200,[0,600],[0,1000],[{p:GS[0],c:'#378ADD',d:[GL,r.gu.load]},{p:GS[1],c:'#1D9E75',d:[GL,r.gu.reab]},{p:GS[2],c:'#D85A30',d:[GL,r.gu.exc]}],[[0,'0'],[100,'100'],[200,'200'],[300,'300'],[400,'400'],[500,'500'],[600,'600']],[0,250,500,750,1000],null,GL);
+$('glr').style.opacity=(.25+.75*cl(r.gu.reab/300,0,1)).toFixed(2);$('gv').textContent=Math.round(r.gu.exc*1.44)+' g/día';
+document.querySelectorAll('#g-c button,#g-d button,#g-e button').forEach(b=>{const on=act.has(b.dataset.k)||SCN===b.dataset.k;b.style.borderColor=on?'var(--acc)':'';b.style.background=on?'var(--accbg)':'';b.style.color=on?'var(--acc)':'';});}
+['pa','pbs','auto','nef','dra','dre','glu','sev','defs'].forEach(i=>$(i).addEventListener('input',upd));
+$('reset').onclick=()=>{act.clear();$('pa').value=100;$('pbs').value=15;$('dra').value=100;$('dre').value=100;$('glu').value=90;$('sev').value=50;SCN=null;$('auto').checked=true;$('nef').checked=false;$('info').textContent=INFO0;upd();};
+upd();
+</script></body></html>
