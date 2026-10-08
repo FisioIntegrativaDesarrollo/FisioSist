@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intercambio de O2 y CO2 en el capilar pulmonar</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fafaf8;--fg:#1d1d1b;--mut:#6b6b66;--card:#fff;--bd:#dcdcd5;--c1:#c0392b;--c2:#2471a3;--c3:#1e8449;--c4:#d35400}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--fg:#ececE6;--mut:#a0a09a;--card:#222220;--bd:#3a3a36;--c1:#ec7063;--c2:#5dade2;--c3:#52be80;--c4:#f0a04b}}
+:root[data-theme="dark"]{--bg:#171716;--fg:#ececE6;--mut:#a0a09a;--card:#222220;--bd:#3a3a36;--c1:#ec7063;--c2:#5dade2;--c3:#52be80;--c4:#f0a04b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:860px;margin:0 auto;padding:16px}
+h1{font-size:1.3rem;margin:0 0 4px}h2{font-size:.95rem;margin:0 0 6px}p.s{color:var(--mut);margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+.eq{font-family:Georgia,serif;font-size:.98rem;overflow-x:auto;white-space:nowrap;line-height:1.8}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 16px}
+label{display:flex;justify-content:space-between;font-size:.85rem;color:var(--mut)}label b{color:var(--fg)}
+input[type=range]{width:100%}
+svg{width:100%;height:auto;display:block}canvas{width:100%;height:260px;display:block}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.kp div{border:1px solid var(--bd);border-radius:8px;padding:8px}.kp small{color:var(--mut);display:block}.kp strong{font-size:1.05rem}
+details{border-bottom:1px solid var(--bd);padding:6px 0}details:last-child{border-bottom:0}summary{cursor:pointer;font-weight:600}details p{margin:6px 0 2px;color:var(--mut);font-size:.9rem}h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:14px 0 2px}
+button{background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;cursor:pointer;margin:0 6px 4px 0}
+</style></head><body><main>
+<h1>Intercambio de O₂ y CO₂ en el capilar pulmonar</h1>
+<p class="s">Modelo 1D de un glóbulo rojo que recorre el capilar alveolar: ley de Fick, espesor de la membrana, curva de la Hb y efecto Haldane</p>
+
+<div class="card eq">
+<div>Fick: V̇<sub>gas</sub> = D<sub>m</sub>·(P<sub>A</sub> − P<sub>c</sub>) &nbsp;;&nbsp; D<sub>m</sub> = K<sub>gas</sub>·A/τ &nbsp;;&nbsp; 1/D<sub>L</sub> = 1/D<sub>m</sub> + 1/(θ·V<sub>c</sub>) &nbsp;;&nbsp; t<sub>tr</sub> = V<sub>c</sub>/Q̇</div>
+<div>O₂: dC<sub>c</sub>/dt = D<sub>L</sub>(P<sub>A</sub>−P<sub>c</sub>)/V<sub>c</sub>, C = 1,34·Hb·S(P) + 0,003·P &nbsp;|&nbsp; CO₂: dC/dt = −D<sub>m,CO₂</sub>(P<sub>c</sub>−P<sub>A</sub>)/V<sub>c</sub>, D<sub>m,CO₂</sub> ≈ 20·D<sub>m,O₂</sub></div>
+</div>
+
+<div class="card">
+<div style="margin-bottom:8px"><button id="reset" title="Vuelve a los valores iniciales de reposo">↺ Restablecer</button><button data-p="rest">Reposo</button><button data-p="ex">Ejercicio</button><button data-p="alt">Altura (4500 m)</button><button data-p="fib">Fibrosis (↑τ, ↓A)</button></div>
+<div class="grid" id="ctl"></div></div>
+
+<div class="card"><svg id="alv" viewBox="0 0 700 380" role="img" aria-label="Alveolo y capilar alveolar"></svg></div>
+<div class="card"><h2>Barrera hemato‑gaseosa (corte transversal, espesor a escala)</h2><svg id="mem" viewBox="0 0 700 160" role="img" aria-label="Membrana alveolo-capilar"></svg></div>
+<div class="card"><h2>PO₂ a lo largo del capilar</h2><canvas id="c1"></canvas></div>
+<div class="card"><h2>Curva de saturación de la hemoglobina al O₂</h2><canvas id="c3"></canvas></div>
+<div class="card"><h2>PCO₂ a lo largo del capilar</h2><canvas id="c2"></canvas></div>
+<div class="card kp" id="kp"></div>
+<div class="card"><h2>Glosario de conceptos clave</h2><h3>Difusión y ley de Fick</h3><details><summary>Ley de Fick</summary><p>La velocidad de transferencia de un gas a través de una barrera es proporcional al área, al coeficiente de difusión y al gradiente de presión parcial, e inversamente proporcional al espesor: V̇ = (K·A/τ)·(P₁ − P₂).</p></details><details><summary>Presión parcial (P)</summary><p>Parte de la presión total que corresponde a un gas. Es la fuerza que impulsa su difusión: el gas pasa de la zona de mayor a menor presión parcial.</p></details><details><summary>Gradiente alvéolo‑capilar</summary><p>Diferencia entre la presión parcial en el alvéolo (P_A) y en la sangre capilar (P_c). Es máximo a la entrada del capilar y tiende a cero cuando la sangre se equilibra.</p></details><details><summary>Barrera hemato‑gaseosa</summary><p>Membrana de unos 0,3–0,6 µm entre el aire alveolar y la sangre: epitelio alveolar, intersticio con membrana basal fusionada y endotelio capilar.</p></details><details><summary>Espesor (τ) y área (A)</summary><p>Determinan la conductancia de la membrana: D_m = K·A/τ. La fibrosis o el edema aumentan τ, y el enfisema o la resección reducen A; ambos disminuyen la difusión.</p></details><details><summary>Coeficiente de difusión (K)</summary><p>Propiedad del gas y del medio: es proporcional a su solubilidad e inversamente proporcional a √(peso molecular) (ley de Graham). Por eso el CO₂ difunde unas 20 veces más rápido que el O₂.</p></details><details><summary>D_m (conductancia de la membrana)</summary><p>Capacidad de la membrana para dejar pasar un gas, en mL/min/mmHg. Depende de A, τ y del gas.</p></details><details><summary>θ·V_c</summary><p>Conductancia de la sangre: θ es la velocidad con que el gas reacciona con la hemoglobina y V_c el volumen capilar disponible.</p></details><details><summary>Capacidad de difusión (D_L)</summary><p>Combina membrana y sangre como resistencias en serie (Roughton‑Forster): 1/D_L = 1/D_m + 1/(θ·V_c). Indica cuánto gas pasa por mmHg de gradiente.</p></details><h3>Circulación capilar</h3><details><summary>Volumen capilar (V_c)</summary><p>Volumen de sangre presente en los capilares alveolares en un instante (~75 mL en reposo). Aumenta en el ejercicio por reclutamiento y distensión de capilares.</p></details><details><summary>Gasto cardíaco (Q̇)</summary><p>Volumen de sangre que bombea el corazón por minuto; es el flujo que atraviesa el capilar pulmonar.</p></details><details><summary>Tiempo de tránsito</summary><p>Tiempo que un glóbulo rojo pasa en el capilar: t = V_c/Q̇ (~0,75 s en reposo). Si Q̇ sube mucho, el tiempo disponible para intercambiar se acorta.</p></details><details><summary>Sangre venosa mixta</summary><p>Sangre que llega al pulmón desde todo el cuerpo: baja en O₂ (P_vO₂ ≈ 40 mmHg) y alta en CO₂ (P_vCO₂ ≈ 46 mmHg).</p></details><details><summary>Equilibrio</summary><p>Situación en que la presión parcial capilar iguala la alveolar. En el modelo se considera alcanzada cuando se cierra el 98% del gradiente inicial.</p></details><details><summary>Limitación por perfusión</summary><p>La sangre se equilibra antes de salir del capilar; captar más gas solo depende de aumentar el flujo. Es el caso normal en reposo.</p></details><details><summary>Limitación por difusión</summary><p>La sangre sale sin equilibrarse porque la difusión es lenta o el tiempo corto (membrana engrosada, ejercicio intenso, altura). Ahí D_L pasa a ser el factor decisivo.</p></details><h3>Transporte de gases en la sangre</h3><details><summary>Curva de disociación de la Hb</summary><p>Relación sigmoidea entre PO₂ y saturación de la hemoglobina. Es plana a PO₂ alta, lo que protege la carga de O₂, y empinada a PO₂ baja, donde facilita la entrega a los tejidos.</p></details><details><summary>Saturación (SO₂)</summary><p>Porcentaje de hemoglobina unida a O₂. Aquí se calcula con la ecuación de Severinghaus.</p></details><details><summary>P50</summary><p>PO₂ a la que la hemoglobina está saturada al 50% (≈ 27 mmHg). Un P50 mayor indica menor afinidad por el O₂.</p></details><details><summary>Contenido de O₂ (C)</summary><p>O₂ total por dL de sangre: C = 1,34·Hb·SO₂ + 0,003·PO₂. El primer término es el O₂ unido a Hb y el segundo el disuelto en plasma.</p></details><details><summary>Efecto Haldane</summary><p>La sangre oxigenada transporta menos CO₂ a igual PCO₂, así que al oxigenarse en el pulmón la Hb libera CO₂ y favorece su eliminación.</p></details><details><summary>Efecto Bohr</summary><p>Más CO₂ o menos pH reducen la afinidad de la Hb por el O₂ y desplazan la curva a la derecha. Este modelo no lo incluye.</p></details><details><summary>V̇O₂ y V̇CO₂</summary><p>Volúmenes de O₂ captado y de CO₂ eliminado por minuto. En el modelo: V̇ = Q̇ × diferencia de contenido entre salida y entrada del capilar.</p></details><details><summary>Cociente V̇CO₂/V̇O₂</summary><p>Relación entre CO₂ producido y O₂ consumido: ≈ 0,8 en una dieta mixta (0,7 con grasas, 1,0 con carbohidratos).</p></details></div>
+<p class="s" style="font-size:.8rem">Supuestos: P<sub>A</sub> constantes, V<sub>c</sub> uniforme, equilibrio químico instantáneo del CO₂ (bicarbonato/carbamino) y del O₂–Hb (cinética en θ·V<sub>c</sub>), sin heterogeneidad V/Q. D<sub>m,O₂</sub> = 39 mL/min/mmHg para A = 70 m² y τ = 0,6 µm; θ<sub>O₂</sub> = 1,8 mL/min/mmHg/mL de sangre (Hb 15). Contenido de CO₂ lineal con efecto Haldane. Herramienta educativa, no clínica.</p>
+</main>
+<script>
+let ST=null;
+const P={PA:100,Pv:40,PAc:40,Pvc:46,Hb:15,A:70,tau:0.6,Vc:75,Q:5.5};
+const defs=[['PA','P alveolar O₂ (mmHg)',20,150,1],['Pv','P venosa O₂ (mmHg)',15,60,1],['PAc','P alveolar CO₂ (mmHg)',15,60,1],['Pvc','P venosa CO₂ (mmHg)',30,90,1],
+['Hb','Hemoglobina (g/dL)',5,20,0.5],['A','Área de intercambio A (m²)',10,140,1],['tau','Espesor membrana τ (µm)',0.2,3,0.1],['Vc','Volumen capilar V_c (mL)',30,150,1],['Q','Gasto cardíaco Q̇ (L/min)',2,30,0.5]];
+const presets={rest:{PA:100,Pv:40,PAc:40,Pvc:46,Hb:15,A:70,tau:0.6,Vc:75,Q:5.5},ex:{PA:105,Pv:25,PAc:38,Pvc:65,Hb:15,A:100,tau:0.6,Vc:110,Q:25},
+alt:{PA:50,Pv:30,PAc:30,Pvc:42,Hb:17,A:70,tau:0.6,Vc:75,Q:6},fib:{PA:100,Pv:40,PAc:40,Pvc:46,Hb:15,A:40,tau:2,Vc:60,Q:5.5}};
+const ctl=document.getElementById('ctl');
+defs.forEach(([k,n,a,b,s])=>{const l=document.createElement('label');l.innerHTML=`<span>${n}</span><b id="v_${k}"></b>`;
+const i=document.createElement('input');i.type='range';i.min=a;i.max=b;i.step=s;i.id='i_'+k;i.oninput=()=>{P[k]=+i.value;run()};
+const w=document.createElement('div');w.append(l,i);ctl.append(w)});
+document.querySelectorAll('button').forEach(b=>b.onclick=()=>{Object.assign(P,presets[b.dataset.p]);run()});
+document.getElementById('reset').onclick=()=>{Object.assign(P,presets.rest);run()};
+const S=p=>{p=Math.max(p,0.1);return 1/(23400/(p*p*p+150*p)+1)};
+const dS=p=>(S(p+.05)-S(p-.05))/.1;
+const CO=p=>1.34*P.Hb*S(p)+0.003*p;
+const CC=(p,s)=>48+0.4*(p-40)+5*(0.975-s);
+const par=()=>{const Dm=39*(P.A/70)*(0.6/P.tau),thV=1.8*(P.Hb/15)*P.Vc;return{Dm,thV,DL:1/(1/Dm+1/thV),DmC:20*Dm}};
+function sim(){const q=par(),T=P.Vc/(P.Q*1000)*60,kO=q.DL/60*100/P.Vc,kC=q.DmC/60*100/P.Vc;
+ const f=(a,b)=>{const d=dS(a),po=kO*(P.PA-a)/(1.34*P.Hb*d+0.003);return[po,(-kC*(b-P.PAc)+5*d*po)/0.4]};
+ const dt=0.0005,n=Math.ceil(T/dt),out=[],g1=P.PA-P.Pv,g2=P.Pvc-P.PAc;let a=P.Pv,b=P.Pvc,t=0,e1=null,e2=null;
+ for(let i=0;i<=n;i++){out.push([t,a,b]);
+  if(e1===null&&(g1<=0.5||P.PA-a<=0.02*g1))e1=t;
+  if(e2===null&&(g2<=0.5||b-P.PAc<=0.02*g2))e2=t;
+  const[x1,y1]=f(a,b),[x2,y2]=f(a+x1*dt,b+y1*dt);a+=dt*(x1+x2)/2;b+=dt*(y1+y2)/2;t+=dt}
+ return{T,out,e1,e2,pe:a,pc:b,q}}
+const col=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function plot(id,o){const cv=document.getElementById(id),dpr=devicePixelRatio||1,W=cv.clientWidth,H=260;cv.width=W*dpr;cv.height=H*dpr;
+ const g=cv.getContext('2d');g.scale(dpr,dpr);const m={l:44,r:o.right?44:14,t:16,b:34},pw=W-m.l-m.r,ph=H-m.t-m.b,lo=o.lo,hi=o.hi;
+ const X=t=>m.l+t/ST.T*pw,Y=p=>m.t+ph*(1-(p-lo)/(hi-lo)),Ys=s=>m.t+ph*(1-s);
+ g.font='12px system-ui';g.fillStyle=col('--mut');g.strokeStyle=col('--bd');g.lineWidth=1;
+ for(let i=0;i<=5;i++){const p=lo+(hi-lo)*i/5;g.beginPath();g.moveTo(m.l,Y(p));g.lineTo(W-m.r,Y(p));g.stroke();g.textAlign='right';g.fillText(Math.round(p),m.l-6,Y(p)+4)}
+ if(o.right)for(let s=0;s<=1.001;s+=.25){g.textAlign='left';g.fillText(Math.round(s*100)+'%',W-m.r+6,Ys(s)+4)}
+ g.textAlign='center';for(let i=0;i<=4;i++){const t=ST.T*i/4;g.fillText(t.toFixed(2)+' s',X(t),H-14)}
+ const st=Math.max(1,Math.floor(ST.out.length/400)),pts=ST.out.filter((_,i)=>i%st===0);
+ o.series.forEach(s=>{g.setLineDash(s.dash?[6,4]:[]);g.strokeStyle=col(s.c);g.lineWidth=s.dash?2:2.5;g.beginPath();
+  pts.forEach((r,i)=>{const y=s.right?Ys(s.f(r)):Y(s.f(r));i?g.lineTo(X(r[0]),y):g.moveTo(X(r[0]),y)});g.stroke()});g.setLineDash([]);
+ if(o.eq!==null){g.strokeStyle=col('--mut');g.setLineDash([2,3]);g.beginPath();g.moveTo(X(o.eq),m.t);g.lineTo(X(o.eq),H-m.b);g.stroke();g.setLineDash([])}
+ g.textAlign='left';o.series.forEach((s,i)=>{g.fillStyle=col(s.c);g.fillText('■ '+s.n,m.l+8+i*130,m.t+12)})}
+const lerpCol=s=>{const t=Math.max(0,Math.min(1,(s-0.4)/0.6)),a=[90,42,122],b=[229,50,45];return 'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')'};
+const rowAt=u=>ST.out[Math.round(u*(ST.out.length-1))];
+const CX=350,CY=170,R=130,NC=12;let RC=150;
+const pos=(u,rad)=>{const a=Math.PI*(1-u);return[CX+rad*Math.cos(a),CY+rad*Math.sin(a),a]};
+const mk=(id,c)=>`<marker id="${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0 0L10 5L0 10z" fill="${c}"/></marker>`;
+function drawAlv(r){const f=n=>n.toFixed(1),w=2+P.tau*5;RC=R+w+14;
+ let h='<defs>'+mk('ah','#2471a3')+mk('ah2','#d35400')+'</defs>';
+ h+=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="#2471a3" fill-opacity=".13"/>`;
+ const cV=lerpCol(S(P.Pv)),cE=lerpCol(S(r.pe));
+ h+=`<path d="M${CX-RC} ${CY}V50" stroke="${cV}" stroke-width="26" fill="none"/><path d="M${CX+RC} ${CY}V50" stroke="${cE}" stroke-width="26" fill="none"/>`;
+ const N=80;for(let i=0;i<N;i++){const u0=i/N,u1=(i+1)/N,p0=pos(u0,RC),p1=pos(u1,RC);
+  h+=`<path d="M${f(p0[0])} ${f(p0[1])}L${f(p1[0])} ${f(p1[1])}" stroke="${lerpCol(S(rowAt((u0+u1)/2)[1]))}" stroke-width="26" fill="none"/>`}
+ h+=`<circle cx="${CX}" cy="${CY}" r="${R+w/2}" fill="none" style="stroke:var(--fg)" stroke-opacity=".55" stroke-width="${f(w)}"/>`;
+ const d1=Math.max(P.PA-P.Pv,1),d2=Math.max(P.Pvc-P.PAc,1),cl=x=>Math.max(0,Math.min(1,x));
+ for(let i=0;i<13;i++){const u=(i+.5)/13,gg=cl((P.PA-rowAt(u)[1])/d1),a=pos(u,R-44),b=pos(u,R-12);
+  h+=`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#2471a3" stroke-width="2.5" marker-end="url(#ah)" opacity="${(.1+.9*gg).toFixed(2)}"/>`}
+ for(let i=1;i<13;i++){const u=i/13,gg=cl((rowAt(u)[2]-P.PAc)/d2),a=pos(u,R-12),b=pos(u,R-44);
+  h+=`<line x1="${f(a[0])}" y1="${f(a[1])}" x2="${f(b[0])}" y2="${f(b[1])}" stroke="#d35400" stroke-width="3.5" marker-end="url(#ah2)" opacity="${(.1+.9*gg).toFixed(2)}"/>`}
+ h+='<g id="cells">';for(let i=0;i<NC;i++)h+='<ellipse rx="9" ry="5.5" stroke="#fff" stroke-opacity=".7" stroke-width="1"/>';h+='</g>';
+ const T=(x,y,t,an,sz,b)=>`<text x="${x}" y="${y}" text-anchor="${an}" font-size="${sz}" ${b?'font-weight="600"':''} style="fill:var(--fg)">${t}</text>`;
+ h+=T(CX,CY-14,'ALVEOLO','middle',16,1)+T(CX,CY+6,'P_AO₂ = '+P.PA+' · P_ACO₂ = '+P.PAc+' mmHg','middle',12)+T(CX,CY+26,'O₂ → capilar (azul) · CO₂ → alveolo (naranja)','middle',11);
+ h+=T(8,16,'Arteriola (sangre venosa)','start',13,1)+T(8,33,'P_vO₂ '+P.Pv+' · P_vCO₂ '+P.Pvc+' mmHg','start',12);
+ h+=T(692,16,'Vénula (sangre arterializada)','end',13,1)+T(692,33,'P_cO₂ '+f(r.pe)+' · P_cCO₂ '+f(r.pc)+' mmHg','end',12);
+ h+=T(CX,372,'Capilar alveolar · flujo →  (t = '+r.T.toFixed(2)+' s) · pared τ = '+P.tau.toFixed(1)+' µm','middle',12);
+ document.getElementById('alv').innerHTML=h}
+function drawMem(r){const wt=P.tau*70,xm=250,xe=xm+wt,f=n=>n.toFixed(1),st=Math.max(1,Math.floor(r.out.length/200));let mO=0,mC=0,k=0;
+ for(let i=0;i<r.out.length;i+=st){mO+=(P.PA-r.out[i][1])/Math.max(P.PA-P.Pv,1);mC+=(r.out[i][2]-P.PAc)/Math.max(P.Pvc-P.PAc,1);k++}
+ mO=Math.max(0,Math.min(1,mO/k));mC=Math.max(0,Math.min(1,mC/k));
+ const rect=(x,w,c,o)=>`<rect x="${f(x)}" y="10" width="${f(w)}" height="100" fill="${c}" fill-opacity="${o}"/>`;
+ let h='<defs>'+mk('mh1','#2471a3')+mk('mh2','#d35400')+'</defs>';
+ h+=rect(10,xm-10,'#2471a3',.12)+rect(xm,wt*.35,'#5dade2',.6)+rect(xm+wt*.35,wt*.3,'#af7ac5',.6)+rect(xm+wt*.65,wt*.35,'#f0b27a',.7)+rect(xe,690-xe,'#c0392b',.1);
+ h+=`<ellipse cx="640" cy="60" rx="38" ry="22" fill="${lerpCol(S(r.pe))}" stroke="#fff" stroke-opacity=".6"/>`;
+ const T=(x,y,t,an,b)=>`<text x="${x}" y="${y}" text-anchor="${an}" font-size="12" ${b?'font-weight="600"':''} style="fill:var(--fg)">${t}</text>`;
+ h+=T(20,28,'Aire alveolar','start',1)+T(xe+(690-xe)/2-30,28,'Plasma y glóbulo rojo','middle',1);
+ h+=`<line x1="${xm-90}" y1="52" x2="${f(xe+55)}" y2="52" stroke="#2471a3" stroke-width="2.5" marker-end="url(#mh1)" opacity="${(.2+.8*mO).toFixed(2)}"/>`+T(xm-95,56,'O₂','end',1);
+ h+=`<line x1="${f(xe+55)}" y1="88" x2="${xm-90}" y2="88" stroke="#d35400" stroke-width="6" marker-end="url(#mh2)" opacity="${(.2+.8*mC).toFixed(2)}"/>`+T(xm-95,92,'CO₂','end',1);
+ h+=`<path d="M${xm} 122V132H${f(xe)}V122" fill="none" style="stroke:var(--fg)"/>`+T(xe+8,136,'τ = '+P.tau.toFixed(1)+' µm','start',1);
+ [['#5dade2','Epitelio 35%'],['#af7ac5','Intersticio 30%'],['#f0b27a','Endotelio 35%']].forEach(([c,t],i)=>{h+=`<rect x="${10+i*118}" y="146" width="10" height="10" fill="${c}"/>`+T(24+i*118,155,t,'start')});
+ document.getElementById('mem').innerHTML=h}
+function tick(ts){if(ST){const c=document.getElementById('cells');
+ if(c)[...c.children].forEach((e,i)=>{const u=((ts/6000)+i/NC)%1,p=pos(u,RC),deg=Math.atan2(-Math.cos(p[2]),Math.sin(p[2]))*180/Math.PI;
+  e.setAttribute('transform',`translate(${p[0].toFixed(1)} ${p[1].toFixed(1)}) rotate(${deg.toFixed(0)})`);e.setAttribute('fill',lerpCol(S(rowAt(u)[1])))})}
+ requestAnimationFrame(tick)}
+
+function curve(id,r){const cv=document.getElementById(id),dpr=devicePixelRatio||1,W=cv.clientWidth,H=260;cv.width=W*dpr;cv.height=H*dpr;
+ const g=cv.getContext('2d');g.scale(dpr,dpr);const m={l:44,r:52,t:16,b:34},pw=W-m.l-m.r,ph=H-m.t-m.b,xm=150;
+ const X=p=>m.l+p/xm*pw,Y=s=>m.t+ph*(1-s),cap=1.34*P.Hb;
+ g.font='12px system-ui';g.lineWidth=1;g.strokeStyle=col('--bd');g.fillStyle=col('--mut');
+ for(let i=0;i<=4;i++){const s=i/4;g.beginPath();g.moveTo(m.l,Y(s));g.lineTo(W-m.r,Y(s));g.stroke();
+  g.textAlign='right';g.fillText(Math.round(s*100)+'%',m.l-6,Y(s)+4);g.textAlign='left';g.fillText((cap*s).toFixed(1),W-m.r+6,Y(s)+4)}
+ g.textAlign='center';for(let p=0;p<=xm;p+=25)g.fillText(p,X(p),H-m.b+16);g.fillText('PO₂ (mmHg)',m.l+pw/2,H-4);
+ g.textAlign='left';g.fillText('mL O₂/dL',W-m.r-20,m.t-4);
+ let lo=1,hi=100;for(let i=0;i<40;i++){const md=(lo+hi)/2;S(md)<.5?lo=md:hi=md}const p50=(lo+hi)/2;
+ g.setLineDash([4,4]);g.strokeStyle=col('--mut');g.beginPath();g.moveTo(m.l,Y(.5));g.lineTo(X(p50),Y(.5));g.lineTo(X(p50),Y(0));g.stroke();g.setLineDash([]);
+ g.textAlign='left';g.fillStyle=col('--mut');g.fillText('P50 ≈ '+p50.toFixed(0),X(p50)+6,Y(.5)+16);
+ const path=(a,b,c,w)=>{g.strokeStyle=col(c);g.lineWidth=w;g.beginPath();for(let p=a,i=0;p<=b+.01;p+=.5,i++){i?g.lineTo(X(p),Y(S(p))):g.moveTo(X(p),Y(S(p)))}g.stroke()};
+ path(0,xm,'--c3',2.5);path(Math.min(P.Pv,r.pe),Math.max(P.Pv,r.pe),'--c1',6);
+ const pt=(p,c,t,dy)=>{g.fillStyle=col(c);g.beginPath();g.arc(X(p),Y(S(p)),5,0,7);g.fill();g.fillText(t+' ('+(S(p)*100).toFixed(0)+'%)',X(p)+8,Y(S(p))+dy)};
+ g.textAlign='left';pt(P.Pv,'--c4','Venosa',16);pt(r.pe,'--c1','Fin capilar',16);pt(P.PA,'--c2','Alveolar',-10)}
+const reg=(e,T)=>e===null?'Limitado por difusión':e/T>0.6?'Equilibrio tardío':'Limitado por perfusión';
+function run(){
+ defs.forEach(([k])=>{document.getElementById('i_'+k).value=P[k];document.getElementById('v_'+k).textContent=Math.round(P[k]*100)/100});
+ const r=sim();ST=r;const q=r.q;
+ plot('c1',{lo:0,hi:Math.max(P.PA,P.Pv)*1.1,right:1,eq:r.e1,series:[{f:o=>o[1],c:'--c1',n:'P_c O₂'},{f:()=>P.PA,c:'--c2',dash:1,n:'P_A O₂'},{f:o=>S(o[1]),c:'--c3',right:1,n:'SO₂ (eje der.)'}]});
+ const lo=Math.floor((Math.min(P.PAc,P.Pvc,r.pc)-5)/5)*5,hi=Math.ceil((Math.max(P.PAc,P.Pvc)+5)/5)*5;
+ plot('c2',{lo,hi,eq:r.e2,series:[{f:o=>o[2],c:'--c4',n:'P_c CO₂'},{f:()=>P.PAc,c:'--c2',dash:1,n:'P_A CO₂'}]});
+ drawAlv(r);drawMem(r);curve('c3',r);
+ const vo2=P.Q*1000*(CO(r.pe)-CO(P.Pv))/100,vco2=P.Q*1000*(CC(P.Pvc,S(P.Pv))-CC(r.pc,S(r.pe)))/100;
+ const kp=[['Tiempo de tránsito',r.T.toFixed(2)+' s'],['D_m O₂ (membrana)',q.Dm.toFixed(1)+' mL/min/mmHg'],['θ·V_c (sangre)',q.thV.toFixed(0)+' mL/min/mmHg'],['D_L O₂ total',q.DL.toFixed(1)+' mL/min/mmHg'],
+ ['D_m CO₂ ≈ 20·D_m O₂',q.DmC.toFixed(0)+' mL/min/mmHg'],['Equilibrio O₂ (98%)',r.e1===null?'no alcanza':r.e1.toFixed(2)+' s'],['P_c O₂ final',r.pe.toFixed(1)+' mmHg ('+(S(r.pe)*100).toFixed(0)+'%)'],['V̇O₂ captado',vo2.toFixed(0)+' mL/min'],
+ ['Régimen O₂',reg(r.e1,r.T)],['Equilibrio CO₂ (98%)',r.e2===null?'no alcanza':r.e2.toFixed(2)+' s'],['P_c CO₂ final',r.pc.toFixed(1)+' mmHg'],['V̇CO₂ eliminado',vco2.toFixed(0)+' mL/min'],
+ ['Régimen CO₂',reg(r.e2,r.T)],['Cociente V̇CO₂/V̇O₂',vo2>1?(vco2/vo2).toFixed(2):'—']];
+ document.getElementById('kp').innerHTML=kp.map(([a,b])=>`<div><small>${a}</small><strong>${b}</strong></div>`).join('')}
+addEventListener('resize',run);run();requestAnimationFrame(tick);
+</script></body></html>
