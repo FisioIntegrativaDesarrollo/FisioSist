@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dinámica respiratoria: presiones, diafragma y difusión de gases</title>
+<style>
+:root{--bg:#fff;--surface-1:#f4f3ee;--surface-2:#e8e6dd;--text-primary:#1f1e1d;--text-secondary:#5f5e5a;--text-muted:#8a8982;--border:rgba(0,0,0,.12);--border-strong:rgba(0,0,0,.25);--border-stronger:rgba(0,0,0,.4);--radius:8px;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1e1d;--surface-1:#2b2a28;--surface-2:#3a3835;--text-primary:#f1efe8;--text-secondary:#b4b2a9;--text-muted:#888780;--border:rgba(255,255,255,.14);--border-strong:rgba(255,255,255,.28);--border-stronger:rgba(255,255,255,.45)}}
+:root[data-theme="dark"]{--bg:#1f1e1d;--surface-1:#2b2a28;--surface-2:#3a3835;--text-primary:#f1efe8;--text-secondary:#b4b2a9;--text-muted:#888780;--border:rgba(255,255,255,.14);--border-strong:rgba(255,255,255,.28);--border-stronger:rgba(255,255,255,.45)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+main{max-width:760px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:22px;font-weight:600;margin:0 0 4px}
+.sub{font-size:14px;color:var(--text-secondary);margin:0 0 16px}
+svg{max-width:100%;height:auto;display:block}
+button,select{font:inherit;font-size:14px;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 12px;cursor:pointer}
+button:hover{background:var(--surface-2)}
+.spd.on{background:var(--surface-2);border-color:var(--border-stronger);font-weight:600}
+.tx{font-size:11px;fill:var(--text-secondary)}
+.tg{font-size:12px;font-weight:500}
+.mc{background:var(--surface-1);border-radius:var(--radius);padding:10px 12px}
+.mc p{margin:0}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+input[type=range]{flex:1;min-width:150px}
+</style>
+</head>
+<body>
+<main>
+<h1>Dinámica respiratoria (versión con presiones)</h1>
+<p class="sub">Presiones del ciclo, contracción del diafragma al inspirar, y difusión del O₂ y el CO₂ entre el alvéolo y los eritrocitos del capilar pulmonar.</p>
+
+<div class="row" style="margin:0 0 8px">
+  <button id="play"><span id="pi">⏸</span> <span id="pt">Pausar</span></button>
+  <select id="mode" aria-label="Tipo de respiración">
+    <option value="quiet">Respiración tranquila</option>
+    <option value="deep">Esfuerzo: inspiración profunda y espiración forzada</option>
+  </select>
+  <input type="range" id="sl" min="0" max="1000" value="0" step="1" aria-label="Momento del ciclo respiratorio">
+</div>
+<div class="row" style="gap:8px;margin:0 0 12px">
+  <span style="font-size:13px;color:var(--text-secondary)">Velocidad:</span>
+  <button class="spd on" data-s="1">1×</button>
+  <button class="spd" data-s=".5">½×</button>
+  <button class="spd" data-s=".25">¼×</button>
+  <button class="spd" data-s=".1">⅒×</button>
+</div>
+
+<h2 style="font-size:16px;font-weight:600;margin:4px 0 8px">Presiones del ciclo respiratorio</h2>
+<div class="grid" style="margin:0 0 10px">
+  <div class="mc"><p style="font-size:12px;color:var(--text-secondary)">Volumen sobre CRF</p><p style="font-size:18px;font-weight:600" id="zV"></p></div>
+  <div class="mc"><p style="font-size:12px;color:var(--text-secondary)">Flujo (L/s)</p><p style="font-size:18px;font-weight:600" id="zF"></p></div>
+  <div class="mc"><p style="font-size:12px;color:#7F77DD">Palv (cmH₂O)</p><p style="font-size:18px;font-weight:600" id="zA"></p></div>
+  <div class="mc"><p style="font-size:12px;color:#1D9E75">Ppl (cmH₂O)</p><p style="font-size:18px;font-weight:600" id="zP"></p></div>
+  <div class="mc"><p style="font-size:12px;color:#BA7517">Ptp (cmH₂O)</p><p style="font-size:18px;font-weight:600" id="zT"></p></div>
+</div>
+<div class="row" style="gap:8px;margin:0 0 10px">
+  <span id="zpI" style="font-size:13px;padding:4px 10px;border-radius:var(--radius)"></span>
+  <span id="zpE" style="font-size:13px;padding:4px 10px;border-radius:var(--radius)"></span>
+</div>
+<p id="zcap" style="font-size:14px;line-height:1.6;margin:0 0 10px;min-height:90px"></p>
+<div class="row" style="gap:16px;margin:0 0 4px;font-size:12px;color:var(--text-secondary)">
+  <span><svg width="26" height="8" style="display:inline"><line x1="0" y1="4" x2="26" y2="4" stroke="#7F77DD" stroke-width="2.5"/></svg> Palv alveolar</span>
+  <span><svg width="26" height="8" style="display:inline"><line x1="0" y1="4" x2="26" y2="4" stroke="#1D9E75" stroke-width="2.5" stroke-dasharray="6 4"/></svg> Ppl pleural</span>
+  <span><svg width="26" height="8" style="display:inline"><line x1="0" y1="4" x2="26" y2="4" stroke="#BA7517" stroke-width="2.5" stroke-dasharray="2 3"/></svg> Ptp = Palv − Ppl</span>
+</div>
+<svg viewBox="0 0 680 350" role="img" aria-label="Curvas del ciclo: presiones alveolar, pleural y transpulmonar; volumen; y flujo de aire en función del tiempo">
+  <g id="zg1"></g><g id="zg2"></g><g id="zg3"></g>
+  <text x="50" y="14" class="tx">Presiones (cmH₂O)</text>
+  <text x="50" y="224" class="tx">Volumen sobre CRF (L)</text>
+  <text x="390" y="224" class="tx">Flujo de aire (L/s)</text>
+  <path id="zPtp" fill="none" stroke="#BA7517" stroke-width="2.2" stroke-dasharray="2 3" stroke-linecap="round"/>
+  <path id="zPpl" fill="none" stroke="#1D9E75" stroke-width="2.2" stroke-dasharray="6 4" stroke-linecap="round"/>
+  <path id="zAlv" fill="none" stroke="#7F77DD" stroke-width="2.2" stroke-linecap="round"/>
+  <path id="zVol" fill="none" stroke="#D4537E" stroke-width="2.2" stroke-linecap="round"/>
+  <path id="zFlo" fill="none" stroke="#D4537E" stroke-width="2.2" stroke-linecap="round"/>
+  <line id="zc1" y1="24" y2="176" stroke-width="1" style="stroke:var(--text-secondary)"/>
+  <line id="zc2" y1="232" y2="322" stroke-width="1" style="stroke:var(--text-secondary)"/>
+  <line id="zc3" y1="232" y2="322" stroke-width="1" style="stroke:var(--text-secondary)"/>
+  <circle id="zd1" r="4" fill="#7F77DD"/><circle id="zd2" r="4" fill="#1D9E75"/><circle id="zd3" r="4" fill="#BA7517"/>
+  <circle id="zd4" r="4" fill="#D4537E"/><circle id="zd5" r="4" fill="#D4537E"/>
+</svg>
+
+<svg viewBox="0 0 680 300" role="img" aria-label="Vista frontal del tórax: el diafragma, con su tendón central y fibras musculares, se contrae y desciende durante la inspiración; a la derecha, gráfica de su activación y descenso en el tiempo">
+  <defs><marker id="mB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#378ADD" stroke-width="1.8"/></marker></defs>
+  <text x="4" y="14" class="tg" style="fill:var(--text-primary)">A. El diafragma se contrae al inspirar</text>
+  <ellipse id="cage" cx="170" cy="140" rx="100" ry="125" fill="#1D9E75" fill-opacity=".1" stroke-width="3" style="stroke:var(--border-stronger)"/>
+  <path d="M170 22 L170 78 M170 78 L115 105 M170 78 L225 105" fill="none" stroke-width="3" stroke-linecap="round" style="stroke:var(--text-muted)"/>
+  <ellipse id="lungL" cx="115" cy="128" rx="40" ry="66" fill="#378ADD" fill-opacity=".2" stroke="#378ADD" stroke-width="1.5"/>
+  <ellipse id="lungR" cx="225" cy="128" rx="40" ry="66" fill="#378ADD" fill-opacity=".2" stroke="#378ADD" stroke-width="1.5"/>
+  <path d="M92 218 Q170 170 248 218" fill="none" stroke-width="1.5" stroke-dasharray="4 4" style="stroke:var(--text-muted)"/>
+  <path id="lens" d="" fill="#EF9F27" fill-opacity=".18"/>
+  <path id="mus" d="" fill="none" stroke="#D85A30" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path id="fib" d="" fill="none" stroke="#F5C4B3" stroke-width="9" stroke-dasharray="2 4" stroke-opacity=".7"/>
+  <path id="ten" d="" fill="none" stroke="#D3D1C7" stroke-width="11"/>
+  <path id="nerve" d="M22 44 L22 206 Q30 224 92 222" fill="none" stroke="#BA7517" stroke-width="2" stroke-dasharray="4 6" stroke-linecap="round"/>
+  <text x="4" y="34" class="tx">Nervio frénico (C3–C5)</text>
+  <g id="aTend" opacity="0"><path id="aTendP" d="" stroke="#378ADD" stroke-width="2.5" fill="none" marker-end="url(#mB)"/></g>
+  <g id="aSide" opacity="0">
+    <path d="M62 120 L46 120" stroke="#378ADD" stroke-width="2.5" fill="none" marker-end="url(#mB)"/>
+    <path d="M278 120 L294 120" stroke="#378ADD" stroke-width="2.5" fill="none" marker-end="url(#mB)"/>
+  </g>
+  <path id="ldT" d="" stroke-width="1" fill="none" style="stroke:var(--text-muted)"/>
+  <text x="284" y="190" class="tx">Tendón central</text>
+  <path id="ldF" d="" stroke-width="1" fill="none" style="stroke:var(--text-muted)"/>
+  <text x="284" y="236" class="tx">Fibras musculares</text>
+  <text x="170" y="292" text-anchor="middle" class="tx">Vista frontal (esquema exagerado)</text>
+  <g id="gp"></g>
+  <line x1="430" y1="34" x2="454" y2="34" stroke="#378ADD" stroke-width="2.5"/>
+  <text x="460" y="38" class="tx">Activación del diafragma</text>
+  <line x1="430" y1="50" x2="454" y2="50" stroke="#BA7517" stroke-width="2.5" stroke-dasharray="6 4"/>
+  <text x="460" y="54" class="tx">Descenso del domo</text>
+  <path id="pAct" fill="none" stroke="#378ADD" stroke-width="2.4" stroke-linejoin="round"/>
+  <path id="pDes" fill="none" stroke="#BA7517" stroke-width="2.4" stroke-dasharray="6 4" stroke-linecap="round"/>
+  <line id="cur" y1="66" y2="206" stroke-width="1" style="stroke:var(--text-secondary)"/>
+  <circle id="dotA" r="4" fill="#378ADD"/><circle id="dotD" r="4" fill="#BA7517"/>
+</svg>
+
+<div class="grid" style="margin:8px 0 10px">
+  <div class="mc"><p style="font-size:12px;color:var(--text-secondary)">Activación (% del máx.)</p><p style="font-size:18px;font-weight:600" id="rA"></p></div>
+  <div class="mc"><p style="font-size:12px;color:var(--text-secondary)">Descenso del domo</p><p style="font-size:18px;font-weight:600" id="rD"></p></div>
+  <div class="mc"><p style="font-size:12px;color:var(--text-secondary)">Acortamiento de fibras</p><p style="font-size:18px;font-weight:600" id="rS"></p></div>
+</div>
+<p id="cap" style="font-size:14px;line-height:1.6;margin:0 0 24px;min-height:90px"></p>
+
+<svg viewBox="0 0 680 350" role="img" aria-label="Alvéolo sobre un capilar pulmonar: el oxígeno atraviesa la barrera alvéolo-capilar hacia los eritrocitos, que se vuelven rojo brillante, y el CO₂ sale hacia el alvéolo; debajo, las presiones parciales a lo largo del capilar">
+  <defs>
+    <marker id="mG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#888780" stroke-width="1.8"/></marker>
+    <clipPath id="clipCap"><rect x="60" y="104" width="570" height="92" rx="14"/></clipPath>
+  </defs>
+  <text x="4" y="14" class="tg" style="fill:var(--text-primary)">B. Difusión de O₂ y CO₂ hacia el eritrocito</text>
+  <rect x="60" y="20" width="570" height="72" fill="#378ADD" fill-opacity=".07"/>
+  <text x="66" y="36" class="tx">Aire alveolar · PAO₂ ≈100 · PACO₂ 40 mmHg</text>
+  <text x="626" y="86" text-anchor="end" class="tx">Barrera alvéolo-capilar ≈0,5 µm</text>
+  <rect x="60" y="92" width="570" height="12" fill="#888780" fill-opacity=".25"/>
+  <line x1="60" x2="630" y1="96" y2="96" stroke-width="1" style="stroke:var(--border-strong)"/>
+  <line x1="60" x2="630" y1="100" y2="100" stroke-width="1" style="stroke:var(--border-strong)"/>
+  <rect x="60" y="104" width="570" height="92" rx="14" fill="#E24B4A" fill-opacity=".08" stroke="#E24B4A" stroke-width="1.5"/>
+  <path d="M290 114 L360 114" stroke="#888780" stroke-width="2" fill="none" marker-end="url(#mG)"/>
+  <text x="368" y="118" class="tx">flujo sanguíneo</text>
+  <g clip-path="url(#clipCap)"><g id="rbcs"></g></g>
+  <g id="pg"></g>
+  <text id="rbcLab" x="0" y="190" text-anchor="middle" class="tx" opacity="0">Eritrocito</text>
+  <text x="60" y="214" class="tx">Entrada: sangre venosa · PO₂ 40 · PCO₂ 46</text>
+  <text x="630" y="214" text-anchor="end" class="tx">Salida: sangre arterial · PO₂ ≈100 · PCO₂ 40</text>
+  <g id="g4"></g>
+  <path id="cO" fill="none" stroke="#378ADD" stroke-width="2.4" stroke-linecap="round"/>
+  <path id="cC" fill="none" stroke="#D85A30" stroke-width="2.4" stroke-dasharray="6 4" stroke-linecap="round"/>
+  <text x="636" y="251" class="tg" fill="#378ADD">PO₂</text>
+  <text x="636" y="292" class="tg" fill="#D85A30">PCO₂</text>
+  <line id="mk" y1="240" y2="320" stroke-width="1" style="stroke:var(--text-secondary)" opacity="0"/>
+  <circle id="mO" r="4" fill="#378ADD" opacity="0"/><circle id="mC2" r="4" fill="#D85A30" opacity="0"/>
+</svg>
+
+<div class="grid" style="margin:8px 0 6px">
+  <div class="mc"><p style="font-size:12px;color:#378ADD">PO₂ de la sangre (mmHg)</p><p style="font-size:18px;font-weight:600" id="qO"></p></div>
+  <div class="mc"><p style="font-size:12px;color:#D85A30">PCO₂ de la sangre (mmHg)</p><p style="font-size:18px;font-weight:600" id="qC"></p></div>
+  <div class="mc"><p style="font-size:12px;color:var(--text-secondary)">Hemoglobina saturada</p><p style="font-size:18px;font-weight:600" id="qS"></p></div>
+</div>
+<p style="font-size:12px;color:var(--text-secondary);margin:0">Con velocidad 1× ya va en cámara lenta: el tránsito real del eritrocito por el capilar dura ≈0,75 s. Esquema didáctico con valores típicos de un adulto sano.</p>
+</main>
+
+<script>
+const $=i=>document.getElementById(i);
+const NS='http://www.w3.org/2000/svg';
+const M={quiet:{Ti:1.6,Te:2.4,amp:.6,maxCm:1.5,sel:.45,Vt:.5,Rin:2,Rex:2,forced:false,yMin:-9,yMax:3,step:3},deep:{Ti:2,Te:2,amp:1,maxCm:7,sel:1,Vt:2,Rin:3,Rex:9,forced:true,yMin:-20,yMax:20,step:10}};
+let m=M.quiet,T=m.Ti+m.Te,t=0,playing=true,last=performance.now(),clock=0,sp=1;
+function f(x,d){let s=x.toFixed(d);if(parseFloat(s)===0)s=(0).toFixed(d);return s.replace('-','−').replace('.',',');}
+function cyc(tt){let x,vf,ai;
+ if(tt<m.Ti){x=tt/m.Ti;vf=.5*(1-Math.cos(Math.PI*x));ai=m.amp*(.45+.55*Math.sin(Math.PI*x/2));}
+ else{x=(tt-m.Ti)/m.Te;vf=.5*(1+Math.cos(Math.PI*x));ai=0;}
+ return {vf,ai,insp:tt<m.Ti};}
+const bez=(tt,cy)=>{const a=(1-tt)*(1-tt),b=2*(1-tt)*tt,c=tt*tt;return [a*92+b*170+c*248,a*218+b*cy+c*218];};
+const poly=(t0,t1,cy)=>{let d='';for(let i=0;i<=24;i++){const p=bez(t0+(t1-t0)*i/24,cy);d+=(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}return d;};
+const len=cy=>{const h=(218-cy)/2;return 156+8*h*h/(3*156);};
+const L0=len(170);
+const PX0=430,PW=230,PY=p=>206-p/100*140,PX=tt=>PX0+tt/T*PW;
+function buildA(){
+ let g=`<rect x="${PX0}" y="66" width="${PW*m.Ti/T}" height="140" fill="#378ADD" fill-opacity=".07"/><rect x="${PX0+PW*m.Ti/T}" y="66" width="${PW*m.Te/T}" height="140" fill="#D85A30" fill-opacity=".06"/>`;
+ [0,50,100].forEach(p=>{g+=`<line x1="${PX0}" x2="${PX0+PW}" y1="${PY(p)}" y2="${PY(p)}" stroke-width="1" style="stroke:${p===0?'var(--border-stronger)':'var(--border)'}"/><text x="${PX0-6}" y="${PY(p)+4}" text-anchor="end" class="tx">${p}%</text>`;});
+ g+=`<text x="${PX0+PW*m.Ti/T/2}" y="224" text-anchor="middle" class="tx" style="fill:#378ADD">Inspiración</text><text x="${PX0+PW*(m.Ti+m.Te/2)/T}" y="224" text-anchor="middle" class="tx" style="fill:#D85A30">Espiración</text>`;
+ $('gp').innerHTML=g;
+ let dA='',dD='';
+ for(let i=0;i<=240;i++){const tt=T*i/240,s=cyc(tt),c=i?'L':'M';
+  dA+=`${c}${PX(tt).toFixed(1)} ${PY(s.ai*100).toFixed(1)}`;
+  dD+=`${c}${PX(tt).toFixed(1)} ${PY(m.maxCm*s.vf/7*100).toFixed(1)}`;}
+ $('pAct').setAttribute('d',dA);$('pDes').setAttribute('d',dD);
+}
+function drawA(){
+ const s=cyc(t),sv=m.sel*s.vf,cy=170+50*sv;
+ $('cage').setAttribute('rx',100+8*sv);
+ ['lungL','lungR'].forEach(i=>{$(i).setAttribute('rx',40+6*sv);$(i).setAttribute('ry',66+10*sv);});
+ $('lens').setAttribute('d',`M92 218 Q170 ${cy} 248 218 Z`);
+ const dm=poly(0,1,cy);
+ $('mus').setAttribute('d',dm);$('fib').setAttribute('d',dm);
+ $('mus').setAttribute('stroke-opacity',.35+.65*s.ai);
+ $('ten').setAttribute('d',poly(.4,.6,cy));
+ const ap=109+cy/2;
+ $('aTendP').setAttribute('d',`M170 ${ap+10} L170 ${ap+34}`);
+ $('aTend').setAttribute('opacity',s.ai);$('aSide').setAttribute('opacity',s.ai);
+ $('nerve').setAttribute('opacity',.2+.8*s.ai);
+ $('nerve').setAttribute('stroke-dashoffset',-clock*40);
+ const pt=bez(.86,cy);
+ $('ldT').setAttribute('d',`M282 186 L178 ${ap}`);
+ $('ldF').setAttribute('d',`M282 232 L${pt[0]} ${pt[1]}`);
+ const cm=m.maxCm*s.vf,sh=(1-len(cy)/L0)*100;
+ $('rA').textContent=f(s.ai*100,0)+' %';
+ $('rD').textContent=f(cm,1)+' cm';
+ $('rS').textContent=f(sh,1)+' %';
+ const x=PX(t);
+ $('cur').setAttribute('x1',x);$('cur').setAttribute('x2',x);
+ $('dotA').setAttribute('cx',x);$('dotA').setAttribute('cy',PY(s.ai*100));
+ $('dotD').setAttribute('cx',x);$('dotD').setAttribute('cy',PY(cm/7*100));
+ $('cap').textContent=s.insp
+  ?'Inspiración: el nervio frénico envía impulsos y las fibras musculares del diafragma se acortan. El domo se aplana y desciende, empujando las vísceras hacia abajo; el tendón central desciende como una sola pieza. Las costillas inferiores se elevan y se abren. El volumen del tórax aumenta y el pulmón lo sigue.'
+  :'Espiración: cesa la actividad del nervio frénico y el diafragma se relaja. Las fibras recuperan su longitud, el domo vuelve a subir empujado por las vísceras y el retroceso elástico del pulmón expulsa el aire. La inspiración es un proceso activo; la espiración tranquila es pasiva.';
+}
+const C=.2,P0=5;
+function stP(tt){let V,F,R,x;
+ if(tt<m.Ti){x=tt/m.Ti;V=m.Vt*.5*(1-Math.cos(Math.PI*x));F=m.Vt*.5*Math.PI/m.Ti*Math.sin(Math.PI*x);R=m.Rin;}
+ else{x=(tt-m.Ti)/m.Te;V=m.Vt*.5*(1+Math.cos(Math.PI*x));F=-m.Vt*.5*Math.PI/m.Te*Math.sin(Math.PI*x);R=m.Rex;}
+ const Palv=-R*F,Ptp=P0+V/C;
+ const ae=(m.forced&&tt>=m.Ti)?Math.min(1,Math.pow(Math.sin(Math.PI*x),.5)):0;
+ return {V,F,Palv,Ptp,Ppl:Palv-Ptp,ae,insp:tt<m.Ti};}
+const ZX1=tt=>50+tt/T*620,ZY1=p=>24+(m.yMax-p)/(m.yMax-m.yMin)*152;
+const ZX2=tt=>50+tt/T*300,ZY2=v=>322-v/(m.Vt*1.1)*90;
+const ZX3=tt=>390+tt/T*280,ZY3=q=>232+(m.Fm-q)/(2*m.Fm)*90;
+function buildP(){
+ m.FI=m.Vt*.5*Math.PI/m.Ti;m.FE=m.Vt*.5*Math.PI/m.Te;m.Fm=Math.max(m.FI,m.FE)*1.15;
+ const band=(x0,w,y0,h)=>`<rect x="${x0}" y="${y0}" width="${w*m.Ti/T}" height="${h}" fill="#378ADD" fill-opacity=".07"/><rect x="${x0+w*m.Ti/T}" y="${y0}" width="${w*m.Te/T}" height="${h}" fill="#D85A30" fill-opacity=".06"/>`;
+ const ln=(x1,x2,y,z)=>`<line x1="${x1}" x2="${x2}" y1="${y}" y2="${y}" stroke-width="1" style="stroke:${z?'var(--border-stronger)':'var(--border)'}"/>`;
+ let g1=band(50,620,24,152),g2=band(50,300,232,90),g3=band(390,280,232,90);
+ for(let p=m.yMin;p<=m.yMax;p+=m.step)g1+=ln(50,670,ZY1(p),p===0)+`<text x="44" y="${ZY1(p)+4}" text-anchor="end" class="tx">${f(p,0)}</text>`;
+ g1+=`<text x="${50+620*m.Ti/T/2}" y="192" text-anchor="middle" class="tx" style="fill:#378ADD">Inspiración</text><text x="${50+620*(m.Ti+m.Te/2)/T}" y="192" text-anchor="middle" class="tx" style="fill:#D85A30">Espiración</text>`;
+ [0,m.Vt].forEach(v=>{g2+=ln(50,350,ZY2(v),false)+`<text x="44" y="${ZY2(v)+4}" text-anchor="end" class="tx">${f(v,1)}</text>`;});
+ const fq=Math.round(Math.max(m.FI,m.FE)*10)/10;
+ [-fq,0,fq].forEach(q=>{g3+=ln(390,670,ZY3(q),q===0)+`<text x="384" y="${ZY3(q)+4}" text-anchor="end" class="tx">${f(q,1)}</text>`;});
+ [[0,'0'],[m.Ti,f(m.Ti,1)],[T,f(T,1)+' s']].forEach(a=>{g2+=`<text x="${ZX2(a[0])}" y="340" text-anchor="middle" class="tx">${a[1]}</text>`;g3+=`<text x="${ZX3(a[0])}" y="340" text-anchor="middle" class="tx">${a[1]}</text>`;});
+ $('zg1').innerHTML=g1;$('zg2').innerHTML=g2;$('zg3').innerHTML=g3;
+ let dA='',dP='',dT='',dV='',dF='';
+ for(let i=0;i<=240;i++){const tt=T*i/240,q=stP(tt),c=i?'L':'M';
+  dA+=`${c}${ZX1(tt).toFixed(1)} ${ZY1(q.Palv).toFixed(1)}`;dP+=`${c}${ZX1(tt).toFixed(1)} ${ZY1(q.Ppl).toFixed(1)}`;dT+=`${c}${ZX1(tt).toFixed(1)} ${ZY1(q.Ptp).toFixed(1)}`;
+  dV+=`${c}${ZX2(tt).toFixed(1)} ${ZY2(q.V).toFixed(1)}`;dF+=`${c}${ZX3(tt).toFixed(1)} ${ZY3(q.F).toFixed(1)}`;}
+ $('zAlv').setAttribute('d',dA);$('zPpl').setAttribute('d',dP);$('zPtp').setAttribute('d',dT);$('zVol').setAttribute('d',dV);$('zFlo').setAttribute('d',dF);
+}
+function drawP(){
+ const q=stP(t),ai=cyc(t).ai;
+ $('zV').textContent=f(q.V,2)+' L';$('zF').textContent=f(q.F,2);
+ $('zA').textContent=f(q.Palv,1);$('zP').textContent=f(q.Ppl,1);$('zT').textContent=f(q.Ptp,1);
+ $('zpI').style.background=`rgba(55,138,221,${.1+.4*ai})`;
+ $('zpE').style.background=`rgba(216,90,48,${.1+.4*q.ae})`;
+ $('zpI').textContent='Diafragma e intercostales externos: '+(ai>.05?'contraídos':'relajados');
+ $('zpE').textContent='Abdominales e intercostales internos: '+(q.ae>.05?'contraídos':'relajados');
+ const xs=[ZX1(t),ZX2(t),ZX3(t)];
+ ['zc1','zc2','zc3'].forEach((id,i)=>{$(id).setAttribute('x1',xs[i]);$(id).setAttribute('x2',xs[i]);});
+ const pos=[[xs[0],ZY1(q.Palv)],[xs[0],ZY1(q.Ppl)],[xs[0],ZY1(q.Ptp)],[xs[1],ZY2(q.V)],[xs[2],ZY3(q.F)]];
+ ['zd1','zd2','zd3','zd4','zd5'].forEach((id,i)=>{$(id).setAttribute('cx',pos[i][0]);$(id).setAttribute('cy',pos[i][1]);});
+ const small=Math.abs(q.F)<.05*(q.insp?m.FI:m.FE);
+ let msg;
+ if(small&&(t<m.Ti/2||t>T-.1))msg='Fin de espiración (CRF): flujo cero y Palv = Patm. El retroceso elástico del pulmón (hacia adentro) se equilibra con el de la pared torácica (hacia afuera): por eso la Ppl es subatmosférica (≈ −5) y la Ptp es positiva.';
+ else if(small)msg='Fin de inspiración: flujo cero y Palv = Patm otra vez. Ppl y Ptp están en su máxima magnitud: el pulmón está más estirado y la presión pleural es la más negativa.';
+ else if(q.insp)msg='Inspiración: el diafragma desciende y los intercostales externos elevan las costillas. Aumenta el volumen torácico, la Ppl se hace más negativa, la Ptp aumenta y el pulmón se expande. Palv cae por debajo de Patm y entra aire rico en O₂.';
+ else if(m.forced)msg='Espiración forzada: abdominales e intercostales internos comprimen el tórax. La Ppl se vuelve positiva, Palv supera ampliamente a Patm y el aire con CO₂ sale con rapidez.';
+ else msg='Espiración pasiva: los músculos inspiratorios se relajan y el retroceso elástico reduce el volumen. La Ppl vuelve hacia su valor basal, Palv queda por encima de Patm y sale aire con CO₂. No participan músculos espiratorios.';
+ $('zcap').textContent=msg;
+}
+const X0=60,W=570,TR=.75,CY=150,NR=5,SP=120,LOOP=NR*SP,SPEED=W/(TR/.2);
+const PO=fr=>100-60*Math.exp(-fr*TR/.25);
+const PC=fr=>40+6*Math.exp(-fr*TR/.25);
+const SA=fr=>.75+.22*(1-Math.exp(-fr*TR/.25));
+const QX=fr=>X0+W*fr,QY=p=>320-p/110*80;
+const rb=[];
+function buildB(){
+ let g='';
+ [0,50,100].forEach(p=>{g+=`<line x1="${X0}" x2="${X0+W}" y1="${QY(p)}" y2="${QY(p)}" stroke-width="1" style="stroke:${p===0?'var(--border-stronger)':'var(--border)'}"/><text x="${X0-6}" y="${QY(p)+4}" text-anchor="end" class="tx">${p}</text>`;});
+ g+=`<text x="${X0-6}" y="236" text-anchor="end" class="tx">mmHg</text>`;
+ g+=`<line x1="${QX(1/3)}" x2="${QX(1/3)}" y1="240" y2="320" stroke-width="1" stroke-dasharray="3 4" style="stroke:var(--text-muted)"/><text x="${QX(1/3)+6}" y="314" class="tx">≈0,25 s: el O₂ casi equilibra</text>`;
+ [[0,'0'],[.5,'0,38'],[1,'0,75 s']].forEach(a=>{g+=`<text x="${QX(a[0])}" y="336" text-anchor="middle" class="tx">${a[1]}</text>`;});
+ $('g4').innerHTML=g;
+ let dO='',dC='';
+ for(let i=0;i<=120;i++){const fr=i/120,c=i?'L':'M';dO+=`${c}${QX(fr).toFixed(1)} ${QY(PO(fr)).toFixed(1)}`;dC+=`${c}${QX(fr).toFixed(1)} ${QY(PC(fr)).toFixed(1)}`;}
+ $('cO').setAttribute('d',dO);$('cC').setAttribute('d',dC);
+ for(let k=0;k<NR;k++){
+  const gr=document.createElementNS(NS,'g');
+  gr.innerHTML='<ellipse rx="26" ry="19" fill="#7A1F2E" stroke="#4A1B0C" stroke-width="1"/><ellipse rx="11" ry="7" fill="#fff" fill-opacity=".22"/>';
+  $('rbcs').appendChild(gr);
+  rb.push({g:gr,x:0,body:gr.firstChild});
+ }
+}
+const lerp=(a,b,u)=>Math.round(a+(b-a)*u);
+const parts=[];
+let trk={f:0};
+function drawB(dt){
+ const off=clock*SPEED;
+ rb.forEach((r,k)=>{
+  r.x=X0-40+((k*SP+off)%LOOP);
+  const fr=Math.min(1,Math.max(0,(r.x-X0)/W)),u=(SA(fr)-.75)/.22;
+  r.body.setAttribute('fill',`rgb(${lerp(122,226,u)},${lerp(31,75,u)},${lerp(46,74,u)})`);
+  r.g.setAttribute('transform',`translate(${r.x.toFixed(1)} ${CY})`);
+  r.body.setAttribute('stroke-width',k===0?2:1);
+  r.fr=fr;r.vis=r.x>=X0&&r.x<=X0+W;
+ });
+ const a=rb[0];
+ if(a.vis)trk.f=a.fr;
+ const fr=trk.f,op=a.vis?1:0;
+ $('qO').textContent=f(PO(fr),0);$('qC').textContent=f(PC(fr),0);$('qS').textContent=f(SA(fr)*100,0)+' %';
+ ['mk','mO','mC2'].forEach(i=>$(i).setAttribute('opacity',op));
+ $('mk').setAttribute('x1',QX(fr));$('mk').setAttribute('x2',QX(fr));
+ $('mO').setAttribute('cx',QX(fr));$('mO').setAttribute('cy',QY(PO(fr)));
+ $('mC2').setAttribute('cx',QX(fr));$('mC2').setAttribute('cy',QY(PC(fr)));
+ $('rbcLab').setAttribute('x',a.x);$('rbcLab').setAttribute('opacity',op);
+ if(dt>0){
+  rb.forEach(r=>{
+   if(!r.vis)return;
+   if(Math.random()<5*((100-PO(r.fr))/60)*dt&&parts.length<260){
+    const e=document.createElementNS(NS,'circle');e.setAttribute('r',3);e.setAttribute('fill','#378ADD');$('pg').appendChild(e);
+    parts.push({e,k:'o',x:r.x+(Math.random()*36-18),y:46,vy:95});}
+   if(Math.random()<5*((PC(r.fr)-40)/6)*dt&&parts.length<260){
+    const e=document.createElementNS(NS,'circle');e.setAttribute('r',3);e.setAttribute('fill','#D85A30');$('pg').appendChild(e);
+    parts.push({e,k:'c',x:r.x+(Math.random()*30-15),y:CY-8,vy:-95});}
+  });
+  for(let i=parts.length-1;i>=0;i--){
+   const p=parts[i];p.y+=p.vy*dt;
+   if(p.y>104&&p.y<196)p.x+=SPEED*dt;
+   const dead=p.k==='o'?p.y>=CY-8:p.y<=30;
+   if(dead||p.x>X0+W){p.e.remove();parts.splice(i,1);continue;}
+   p.e.setAttribute('cx',p.x.toFixed(1));p.e.setAttribute('cy',p.y.toFixed(1));
+  }
+ }
+}
+function frame(now){
+ const dt=Math.min(.1,(now-last)/1000)*sp;last=now;
+ if(playing){t+=dt*.7;if(t>=T)t-=T;$('sl').value=Math.round(t/T*1000);clock+=dt;}
+ drawA();drawP();drawB(playing?dt:0);
+ requestAnimationFrame(frame);
+}
+function setPlay(p){playing=p;$('pi').textContent=p?'⏸':'▶';$('pt').textContent=p?'Pausar':'Reanudar';}
+$('play').addEventListener('click',()=>setPlay(!playing));
+$('sl').addEventListener('input',e=>{setPlay(false);t=e.target.value/1000*T;});
+$('mode').addEventListener('change',e=>{m=M[e.target.value];T=m.Ti+m.Te;t=0;$('sl').value=0;buildA();buildP();});
+document.querySelectorAll('.spd').forEach(b=>b.addEventListener('click',()=>{
+ sp=parseFloat(b.dataset.s);
+ document.querySelectorAll('.spd').forEach(x=>x.classList.toggle('on',x===b));
+}));
+buildA();buildB();buildP();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

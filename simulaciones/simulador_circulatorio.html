@@ -1,0 +1,702 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Simulador Circulatorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: panel de monitorización (lecturas, curvas, volúmenes) a la izquierda, controles a la derecha; en móvil se apilan. */
+:root {
+  --bg: #f1f4f6;
+  --panel: #ffffff;
+  --fg: #19252e;
+  --muted: #586977;
+  --line: #d6dee4;
+  --art: #c0392b;      /* sangre arterial sistémica */
+  --art2: #c9741f;     /* arterial pulmonar */
+  --ven: #2a6fb0;      /* venosa sistémica */
+  --ven2: #1d8a94;     /* venosa pulmonar */
+  --pul: #3b55b8;      /* sangre poco oxigenada (arteria pulmonar) */
+  --accent: #17667a;
+  --accent-fg: #ffffff;
+  --soft: #e7edf1;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10171c; --panel: #172129; --fg: #e5ecf1; --muted: #94a5b2; --line: #2a3843;
+    --art: #ee6c5c; --art2: #efa25a; --ven: #5ba7e8; --ven2: #5cc3cb; --pul: #8aa0f0;
+    --accent: #4cc0d0; --accent-fg: #08181c; --soft: #202e38;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10171c; --panel: #172129; --fg: #e5ecf1; --muted: #94a5b2; --line: #2a3843;
+  --art: #ee6c5c; --art2: #efa25a; --ven: #5ba7e8; --ven2: #5cc3cb; --pul: #8aa0f0;
+  --accent: #4cc0d0; --accent-fg: #08181c; --soft: #202e38;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.45;
+  padding-inline: 16px; padding-block: 20px 32px;
+}
+.wrap { max-width: 1180px; margin-inline: auto; display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; }
+h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { margin: 2px 0 0; color: var(--muted); max-width: 62ch; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+@media (max-width: 880px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px; min-width: 0; }
+.panel h2 { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+.reads { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.read { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+.read .k { font-size: 11px; color: var(--muted); }
+.read .v { font-family: var(--font-data); font-size: 26px; font-weight: 500; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.read .u { font-family: var(--font-data); font-size: 12px; color: var(--muted); margin-left: 4px; }
+.read.a .v { color: var(--art); }
+.read.p .v { color: var(--pul); }
+.read.v2 .v { color: var(--ven); }
+
+.chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.chart-head h2 { margin: 0; }
+.chart-head .u { font-family: var(--font-data); font-size: 11px; color: var(--muted); }
+canvas { display: block; width: 100%; height: 190px; }
+
+.vols { display: flex; flex-direction: column; gap: 10px; }
+.vrow { display: grid; grid-template-columns: 120px minmax(0, 1fr) 72px; gap: 10px; align-items: center; }
+@media (max-width: 480px) { .vrow { grid-template-columns: 96px minmax(0, 1fr) 60px; } }
+.vrow .n { font-size: 12.5px; }
+.vrow .m { font-family: var(--font-data); font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+.bar { position: relative; height: 14px; background: var(--soft); border-radius: 2px; overflow: hidden; }
+.bar i { position: absolute; top: 0; bottom: 0; left: 0; display: block; }
+.bar .u0 { background: var(--line); }
+.bar .st { background: currentColor; }
+.legend { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+.ctl { display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-direction: column; gap: 4px; }
+.row .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.row label { font-size: 13px; }
+.row output { font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.row.off { opacity: 0.45; }
+input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; height: 22px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+button, select {
+  font: inherit; color: var(--fg); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 5px; padding: 6px 10px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; }
+.seg button:first-child { border-radius: 5px 0 0 5px; }
+.seg button:last-child { border-radius: 0 5px 5px 0; margin-left: -1px; }
+.scen { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.scen button { text-align: left; }
+.note { margin: 10px 0 0; min-height: 3.9em; color: var(--muted); font-size: 12.5px; }
+.foot { font-size: 12px; color: var(--muted); max-width: 90ch; }
+.foot a { color: var(--accent); }
+.diag-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.diag-head h2 { margin: 0; }
+.phase { font-family: var(--font-data); font-size: 12px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--soft); }
+.diag svg { display: block; width: 100%; height: auto; }
+.diag svg text { font: 12px var(--font-body); fill: var(--muted); }
+.diag svg .big { font: 600 13px var(--font-data); fill: var(--fg); }
+.chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 10px 0; }
+.chip { display: grid; grid-template-columns: 10px minmax(0, 1fr); column-gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; }
+.chip .sw { width: 10px; height: 10px; border-radius: 2px; }
+.chip .k { font-size: 12px; color: var(--muted); }
+.chip b { grid-column: 2; font-family: var(--font-data); font-weight: 500; font-size: 15px; font-variant-numeric: tabular-nums; }
+.canvas-sm { height: 170px; }
+.explain { margin: 12px 0 0; display: flex; flex-direction: column; gap: 8px; color: var(--fg); max-width: 78ch; }
+.explain p { margin: 0; }
+.explain .small { color: var(--muted); font-size: 12.5px; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+.keys span { display: inline-flex; align-items: center; gap: 6px; }
+.keys i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.circ-note { margin: 8px 0 0; max-width: 78ch; }
+.diag svg .gas { font: 500 12px var(--font-data); fill: var(--fg); }
+.diag svg .gas-s { font: 500 11px var(--font-data); fill: var(--muted); }
+.tbl-wrap { overflow-x: auto; }
+.gas-table { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px; }
+.gas-table th { text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.gas-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+.gas-table th.n, .gas-table td.n { text-align: right; font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gas-table tr.grp td { background: var(--soft); font-weight: 600; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; }
+.dot.none { background: transparent; border: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Simulador Circulatorio</h1>
+      <p class="sub">Circulación sistémica y pulmonar en lazo cerrado. Mueve un parámetro o elige un escenario y mira cómo reaccionan las presiones, el flujo y el reparto de sangre.</p>
+    </div>
+    <div class="btns">
+      <div class="seg" role="group" aria-label="Tipo de corazón">
+        <button id="mPul" type="button" aria-pressed="true">Pulsátil</button>
+        <button id="mMed" type="button" aria-pressed="false">Valores medios</button>
+      </div>
+      <button id="bPlay" type="button">Pausar</button>
+      <label class="sr" for="speed" style="position:absolute;left:-9999px">Velocidad</label>
+      <select id="speed">
+        <option value="0.25">0,25×</option>
+        <option value="0.5">0,5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <div class="reads">
+        <div class="read a"><div class="k">Presión arterial sistémica</div><div><span class="v" id="rBP">–</span><span class="u">mmHg</span></div></div>
+        <div class="read a"><div class="k">Presión arterial media</div><div><span class="v" id="rMAP">–</span><span class="u">mmHg</span></div></div>
+        <div class="read p"><div class="k">Presión arterial pulmonar</div><div><span class="v" id="rPAP">–</span><span class="u">mmHg</span></div></div>
+        <div class="read"><div class="k">Gasto cardíaco</div><div><span class="v" id="rCO">–</span><span class="u">l/min</span></div></div>
+        <div class="read v2"><div class="k">Presión venosa central</div><div><span class="v" id="rCVP">–</span><span class="u">mmHg</span></div></div>
+        <div class="read"><div class="k">Cortocircuito anatómico</div><div><span class="v" id="rSH">–</span><span class="u">% del gasto</span></div></div>
+        <div class="read"><div class="k">Saturación arterial (estimada)</div><div><span class="v" id="rSAT">–</span><span class="u">%</span></div></div>
+      </div>
+
+      <div class="panel diag">
+        <div class="diag-head"><h2>Dos circuitos, dos ventrículos</h2></div>
+        <svg viewBox="0 0 760 340" role="img" aria-label="Esquema de la circulación en forma de ocho. El ventrículo derecho eyecta sangre poco oxigenada por la arteria pulmonar hacia los pulmones y la sangre oxigenada vuelve a la aurícula izquierda. El ventrículo izquierdo eyecta sangre oxigenada por la aorta hacia los tejidos y la sangre poco oxigenada vuelve a la aurícula derecha. Además, las arterias bronquiales y las venas de Tebesio derivan una pequeña parte de la sangre sin completar el circuito.">
+          <defs>
+            <marker id="mkR" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--art)"/></marker>
+            <marker id="mkB" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--pul)"/></marker>
+          </defs>
+          <!-- pulmones y tejidos -->
+          <rect x="280" y="16" width="200" height="40" rx="20" fill="var(--soft)" stroke="var(--line)" stroke-width="2"/>
+          <text x="380" y="33" text-anchor="middle" class="big">Pulmones</text>
+          <text x="380" y="48" text-anchor="middle" class="gas-s">alvéolo PO₂ 104 · PCO₂ 40</text>
+          <rect x="280" y="282" width="200" height="40" rx="20" fill="var(--soft)" stroke="var(--line)" stroke-width="2"/>
+          <text x="380" y="299" text-anchor="middle" class="big">Tejidos del cuerpo</text>
+          <text x="380" y="314" text-anchor="middle" class="gas-s">intersticio PO₂ 40 · PCO₂ 45</text>
+          <!-- vasos: azul = poco oxigenada, rojo = oxigenada -->
+          <path d="M250,87 V36 H274" fill="none" stroke="var(--pul)" stroke-width="8" stroke-linejoin="round" marker-end="url(#mkB)"/>
+          <path d="M486,36 H510 V95" fill="none" stroke="var(--art)" stroke-width="8" stroke-linejoin="round" marker-end="url(#mkR)"/>
+          <path d="M510,257 V302 H486" fill="none" stroke="var(--art)" stroke-width="8" stroke-linejoin="round" marker-end="url(#mkR)"/>
+          <path d="M274,302 H250 V240" fill="none" stroke="var(--pul)" stroke-width="8" stroke-linejoin="round" marker-end="url(#mkB)"/>
+          <!-- aurícula a ventrículo -->
+          <path d="M250,187 V167" fill="none" stroke="var(--pul)" stroke-width="6" marker-end="url(#mkB)"/>
+          <path d="M510,153 V173" fill="none" stroke="var(--art)" stroke-width="6" marker-end="url(#mkR)"/>
+          <!-- derivaciones: arterias bronquiales → pulmón → vena bronquial → venas pulmonares -->
+          <path d="M510,272 H310 V64" fill="none" stroke="var(--art)" stroke-width="4" stroke-linejoin="round" marker-end="url(#mkR)"/>
+          <path d="M440,58 V76 H504" fill="none" stroke="var(--pul)" stroke-width="4" stroke-linejoin="round" marker-end="url(#mkB)"/>
+          <!-- coronarias → miocardio → venas de Tebesio → ventrículo izquierdo -->
+          <path d="M510,262 H390 V233" fill="none" stroke="var(--art)" stroke-width="4" stroke-linejoin="round" marker-end="url(#mkR)"/>
+          <ellipse cx="390" cy="215" rx="32" ry="14" fill="var(--soft)" stroke="var(--line)" stroke-width="2"/>
+          <path d="M424,215 H458" fill="none" stroke="var(--pul)" stroke-width="4" marker-end="url(#mkB)"/>
+          <!-- cámaras: el ventrículo izquierdo tiene la pared más gruesa -->
+          <ellipse cx="250" cy="125" rx="40" ry="36" fill="var(--pul)" fill-opacity="0.2" stroke="var(--pul)" stroke-width="3"/>
+          <ellipse cx="250" cy="215" rx="34" ry="28" fill="var(--pul)" fill-opacity="0.2" stroke="var(--pul)" stroke-width="3"/>
+          <ellipse cx="510" cy="125" rx="34" ry="28" fill="var(--art)" fill-opacity="0.2" stroke="var(--art)" stroke-width="3"/>
+          <ellipse cx="510" cy="215" rx="44" ry="40" fill="var(--art)" fill-opacity="0.2" stroke="var(--art)" stroke-width="7"/>
+          <text x="250" y="130" text-anchor="middle" class="big">VD</text>
+          <text x="250" y="220" text-anchor="middle" class="big">AD</text>
+          <text x="510" y="130" text-anchor="middle" class="big">AI</text>
+          <text x="510" y="220" text-anchor="middle" class="big">VI</text>
+          <text x="318" y="170" style="font-size:11px">Arterias</text>
+          <text x="318" y="183" style="font-size:11px">bronquiales</text>
+          <text x="432" y="100" text-anchor="end" style="font-size:11px">Vena</text>
+          <text x="432" y="113" text-anchor="end" style="font-size:11px">bronquial</text>
+          <text x="390" y="219" text-anchor="middle" style="font-size:11px">Miocardio</text>
+          <text x="445" y="256" text-anchor="middle" style="font-size:11px">Coronarias</text>
+          <text x="442" y="205" text-anchor="middle" style="font-size:11px">Tebesio</text>
+          <!-- rótulos izquierda: circulación pulmonar -->
+          <text x="14" y="36" style="fill:var(--fg)">Arteria pulmonar</text>
+          <text x="14" y="52">sangre poco oxigenada</text>
+          <text x="14" y="70" class="gas">PO₂ 40 · PCO₂ 46</text>
+          <text x="14" y="108" style="fill:var(--fg)">Ventrículo derecho</text>
+          <text x="14" y="124">eyecta sangre poco</text>
+          <text x="14" y="140">oxigenada hacia los</text>
+          <text x="14" y="156">pulmones (baja presión)</text>
+          <text x="14" y="180">Presión: <tspan id="x_pap" class="big">–</tspan> mmHg</text>
+          <text x="14" y="292" style="fill:var(--fg)">Venas cavas</text>
+          <text x="14" y="308">sangre poco oxigenada</text>
+          <text x="14" y="326" class="gas">PO₂ 40 · PCO₂ 46</text>
+          <!-- rótulos derecha: circulación sistémica -->
+          <text x="530" y="36" style="fill:var(--fg)">Venas pulmonares</text>
+          <text x="530" y="52">sangre oxigenada</text>
+          <text x="530" y="70" class="gas">PO₂ 100 · PCO₂ 40</text>
+          <text x="572" y="192" style="fill:var(--fg)">Ventrículo izquierdo</text>
+          <text x="572" y="208">eyecta sangre oxigenada</text>
+          <text x="572" y="224">hacia todo el cuerpo</text>
+          <text x="572" y="240">(alta presión)</text>
+          <text x="572" y="264">Presión: <tspan id="x_pao" class="big">–</tspan> mmHg</text>
+          <text x="530" y="292" style="fill:var(--fg)">Aorta</text>
+          <text x="530" y="308">sangre oxigenada</text>
+          <text x="530" y="326" class="gas">PO₂ 95 · PCO₂ 40</text>
+        </svg>
+        <p class="keys"><span><i style="background:var(--art)"></i>Sangre oxigenada</span><span><i style="background:var(--pul)"></i>Sangre poco oxigenada</span></p>
+        <p class="legend circ-note">El ventrículo derecho recorre solo el circuito pulmonar, de baja presión. El izquierdo impulsa la sangre a todo el cuerpo contra una presión mucho mayor, por eso su pared es más gruesa. Las presiones del esquema se actualizan con la simulación.</p>
+        <p class="legend circ-note">Las arterias bronquiales nutren los pulmones y su sangre, ya poco oxigenada, vuelve por la vena bronquial a las venas pulmonares. Las venas de Tebesio drenan el miocardio directamente al ventrículo izquierdo. Las dos mezclan sangre venosa con la oxigenada: es el cortocircuito anatómico, normalmente de un 2 a un 3 % del gasto. Por eso el ventrículo izquierdo eyecta algo más que el derecho.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Gases en sangre: valores de referencia</h2>
+        <div class="tbl-wrap">
+          <table class="gas-table">
+            <thead><tr><th>Ubicación</th><th class="n">PO₂ (mmHg)</th><th class="n">PCO₂ (mmHg)</th><th class="n">Sat. de Hb</th></tr></thead>
+            <tbody>
+              <tr class="grp"><td colspan="4">Circulación menor (pulmonar)</td></tr>
+              <tr><td><i class="dot" style="background:var(--pul)"></i>Arteria pulmonar (sangre venosa mixta)</td><td class="n">40</td><td class="n">46</td><td class="n">75 %</td></tr>
+              <tr><td><i class="dot none"></i>Alvéolo y capilar pulmonar al final del recorrido</td><td class="n">104</td><td class="n">40</td><td class="n">–</td></tr>
+              <tr><td><i class="dot" style="background:var(--art)"></i>Venas pulmonares</td><td class="n">≈ 100</td><td class="n">40</td><td class="n">98 %</td></tr>
+              <tr class="grp"><td colspan="4">Circulación mayor (sistémica)</td></tr>
+              <tr><td><i class="dot" style="background:var(--art)"></i>Aorta y arterias sistémicas</td><td class="n">95 (80 a 100)</td><td class="n">40 (35 a 45)</td><td class="n">97 %</td></tr>
+              <tr><td><i class="dot none"></i>Líquido intersticial de los tejidos</td><td class="n">40</td><td class="n">45</td><td class="n">–</td></tr>
+              <tr><td><i class="dot none"></i>Interior de las células</td><td class="n">≈ 23 (5 a 40)</td><td class="n">46</td><td class="n">–</td></tr>
+              <tr><td><i class="dot" style="background:var(--pul)"></i>Venas sistémicas y venas cavas (sangre venosa mixta)</td><td class="n">40</td><td class="n">46</td><td class="n">75 %</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="legend">Valores típicos de un adulto sano a nivel del mar respirando aire ambiente. El aire inspirado ya humidificado tiene una PO₂ de unos 149 mmHg y una PCO₂ casi nula (0,3 mmHg). Las fuentes difieren en uno o dos mmHg (por ejemplo, PCO₂ venosa de 45 o 46); a mayor altitud la PO₂ baja.</p>
+        <p class="legend">El oxígeno pasa del alvéolo a la sangre por una diferencia de unos 64 mmHg (104 contra 40). El dióxido de carbono sale por una diferencia de solo unos 6 mmHg (46 contra 40), pero difunde unas 20 veces mejor. La PO₂ arterial queda por debajo de la de las venas pulmonares en parte por el cortocircuito anatómico (bronquial y de Tebesio) y por la desigualdad entre ventilación y perfusión.</p>
+      </div>
+
+      <div class="panel diag">
+        <div class="diag-head"><h2>Del pulso al flujo continuo</h2><span class="phase" id="phase">–</span></div>
+        <svg viewBox="0 0 760 290" role="img" aria-label="Esquema: el ventrículo izquierdo eyecta sangre de forma pulsátil hacia la aorta, cuya pared se distiende y la devuelve poco a poco hacia los tejidos a través de la resistencia periférica">
+          <!-- ventrículo izquierdo -->
+          <ellipse id="d_lv" cx="70" cy="140" rx="50" ry="62" fill="var(--art)" fill-opacity="0.2" stroke="var(--art)" stroke-width="3"/>
+          <text x="70" y="144" text-anchor="middle" class="big">VI</text>
+          <!-- válvula aórtica -->
+          <line id="d_valveT" x1="133" y1="114" x2="133" y2="140" stroke="var(--fg)" stroke-width="4" stroke-linecap="round"/>
+          <line id="d_valveB" x1="133" y1="140" x2="133" y2="166" stroke="var(--fg)" stroke-width="4" stroke-linecap="round"/>
+          <text x="133" y="92" text-anchor="middle">Válvula</text>
+          <!-- aorta y arterias -->
+          <rect id="d_aorta" x="200" y="86" width="240" height="108" rx="36" fill="var(--art)" fill-opacity="0.2" stroke="var(--art)" stroke-width="3"/>
+          <text id="d_pTxt" x="320" y="145" text-anchor="middle" class="big">–</text>
+          <path id="d_stT" fill="var(--art2)"/>
+          <path id="d_stB" fill="var(--art2)"/>
+          <!-- resistencia periférica -->
+          <path d="M455,110 L485,131 L525,131 L555,110 L555,170 L525,149 L485,149 L455,170 Z" fill="var(--soft)" stroke="var(--line)" stroke-width="2"/>
+          <!-- tejidos -->
+          <rect x="590" y="96" width="160" height="88" rx="8" fill="var(--ven)" fill-opacity="0.16" stroke="var(--ven)" stroke-width="3"/>
+          <text x="670" y="144" text-anchor="middle" class="big">Tejidos</text>
+          <!-- flujos -->
+          <path id="d_arIn" fill="var(--art)"/>
+          <path id="d_arOut" fill="var(--ven)"/>
+          <text x="70" y="276" text-anchor="middle">Ventrículo izquierdo</text>
+          <text x="320" y="276" text-anchor="middle">Aorta y arterias (distensibles)</text>
+          <text x="505" y="276" text-anchor="middle">Resistencia</text>
+          <text x="670" y="276" text-anchor="middle">Flujo continuo</text>
+        </svg>
+        <div class="chips">
+          <div class="chip"><span class="sw" style="background:var(--art)"></span><span class="k">Eyección del ventrículo</span><b id="chIn">–</b></div>
+          <div class="chip"><span class="sw" style="background:var(--art2)"></span><span class="k" id="chStK">Almacena en la pared</span><b id="chSt">–</b></div>
+          <div class="chip"><span class="sw" style="background:var(--ven)"></span><span class="k">Hacia los tejidos</span><b id="chOut">–</b></div>
+        </div>
+        <div class="chart-head"><h2>Flujos</h2><span class="u">l/min · últimos 4 s · almacenado en línea discontinua</span></div>
+        <canvas id="c3" class="canvas-sm" role="img" aria-label="Flujo eyectado por el ventrículo, flujo almacenado o devuelto por la pared arterial y flujo hacia los tejidos en los últimos 4 segundos"></canvas>
+        <div class="explain">
+          <p>En sístole el ventrículo eyecta más sangre de la que sale hacia los tejidos. La diferencia distiende la pared de la aorta y las arterias, que guardan ese volumen y hacen subir la presión.</p>
+          <p>Al cerrarse la válvula empieza la diástole. La pared se retrae y devuelve la sangre guardada, así que el flujo hacia los tejidos casi no se interrumpe. Con arterias más rígidas (menos compliancia) se amortigua menos y el flujo oscila más; prueba el escenario Hipertensión.</p>
+          <p class="small">El modelo agrupa la aorta y las grandes arterias en un solo compartimento elástico. En "Valores medios" no hay pulso que amortiguar.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="chart-head"><h2>Arteria sistémica</h2><span class="u">mmHg · últimos 6 s</span></div>
+        <canvas id="c1" role="img" aria-label="Presión en la arteria sistémica en los últimos 6 segundos"></canvas>
+      </div>
+      <div class="panel">
+        <div class="chart-head"><h2>Arteria pulmonar</h2><span class="u">mmHg · últimos 6 s</span></div>
+        <canvas id="c2" role="img" aria-label="Presión en la arteria pulmonar en los últimos 6 segundos"></canvas>
+      </div>
+
+      <div class="panel">
+        <h2>Dónde está la sangre</h2>
+        <div class="vols" id="vols"></div>
+        <p class="legend">Gris: volumen sin estirar (V₀). Color: volumen que genera presión. Escala 0 a 4800 ml.</p>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <h2>Escenarios</h2>
+        <div class="scen" id="scen"></div>
+        <p class="note" id="note">Elige un escenario para ver qué cambia.</p>
+      </div>
+      <div class="panel">
+        <h2>Parámetros</h2>
+        <div class="ctl" id="ctl"></div>
+        <div class="btns" style="margin-top:14px"><button id="bReset" type="button">Restablecer</button></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">Modelo de parámetros concentrados de Kulhánek, Tribula, Kofránek y Mateják, <a href="https://mj.mefanet.cz/mj-04140914" target="_blank" rel="noopener">MEFANET Journal 2014; 2(2): 56-63</a>, con los parámetros de sus Tablas 2 y 3. El flujo de cada corazón sigue un pulso sinusoidal en sístole, escalado por la presión de llenado (pendiente de Starling); esa parte es una interpretación del diagrama del artículo. La circulación bronquial y las venas de Tebesio son un añadido propio con flujos expresados como porcentaje del gasto, y la saturación arterial es una estimación didáctica por mezcla de sangre (bronquial 75 %, Tebesio 35 %, sangre pulmonar 98 %). Las presiones parciales de O₂ y CO₂ son valores típicos de referencia y el simulador no las calcula. Es una herramienta didáctica, no clínica.</p>
+</div>
+
+<script>
+// ENGINE START
+const V0 = { as: 529, vs: 2845, ap: 327, vp: 435 };   // ml, volumen sin estirar
+const CMP = { vs: 200, ap: 3.01, vp: 30 };            // ml/mmHg
+// pbr, pth: flujo bronquial y de Tebesio como % del gasto en reposo (añadido propio, no está en el artículo)
+const DEF = { hr: 72, cas: 0.97, rt: 1.0, rp: 0.07, sl: 10, sr: 16.67, vol: 0, pbr: 1.5, pth: 0.5 };
+const Y_INIT = [603, 3991, 373, 704];                 // ml: art. sistémicas, venas sist., art. pulm., venas pulm.
+const MEAN_SHAPE = 0.8 / Math.PI;
+
+function shape(tc, hp) {
+  const td1 = 0.07, td2 = td1 + 0.4 * hp;
+  return tc >= td1 && tc < td2 ? Math.sin((tc - td1) / (td2 - td1) * Math.PI) : 0;
+}
+function deriv(y, k, P) {
+  const pas = (y[0] - V0.as) / P.cas, pvs = (y[1] - V0.vs) / CMP.vs;
+  const pap = (y[2] - V0.ap) / CMP.ap, pvp = (y[3] - V0.vp) / CMP.vp;
+  const qs = (pas - pvs) / P.rt, qp = (pap - pvp) / P.rp;
+  const qR = P.sr * Math.max(pvs, 0) * k, qL = P.sl * Math.max(pvp, 0) * k;
+  // arterias bronquiales: aorta → tejido pulmonar → vena bronquial → venas pulmonares (salta el corazón derecho).
+  // Las venas de Tebesio salen de la aorta (coronarias) y vuelven al ventrículo izquierdo: no cambian el balance
+  // de volúmenes de este modelo y solo se contabilizan en pressures().
+  const qbr = Math.max(P.pbr * 0.0105 * (pas - pvp), 0);
+  return [qL - qs - qbr, qs - qR, qR - qp, qp - qL + qbr];
+}
+function pressures(y, P) {
+  return {
+    pas: (y[0] - V0.as) / P.cas, pvs: (y[1] - V0.vs) / CMP.vs,
+    pap: (y[2] - V0.ap) / CMP.ap, pvp: (y[3] - V0.vp) / CMP.vp,
+    qs: ((y[0] - V0.as) / P.cas - (y[1] - V0.vs) / CMP.vs) / P.rt,
+    qbr: Math.max(P.pbr * 0.0105 * ((y[0] - V0.as) / P.cas - (y[3] - V0.vp) / CMP.vp), 0),
+    qth: Math.max(P.pth * 0.01 * ((y[0] - V0.as) / P.cas - (y[1] - V0.vs) / CMP.vs), 0)
+  };
+}
+// Flujo que expulsa el corazón izquierdo en este instante (ml/s)
+function inflow(y, tc, P, pulsatile) {
+  const hp = 60 / P.hr;
+  const k = pulsatile ? shape(tc % hp, hp) / MEAN_SHAPE : 1;
+  return P.sl * Math.max((y[3] - V0.vp) / CMP.vp, 0) * k;
+}
+// Un paso RK4. Devuelve la nueva fase del ciclo cardíaco.
+function step(y, tc, dt, P, pulsatile) {
+  const hp = 60 / P.hr;
+  tc = tc % hp;
+  const kAt = (ph) => pulsatile ? shape(ph % hp, hp) / MEAN_SHAPE : 1;
+  const k1 = kAt(tc), k2 = kAt(tc + dt / 2), k3 = k2, k4 = kAt(tc + dt);
+  const a = deriv(y, k1, P);
+  const b = deriv(y.map((v, i) => v + a[i] * dt / 2), k2, P);
+  const c = deriv(y.map((v, i) => v + b[i] * dt / 2), k3, P);
+  const d = deriv(y.map((v, i) => v + c[i] * dt), k4, P);
+  for (let i = 0; i < 4; i++) y[i] += dt / 6 * (a[i] + 2 * b[i] + 2 * c[i] + d[i]);
+  tc += dt;
+  if (tc >= hp) tc -= hp;
+  return tc;
+}
+// ENGINE END
+
+// ---------- estado
+const P = { ...DEF };
+let y = Y_INIT.slice();
+let tc = 0, simT = 0, sampAcc = 0;
+let pulsatile = true, running = true, speed = 1;
+const S = { t: [], pas: [], pap: [], pvs: [], qs: [], qin: [], qbr: [], qth: [] };
+const WINDOW = 6;
+
+// ---------- controles
+const SL = [
+  { k: "hr",  label: "Frecuencia cardíaca", unit: "lpm",         min: 40,   max: 180, step: 1 },
+  { k: "cas", label: "Compliancia arterial sistémica", unit: "ml/mmHg", min: 0.4, max: 3, step: 0.01 },
+  { k: "rt",  label: "Resistencia sistémica", unit: "mmHg·s/ml", min: 0.4,  max: 2.5, step: 0.01 },
+  { k: "rp",  label: "Resistencia pulmonar",  unit: "mmHg·s/ml", min: 0.03, max: 0.4, step: 0.005 },
+  { k: "sl",  label: "Bombeo corazón izquierdo", unit: "ml/(mmHg·s)", min: 2, max: 20, step: 0.1 },
+  { k: "sr",  label: "Bombeo corazón derecho",   unit: "ml/(mmHg·s)", min: 4, max: 30, step: 0.1 },
+  { k: "vol", label: "Volumen de sangre añadido o perdido", unit: "ml", min: -800, max: 1000, step: 50 },
+  { k: "pbr", label: "Flujo de las arterias bronquiales", unit: "% del gasto", min: 0, max: 10, step: 0.1 },
+  { k: "pth", label: "Flujo de las venas de Tebesio", unit: "% del gasto", min: 0, max: 5, step: 0.1 }
+];
+const fmtVal = (k, v) => k === "rp" ? v.toFixed(3) : (k === "hr" || k === "vol") ? String(Math.round(v)) : (k === "pbr" || k === "pth") ? v.toFixed(1) : v.toFixed(2);
+const ctl = document.getElementById("ctl");
+const rows = {}, inputs = {}, outs = {};
+SL.forEach(s => {
+  const row = document.createElement("div"); row.className = "row";
+  row.innerHTML = `<div class="top"><label for="s_${s.k}">${s.label}</label><output id="o_${s.k}" for="s_${s.k}"></output></div>
+    <input type="range" id="s_${s.k}" min="${s.min}" max="${s.max}" step="${s.step}">`;
+  ctl.appendChild(row);
+  rows[s.k] = row; inputs[s.k] = row.querySelector("input"); outs[s.k] = row.querySelector("output");
+  inputs[s.k].addEventListener("input", () => { setParam(s.k, parseFloat(inputs[s.k].value)); clearScenario(); });
+});
+function setParam(k, v) {
+  if (k === "vol") y[1] += v - P.vol;           // la sangre añadida o perdida pasa por las venas sistémicas
+  P[k] = v;
+  inputs[k].value = v;
+  const s = SL.find(x => x.k === k);
+  outs[k].textContent = fmtVal(k, v) + " " + s.unit;
+  if (k === "hr") tc = tc % (60 / v);
+}
+function applyMode() {
+  document.getElementById("mPul").setAttribute("aria-pressed", pulsatile);
+  document.getElementById("mMed").setAttribute("aria-pressed", !pulsatile);
+  rows.hr.classList.toggle("off", !pulsatile);
+  inputs.hr.disabled = !pulsatile;
+}
+document.getElementById("mPul").onclick = () => { pulsatile = true; applyMode(); };
+document.getElementById("mMed").onclick = () => { pulsatile = false; applyMode(); };
+document.getElementById("bPlay").onclick = (e) => { running = !running; e.target.textContent = running ? "Pausar" : "Reanudar"; };
+document.getElementById("speed").onchange = (e) => { speed = parseFloat(e.target.value); };
+
+// ---------- escenarios
+const SCEN = [
+  { n: "Reposo", set: {}, d: "Valores de referencia del artículo: unos 120/75 mmHg y 5 a 6 l/min de gasto." },
+  { n: "Ejercicio", set: { hr: 140, rt: 0.6, sl: 14, sr: 22 }, d: "Sube la frecuencia, bajan las resistencias y los corazones bombean más. El gasto aumenta mucho." },
+  { n: "Hipertensión", set: { rt: 1.8, cas: 0.6 }, d: "Resistencia alta y arterias rígidas: sube la presión arterial y se ensancha la diferencia entre sistólica y diastólica." },
+  { n: "Fallo izquierdo", set: { sl: 4 }, d: "El corazón izquierdo bombea poco: la sangre se acumula en el pulmón y sube la presión pulmonar mientras cae la sistémica." },
+  { n: "Fallo derecho", set: { sr: 5 }, d: "El corazón derecho no vacía las venas: sube la presión venosa central y cae el gasto." },
+  { n: "Hemorragia", set: { vol: -600 }, d: "Se pierde sangre de las venas, que son el mayor depósito. Cae el llenado del corazón, el gasto y la presión." },
+  { n: "Sobrecarga de volumen", set: { vol: 800 }, d: "Se añade sangre: sube la presión venosa y, por Starling, aumenta el gasto hasta saturar la circulación." },
+  { n: "Cortocircuito elevado", set: { pbr: 8, pth: 3 }, d: "Arterias bronquiales dilatadas y más drenaje de Tebesio: más sangre venosa se mezcla con la oxigenada. Sube el cortocircuito y baja la saturación arterial estimada." }
+];
+const scenEl = document.getElementById("scen"), noteEl = document.getElementById("note");
+SCEN.forEach((s, i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = s.n; b.setAttribute("aria-pressed", "false");
+  b.onclick = () => {
+    SL.forEach(x => setParam(x.k, s.set[x.k] !== undefined ? s.set[x.k] : DEF[x.k]));
+    [...scenEl.children].forEach(c => c.setAttribute("aria-pressed", "false"));
+    b.setAttribute("aria-pressed", "true");
+    noteEl.textContent = s.d;
+  };
+  scenEl.appendChild(b);
+});
+function clearScenario() {
+  [...scenEl.children].forEach(c => c.setAttribute("aria-pressed", "false"));
+  noteEl.textContent = "Parámetros modificados a mano.";
+}
+document.getElementById("bReset").onclick = () => {
+  y = Y_INIT.slice(); tc = 0; simT = 0; sampAcc = 0;
+  for (const k in S) S[k].length = 0;
+  P.vol = 0;
+  SL.forEach(x => setParam(x.k, DEF[x.k]));
+  [...scenEl.children].forEach(c => c.setAttribute("aria-pressed", "false"));
+  scenEl.children[0].setAttribute("aria-pressed", "true");
+  noteEl.textContent = SCEN[0].d;
+};
+
+// ---------- volúmenes
+const VOL = [
+  { n: "Arterias sistémicas", i: 0, v0: V0.as, c: "var(--art)" },
+  { n: "Venas sistémicas",    i: 1, v0: V0.vs, c: "var(--ven)" },
+  { n: "Arterias pulmonares", i: 2, v0: V0.ap, c: "var(--pul)" },
+  { n: "Venas pulmonares",    i: 3, v0: V0.vp, c: "var(--ven2)" }
+];
+const VMAX = 4800;
+const volsEl = document.getElementById("vols");
+VOL.forEach(v => {
+  const r = document.createElement("div"); r.className = "vrow";
+  r.innerHTML = `<span class="n">${v.n}</span><div class="bar" style="color:${v.c}"><i class="st"></i><i class="u0"></i></div><span class="m"></span>`;
+  volsEl.appendChild(r);
+  v.st = r.querySelector(".st"); v.u0 = r.querySelector(".u0"); v.m = r.querySelector(".m");
+});
+function updateVols() {
+  VOL.forEach(v => {
+    const tot = Math.max(y[v.i], 0);
+    v.st.style.width = Math.min(tot / VMAX * 100, 100) + "%";
+    v.u0.style.width = Math.min(v.v0 / VMAX * 100, 100) + "%";
+    v.m.textContent = Math.round(tot) + " ml";
+  });
+}
+
+// ---------- lecturas
+const el = id => document.getElementById(id);
+function updateReads() {
+  const n = S.t.length;
+  if (n < 5) return;
+  const hp = 60 / P.hr, tNow = S.t[n - 1];
+  let i0 = n - 1;
+  while (i0 > 0 && S.t[i0 - 1] > tNow - hp) i0--;
+  const win = (arr) => { let mn = Infinity, mx = -Infinity, sm = 0; for (let i = i0; i < n; i++) { const v = arr[i]; if (v < mn) mn = v; if (v > mx) mx = v; sm += v; } return { mn, mx, mean: sm / (n - i0) }; };
+  const a = win(S.pas), p = win(S.pap), q = win(S.qs), c = win(S.pvs);
+  el("rBP").textContent = Math.round(a.mx) + "/" + Math.round(a.mn);
+  el("rMAP").textContent = Math.round(a.mean);
+  el("rPAP").textContent = Math.round(p.mx) + "/" + Math.round(p.mn);
+  el("rCO").textContent = (q.mean * 0.06).toFixed(1);
+  el("rCVP").textContent = c.mean.toFixed(1);
+  // sangre venosa que se mezcla con la oxigenada (bronquial: ~75 % sat.; Tebesio: ~35 %; sangre pulmonar: 98 %)
+  const br = win(S.qbr), th = win(S.qth);
+  const lvOut = q.mean + br.mean + th.mean;
+  const fb = br.mean / lvOut, ft = th.mean / lvOut;
+  el("rSH").textContent = ((fb + ft) * 100).toFixed(1);
+  el("rSAT").textContent = (98 * (1 - fb - ft) + 75 * fb + 35 * ft).toFixed(1);
+}
+
+// ---------- gráficos
+function drawChart(cv, data, color, o, col) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const L = 36, R = 8, T = 8, B = 20, pw = w - L - R, ph = h - T - B;
+  const now = simT, t0 = now - WINDOW;
+  let mx = 0;
+  for (let i = 0; i < S.t.length; i++) if (S.t[i] >= t0 && data[i] > mx) mx = data[i];
+  const yMax = Math.max(o.min, Math.ceil(mx / o.step) * o.step);
+  const yy = v => T + ph - (Math.max(v, 0) / yMax) * ph;
+  g.font = "11px " + col.font; g.textBaseline = "middle"; g.textAlign = "right";
+  g.lineWidth = 1;
+  const tick = yMax / 4;
+  for (let i = 0; i <= 4; i++) {
+    const v = tick * i, py = Math.round(yy(v)) + 0.5;
+    g.strokeStyle = col.line; g.beginPath(); g.moveTo(L, py); g.lineTo(L + pw, py); g.stroke();
+    g.fillStyle = col.muted; g.fillText(String(Math.round(v)), L - 6, py);
+  }
+  g.textBaseline = "alphabetic"; g.textAlign = "center";
+  [[0, "−6 s"], [0.5, "−3 s"], [1, "ahora"]].forEach(([f, s]) => {
+    g.fillStyle = col.muted;
+    g.textAlign = f === 0 ? "left" : f === 1 ? "right" : "center";
+    g.fillText(s, L + f * pw, h - 5);
+  });
+  g.strokeStyle = color; g.lineWidth = 2; g.lineJoin = "round"; g.beginPath();
+  let started = false;
+  for (let i = 0; i < S.t.length; i++) {
+    if (S.t[i] < t0) continue;
+    const px = L + (S.t[i] - t0) / WINDOW * pw, py = yy(data[i]);
+    if (!started) { g.moveTo(px, py); started = true; } else g.lineTo(px, py);
+  }
+  g.stroke();
+}
+
+// ---------- gráfico de flujos (varias series, con valores negativos)
+function drawMulti(cv, series, win, col) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const L = 36, R = 8, T = 8, B = 20, pw = w - L - R, ph = h - T - B;
+  const t0 = simT - win;
+  let mn = 0, mx = 0;
+  for (let i = 0; i < S.t.length; i++) {
+    if (S.t[i] < t0) continue;
+    for (const s of series) { const v = s.f(i); if (v < mn) mn = v; if (v > mx) mx = v; }
+  }
+  const range = mx - mn, step = range > 80 ? 20 : range > 40 ? 10 : 5;
+  const yMin = Math.floor(mn / step) * step, yMax = Math.max(Math.ceil(mx / step) * step, yMin + step);
+  const yy = v => T + ph - (v - yMin) / (yMax - yMin) * ph;
+  g.font = "11px " + col.font; g.textAlign = "right"; g.textBaseline = "middle"; g.lineWidth = 1;
+  for (let v = yMin; v <= yMax + 1e-9; v += step) {
+    const py = Math.round(yy(v)) + 0.5;
+    g.strokeStyle = v === 0 ? col.muted : col.line; g.beginPath(); g.moveTo(L, py); g.lineTo(L + pw, py); g.stroke();
+    g.fillStyle = col.muted; g.fillText(String(v), L - 6, py);
+  }
+  g.textBaseline = "alphabetic";
+  g.fillStyle = col.muted; g.textAlign = "left"; g.fillText("−" + win + " s", L, h - 5);
+  g.textAlign = "right"; g.fillText("ahora", L + pw, h - 5);
+  g.lineJoin = "round"; g.lineWidth = 2;
+  for (const s of series) {
+    g.strokeStyle = s.color; g.setLineDash(s.dash || []); g.beginPath();
+    let started = false;
+    for (let i = 0; i < S.t.length; i++) {
+      if (S.t[i] < t0) continue;
+      const px = L + (S.t[i] - t0) / win * pw, py = yy(s.f(i));
+      if (!started) { g.moveTo(px, py); started = true; } else g.lineTo(px, py);
+    }
+    g.stroke();
+  }
+  g.setLineDash([]);
+}
+
+// ---------- diagrama animado
+const YC = 140;
+const D = {};
+["lv", "valveT", "valveB", "arIn", "arOut", "aorta", "stT", "stB", "pTxt"].forEach(k => { D[k] = document.getElementById("d_" + k); });
+function arrowPath(x1, x2, w) {
+  if (w < 0.8) return "";
+  const hw = w / 2, hh = Math.max(hw + 4, 8), xb = x2 - Math.min(14, (x2 - x1) * 0.5);
+  return `M${x1},${YC - hw}L${xb},${YC - hw}L${xb},${YC - hh}L${x2},${YC}L${xb},${YC + hh}L${xb},${YC + hw}L${x1},${YC + hw}Z`;
+}
+// flecha vertical sobre la pared: hacia fuera (almacena) o hacia dentro (devuelve)
+function wallArrow(x, yWall, len, outward, bottom) {
+  const m = y0 => bottom ? 2 * YC - y0 : y0;
+  const tipY = outward ? yWall - len : yWall;
+  const tailY = outward ? yWall : yWall - len;
+  const head = 9, d = outward ? 1 : -1;
+  const hb = tipY + d * head;
+  const pts = [[x - 2.5, tailY], [x + 2.5, tailY], [x + 2.5, hb], [x + 6.5, hb], [x, tipY], [x - 6.5, hb], [x - 2.5, hb]];
+  return "M" + pts.map(p => p[0] + "," + m(p[1])).join("L") + "Z";
+}
+const lpm = v => (v * 0.06).toFixed(1) + " l/min";
+function updateDiagram() {
+  const n = S.t.length;
+  if (!n) return;
+  el("x_pap").textContent = Math.round(S.pap[n - 1]);
+  el("x_pao").textContent = Math.round(S.pas[n - 1]);
+  const qin = S.qin[n - 1], qout = Math.max(S.qs[n - 1], 0), st = qin - S.qs[n - 1];
+  const vst = Math.max(y[0] - V0.as, 0);
+  const H = Math.min(176, 36 + vst * 0.9), top = YC - H / 2;
+  D.aorta.setAttribute("y", top); D.aorta.setAttribute("height", H);
+  D.pTxt.textContent = Math.round(S.pas[n - 1]) + " mmHg";
+  D.arIn.setAttribute("d", arrowPath(142, 196, 2 + Math.min(qin, 400) / 350 * 16));
+  D.arOut.setAttribute("d", arrowPath(440, 585, Math.min(2 + Math.min(qout, 400) / 350 * 16, 16)));
+  D.lv.setAttribute("ry", 62 - 16 * Math.min(qin / 350, 1.1));
+  D.lv.setAttribute("rx", 50 - 8 * Math.min(qin / 350, 1.1));
+  const gap = Math.min(12, qin / 30 * 12);
+  D.valveT.setAttribute("y1", YC - 26); D.valveT.setAttribute("y2", YC - gap);
+  D.valveB.setAttribute("y1", YC + gap); D.valveB.setAttribute("y2", YC + 26);
+  const len = Math.min(26, 3 + Math.abs(st) / 200 * 22), show = Math.abs(st) > 3;
+  D.stT.setAttribute("d", show ? wallArrow(320, top, len, st > 0, false) : "");
+  D.stB.setAttribute("d", show ? wallArrow(320, top, len, st > 0, true) : "");
+  el("chIn").textContent = lpm(qin);
+  el("chStK").textContent = st >= 0 ? "Almacena en la pared" : "Devuelve la pared";
+  el("chSt").textContent = (st >= 0 ? "+" : "−") + lpm(Math.abs(st));
+  el("chOut").textContent = lpm(qout);
+  el("phase").textContent = !pulsatile ? "Flujo medio constante" : qin > 1 ? "Sístole · válvula abierta" : "Diástole · válvula cerrada";
+}
+
+// ---------- bucle
+let last = performance.now(), lastRead = 0;
+function frame(nowMs) {
+  const dtReal = Math.min((nowMs - last) / 1000, 0.05);
+  last = nowMs;
+  if (running) {
+    let todo = dtReal * speed;
+    const dt = 0.001;
+    while (todo > 1e-9) {
+      const h = Math.min(dt, todo);
+      tc = step(y, tc, h, P, pulsatile);
+      simT += h; sampAcc += h; todo -= h;
+      if (sampAcc >= 0.01) {
+        sampAcc -= 0.01;
+        const p = pressures(y, P);
+        S.t.push(simT); S.pas.push(p.pas); S.pap.push(p.pap); S.pvs.push(p.pvs); S.qs.push(p.qs); S.qin.push(inflow(y, tc, P, pulsatile)); S.qbr.push(p.qbr); S.qth.push(p.qth);
+        if (S.t.length > 800) for (const k in S) S[k].shift();
+      }
+    }
+  }
+  const cs = getComputedStyle(document.documentElement);
+  const col = { line: cs.getPropertyValue("--line").trim(), muted: cs.getPropertyValue("--muted").trim(), font: cs.getPropertyValue("--font-data").trim() };
+  drawChart(el("c1"), S.pas, cs.getPropertyValue("--art").trim(), { min: 140, step: 20 }, col);
+  drawChart(el("c2"), S.pap, cs.getPropertyValue("--pul").trim(), { min: 40, step: 10 }, col);
+  drawMulti(el("c3"), [
+    { f: i => S.qin[i] * 0.06, color: cs.getPropertyValue("--art").trim() },
+    { f: i => (S.qin[i] - S.qs[i]) * 0.06, color: cs.getPropertyValue("--art2").trim(), dash: [5, 4] },
+    { f: i => S.qs[i] * 0.06, color: cs.getPropertyValue("--ven").trim() }
+  ], 4, col);
+  updateDiagram();
+  if (nowMs - lastRead > 150) { lastRead = nowMs; updateReads(); updateVols(); }
+  requestAnimationFrame(frame);
+}
+
+// ---------- arranque con la simulación ya en marcha (4 s de calentamiento)
+SL.forEach(s => setParam(s.k, DEF[s.k]));
+applyMode();
+scenEl.children[0].setAttribute("aria-pressed", "true");
+noteEl.textContent = SCEN[0].d;
+for (let i = 0; i < 4000; i++) {
+  tc = step(y, tc, 0.001, P, true); simT += 0.001; sampAcc += 0.001;
+  if (sampAcc >= 0.01) { sampAcc -= 0.01; const p = pressures(y, P); S.t.push(simT); S.pas.push(p.pas); S.pap.push(p.pap); S.pvs.push(p.pvs); S.qs.push(p.qs); S.qin.push(inflow(y, tc, P, pulsatile)); S.qbr.push(p.qbr); S.qth.push(p.qth); }
+}
+updateReads(); updateVols();
+requestAnimationFrame(t => { last = t; frame(t); });
+</script>
+
+</body></html>
