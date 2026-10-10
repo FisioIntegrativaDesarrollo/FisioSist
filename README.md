@@ -1,350 +1,109 @@
-# FisioSist
+# Simuladores interactivos de Fisiología
 
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Potencial de acción ventricular humano (O'Hara-Rudy 2011)</title>
-<style>
-:root{--bg:#fff;--fg:#1d1d1f;--mut:#6b6b70;--card:#f5f5f7;--line:#d6d6db;--ap:#c0392b;--tr:#2471a3;--ac:#c0392b}
-@media(prefers-color-scheme:dark){:root{--bg:#161618;--fg:#ececf0;--mut:#9a9aa2;--card:#222226;--line:#3a3a40;--ap:#ff7b6b;--tr:#6cb4e8;--ac:#ff7b6b}}
-*{box-sizing:border-box}
-body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;max-width:980px;margin-inline:auto}
-h1{font-size:1.3rem;margin:0 0 4px}
-p.s{color:var(--mut);margin:0 0 14px;font-size:.9rem}
-canvas{width:100%;height:230px;display:block;background:var(--card);border-radius:10px}
-.lbl{display:flex;justify-content:space-between;align-items:center;margin:12px 0 6px;font-size:.85rem;color:var(--mut)}
-select,button{font:inherit;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
-.ro{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
-.ro div{background:var(--card);border-radius:10px;padding:8px 10px;font-size:.78rem;color:var(--mut)}
-.ro b{display:block;font-size:1.15rem;color:var(--fg);font-variant-numeric:tabular-nums}
-.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 24px;margin-top:6px}
-.ctl label{display:block;font-size:.85rem}
-.ctl label span{float:right;font-variant-numeric:tabular-nums;color:var(--mut)}
-input[type=range]{width:100%;accent-color:var(--ac)}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-details{margin-top:16px;background:var(--card);border-radius:10px;padding:10px 14px;font-size:.88rem}
-summary{cursor:pointer;font-weight:600}
-</style>
-</head>
-<body>
-<h1>Potencial de acción de un cardiomiocito ventricular humano</h1>
-<p class="s">Modelo de célula única O'Hara-Rudy (ORd, 2011) con tres tipos celulares transmurales (endocardio, epicardio y célula M), dinámica completa de Ca²⁺ y activación por CaMKII. Estimulación periódica; los parámetros iniciales son el estado estacionario a 1 Hz.</p>
+Colección de simulaciones interactivas para la docencia de fisiología, desarrolladas por **FisioIntegrativaDesarrollo**. Cada simulación es una página web independiente que se abre en el navegador, sin instalar nada.
 
-<canvas id="cv"></canvas>
-<div class="lbl"><span>Traza adicional:
-  <select id="sel">
-    <option value="INa">I_Na (Na⁺ rápida)</option>
-    <option value="INaL">I_NaL (Na⁺ tardía)</option>
-    <option value="Ito">I_to (K⁺ transitoria)</option>
-    <option value="ICaL" selected>I_CaL (Ca²⁺ tipo L)</option>
-    <option value="IKr">I_Kr (K⁺ rápido)</option>
-    <option value="IKs">I_Ks (K⁺ lento)</option>
-    <option value="IK1">I_K1 (rectificador entrante)</option>
-    <option value="INaCa">I_NaCa (intercambiador Na⁺/Ca²⁺)</option>
-    <option value="INaK">I_NaK (bomba Na⁺/K⁺)</option>
-    <option value="Cai">[Ca²⁺] citosólico (nM)</option>
-    <option value="Cass">[Ca²⁺] subespacio dinámico (nM)</option>
-    <option value="Cajsr">[Ca²⁺] en el RS de liberación (mM)</option>
-    <option value="Nai">[Na⁺] intracelular (mM)</option>
-  </select></span><span id="unit"></span></div>
-<canvas id="cv2"></canvas>
+**Sitio web:** https://fisiointegrativadesarrollo.github.io/FisioSist/
 
-<div class="ro">
-  <div>V<sub>m</sub> (mV)<b id="rV">–</b></div>
-  <div>APD90 (ms)<b id="rA">–</b></div>
-  <div>V reposo (mV)<b id="rR">–</b></div>
-  <div>Pico (mV)<b id="rP">–</b></div>
-  <div>dV/dt máx (V/s)<b id="rD">–</b></div>
-  <div>[Ca²⁺]<sub>i</sub> pico (nM)<b id="rC">–</b></div>
-</div>
+## Simulaciones
 
-<div class="row">
-  <label style="display:flex;align-items:center;gap:6px;font-size:.9rem">Tipo celular
-    <select id="ct"><option value="0">Endocardio</option><option value="1">Epicardio</option><option value="2">Célula M</option></select></label>
-  <label style="display:flex;align-items:center;gap:6px;font-size:.9rem"><input type="checkbox" id="ov"> Superponer último latido y referencia</label>
-  <button id="bp">Pausar</button>
-  <button id="bs">Guardar referencia</button>
-  <button id="br">Reiniciar</button>
-  <button id="bz">Restablecer parámetros</button>
-  <span id="eff" style="font-size:.8rem;color:var(--mut);align-self:center"></span>
-</div>
+### Fisiología cardiovascular
 
+| Simulación | Archivo |
+|---|---|
+| Potencial de acción del nodo sinusal (modelo de Fabbri 2017) | `potencial_nodo_sinusal_fabbri2017.html` |
+| Potencial de acción ventricular humano (modelo de O'Hara-Rudy 2011) | `potencial_ventricular_ord2011.html` |
+| ECG y bucle presión-volumen | `ecg_bucle_presion_volumen.html` |
+| Frank-Starling y asa presión-volumen | `modelo_frank_starling.html` |
+| Simulador circulatorio | `simulador_circulatorio.html` |
+| Física de fluidos y hemodinámica del sistema circulatorio | `fisica_fluidos_hemodinamica_circulatorio.html` |
 
-<div class="ctl" id="ctl"></div>
+### Microcirculación
 
-<details>
-<summary>Cómo interpretar el potencial y experimentos sugeridos</summary>
-<p><b>Fase 0:</b> I<sub>Na</sub> despolariza la célula (≈ 250 V/s). <b>Fase 1:</b> repolarización parcial por I<sub>to</sub> (más marcada en epicardio y célula M, que tienen cuatro veces más I<sub>to</sub> y la muesca característica). <b>Fase 2 (meseta):</b> I<sub>CaL</sub> entrante frente a I<sub>Kr</sub>, I<sub>Ks</sub> e I<sub>NaCa</sub>; la entrada de Ca²⁺ dispara su liberación del retículo sarcoplásmico (RyR). <b>Fase 3:</b> I<sub>Kr</sub>, I<sub>Ks</sub> e I<sub>K1</sub> repolarizan. <b>Fase 4:</b> I<sub>K1</sub> mantiene el reposo cerca de −88 mV. La activación por CaMKII (variable CaMKt) modifica I<sub>Na</sub>, I<sub>NaL</sub>, I<sub>to</sub>, I<sub>CaL</sub>, RyR y SERCA.</p>
-<p><b>Tipos celulares (control, 1 Hz, estado estacionario):</b> APD90 de 268 ms en endocardio, 228 ms en epicardio y 330 ms en célula M; la heterogeneidad transmural procede de las diferencias de I<sub>to</sub>, I<sub>CaL</sub>, I<sub>Kr</sub>, I<sub>Ks</sub>, I<sub>K1</sub>, I<sub>NaCa</sub> y SERCA entre capas. Usa «Guardar referencia» y cambia de tipo celular con «Superponer» activado para compararlos.</p>
-<p><b>Experimentos (endocardio, 1 Hz, tras 8 latidos de la intervención):</b> I<sub>Kr</sub> al 50 %: APD90 380 ms; al 10 %: 632 ms. I<sub>Ks</sub> al 0 %: solo 285 ms (reserva de repolarización: bloquear I<sub>Ks</sub> aislada casi no alarga). I<sub>CaL</sub> al 50 %: 230 ms. I<sub>NaL</sub> ×3 (tipo QT largo 3): 314 ms. I<sub>Na</sub> al 50 %: dV/dt máx de 253 a 119 V/s. Ciclo de 500 ms: 241 ms; de 2000 ms: 279 ms (dependencia de la frecuencia). [K⁺]<sub>o</sub> = 3,5 mM: reposo −99,5 mV y APD90 306 ms; 8 mM: reposo −77,5 mV, upstroke más lento (82 V/s). RyR al 0 %: el [Ca²⁺]<sub>i</sub> pico baja de 360 a 138 nM y el APD90 sube a 330 ms (se pierde la inactivación dependiente de Ca²⁺). <b>Proarritmia:</b> célula M con I<sub>Kr</sub> al 30 % y ciclo de 2000 ms: APD90 ≈ 980 ms con posdespolarizaciones tempranas.</p>
-<p><b>Notas del modelo:</b> el estado inicial es el estado estacionario a 1 Hz tras 500 latidos de pre-estimulación (calculado previamente). Si cambias el ciclo o bloqueas corrientes, el APD responde en pocos latidos, pero las concentraciones de Na⁺ y K⁺ intracelulares tardan cientos de latidos en equilibrarse, por lo que los valores medidos son los de la respuesta de unos pocos latidos. La integración usa Rush-Larsen para las compuertas y Euler con paso adaptativo (5–25 µs); frente a un paso fijo de 2 µs el APD90 difiere en 0,3 ms. El estímulo es de −80 µA/µF durante 0,5 ms. Si tu equipo es lento, la simulación se ralentiza sola y se indica la velocidad real.</p>
-<p><b>Referencia:</b> O'Hara T, Virág L, Varró A, Rudy Y (2011) Simulation of the undiseased human cardiac ventricular action potential: model formulation and experimental validation. PLoS Comput Biol 7(5):e1002061. Ecuaciones portadas de la codificación CellML del Physiome Model Repository (models.physiomeproject.org/e/639), que a su vez reproduce el código MATLAB de los autores (Rudy Lab, GPL v3).</p>
-</details>
+| Simulación | Archivo |
+|---|---|
+| Intercambio capilar | `intercambio_capilar.html` |
 
+### Fisiología respiratoria
 
+| Simulación | Archivo |
+|---|---|
+| Intercambio de O₂ y CO₂ en el capilar pulmonar | `intercambio_o2_co2_capilar_pulmonar.html` |
+| Dinámica respiratoria: presiones, diafragma y difusión de gases | `dinamica_respiratoria_presiones_difusion.html` |
+| Física de fluidos en el sistema respiratorio (8 módulos con definiciones) | `fisica_fluidos_sistema_respiratorio.html` |
 
-<script>
-"use strict";
-// O'Hara, Virag, Varro & Rudy (2011) PLoS Comput Biol 7:e1002061. Port del CellML de Physiome (e/639).
-// Tiempo en ms, V en mV, corrientes en µA/µF, concentraciones en mM.
-const RG=8314,TK=310,FA=96485,cao=1.8,nao=140,FRT=FA/(RG*TK);
-const rad=0.0011,Lc=0.01,vcell=1000*3.14*rad*rad*Lc,Acap=2*(2*3.14*rad*rad+2*3.14*rad*Lc);
-const vmyo=0.68*vcell,vnsr=0.0552*vcell,vjsr=0.0048*vcell,vss=0.02*vcell;
-const DEF={ct:0,BCL:1000,Na:1,NaL:1,to:1,CaL:1,Kr:1,Ks:1,K1:1,NaCa:1,NaK:1,Up:1,Rel:1,Ko:5.4,spd:1};
-let P={...DEF},K={};
-function prep(){
-  const ep=P.ct===1,M=P.ct===2;K.epi=ep;K.relM=M?1.7:1;K.ko=P.Ko;
-  K.cmdn=ep?0.065:0.05;K.GNa=75*P.Na;K.GNaL=(ep?0.0045:0.0075)*P.NaL;K.Gto=((ep||M)?0.08:0.02)*P.to;
-  const pca=(ep?1.2e-4:M?2.5e-4:1e-4)*P.CaL;K.PCa=pca;K.PCap=1.1*pca;K.PCaNa=0.00125*pca;K.PCaK=0.0003574*pca;K.PCaNap=0.00125*K.PCap;K.PCaKp=0.0003574*K.PCap;
-  K.GKr=(ep?0.046*1.3:M?0.046*0.8:0.046)*P.Kr;K.GKs=(ep?0.0034*1.4:0.0034)*P.Ks;K.GK1=(ep?0.1908*1.2:M?0.1908*1.3:0.1908)*P.K1;
-  K.Gncx=(ep?0.0008*1.1:M?0.0008*1.4:0.0008)*P.NaCa;K.Pnak=(ep?27:M?21:30)*P.NaK;K.GKb=ep?0.0018:0.003;
-  K.up=(ep?1.3:1)*P.Up;K.arel=2.375*P.Rel;K.arelp=0.5*1.25*4.75*P.Rel;
-  const h10=12.5+1+(nao/15)*(1+nao/5);K.h11=nao*nao/(h10*15*5);K.h12=1/h10;K.k1=K.h12*cao*1.5e6;
-  K.a4=((639*9.8)/1.698e-7)/(1+9.8/1.698e-7);K.b1=182.4*0.05;
-}
-const init=()=>({v:-87,CaMKt:0,cass:1e-4,nai:7,nass:7,ki:145,kss:145,cansr:1.2,cajsr:1.2,cai:1e-4,m:0,hf:1,hs:1,j:1,hsp:1,jp:1,mL:0,hL:1,hLp:1,a:0,iF:1,iS:1,ap:0,iFp:1,iSp:1,d:0,ff:1,fs:1,fcaf:1,fcas:1,jca:1,ffp:1,fcafp:1,nca:0,xrf:0,xrs:0,xs1:0,xs2:0,xk1:1,Jrelnp:0,Jrelp:0,t:0,dv:0});
-let S=init();const I={};
-const ex=Math.exp,nz=x=>Math.abs(x)<1e-9?1e-9:x;
-function rl(x,xi,tau,dt){return xi+(x-xi)*ex(-dt/tau);}
-function step(dt,Ist){
-  const s=S,v=s.v,vfrt=v*FRT,vffrt=v*FA*FRT,vn=nz(v),vfrtn=vn*FRT,vffrtn=vn*FA*FRT;
-  const ko=K.ko,ep=K.epi;
-  // CaMK
-  const CaMKb=0.05*(1-s.CaMKt)/(1+0.0015/s.cass),CaMKa=CaMKb+s.CaMKt,fC=1/(1+0.15/CaMKa);
-  const ENa=(1/FRT)*Math.log(nao/s.nai),EK=(1/FRT)*Math.log(ko/s.ki),EKs=(1/FRT)*Math.log((ko+0.01833*nao)/(s.ki+0.01833*s.nai));
-  // INa
-  const mss=1/(1+ex(-(v+39.57)/9.871)),tm=1/(6.765*ex((v+11.64)/34.77)+8.552*ex(-(v+77.42)/5.955));
-  const hss=1/(1+ex((v+82.9)/6.086)),thf=1/(1.432e-5*ex(-(v+1.196)/6.285)+6.149*ex((v+0.5096)/20.27)),ths=1/(0.009794*ex(-(v+17.95)/28.05)+0.3343*ex((v+5.73)/56.66));
-  const tj=2.038+1/(0.02136*ex(-(v+100.6)/8.281)+0.3052*ex((v+0.9941)/38.45)),hssp=1/(1+ex((v+89.1)/6.086));
-  const h=0.99*s.hf+0.01*s.hs,hp=0.99*s.hf+0.01*s.hsp;
-  const INa=K.GNa*(v-ENa)*s.m*s.m*s.m*((1-fC)*h*s.j+fC*hp*s.jp);
-  const mLss=1/(1+ex(-(v+42.85)/5.264)),hLss=1/(1+ex((v+87.61)/7.488)),hLssp=1/(1+ex((v+93.81)/7.488));
-  const INaL=K.GNaL*(v-ENa)*s.mL*((1-fC)*s.hL+fC*s.hLp);
-  // Ito
-  const ass=1/(1+ex(-(v-14.34)/14.82)),ta=1.0515/(1/(1.2089*(1+ex(-(v-18.4099)/29.3814)))+3.5/(1+ex((v+100)/29.3814))),assp=1/(1+ex(-(v-24.34)/14.82));
-  const iss=1/(1+ex((v+43.94)/5.711)),dep=ep?1-0.95/(1+ex((v+70)/5)):1;
-  const tiF=(4.562+1/(0.3933*ex(-(v+100)/100)+0.08004*ex((v+50)/16.59)))*dep,tiS=(23.62+1/(0.001416*ex(-(v+96.52)/59.05)+1.78e-8*ex((v+114.1)/8.079)))*dep;
-  const dti=(1.354+1e-4/(ex((v-167.4)/15.89)+ex(-(v-12.23)/0.2154)))*(1-0.5/(1+ex((v+70)/20)));
-  const AiF=1/(1+ex((v-213.6)/151.2)),AiS=1-AiF;
-  const Ito=K.Gto*(v-EK)*((1-fC)*s.a*(AiF*s.iF+AiS*s.iS)+fC*s.ap*(AiF*s.iFp+AiS*s.iSp));
-  // ICaL
-  const dss=1/(1+ex(-(v+3.94)/4.23)),td=0.6+1/(ex(-0.05*(v+6))+ex(0.09*(v+14)));
-  const fss=1/(1+ex((v+19.58)/3.696)),tff=7+1/(0.0045*ex(-(v+20)/10)+0.0045*ex((v+20)/10)),tfs=1000+1/(3.5e-5*ex(-(v+5)/4)+3.5e-5*ex((v+5)/6));
-  const tfcaf=7+1/(0.04*ex(-(v-4)/7)+0.04*ex((v-4)/7)),tfcas=100+1/(0.00012*ex(-v/3)+0.00012*ex(v/7));
-  const Afcaf=0.3+0.6/(1+ex((v-10)/10)),Afcas=1-Afcaf;
-  const f=0.6*s.ff+0.4*s.fs,fp=0.6*s.ffp+0.4*s.fs,fca=Afcaf*s.fcaf+Afcas*s.fcas,fcap=Afcaf*s.fcafp+Afcas*s.fcas;
-  const km2n=s.jca,anca=1/(1000/km2n+Math.pow(1+0.002/s.cass,4));
-  const e2=ex(2*vfrtn),e1=ex(vfrtn);
-  const PhiCaL=4*vffrtn*(s.cass*e2-0.341*cao)/(e2-1),PhiCaNa=vffrtn*(0.75*s.nass*e1-0.75*nao)/(e1-1),PhiCaK=vffrtn*(0.75*s.kss*e1-0.75*ko)/(e1-1);
-  const gA=s.d*(f*(1-s.nca)+s.jca*fca*s.nca),gB=s.d*(fp*(1-s.nca)+s.jca*fcap*s.nca);
-  const ICaL0=(1-fC)*K.PCa*PhiCaL*gA+fC*K.PCap*PhiCaL*gB;
-  const ICaNa=(1-fC)*K.PCaNa*PhiCaNa*gA+fC*K.PCaNap*PhiCaNa*gB;
-  const ICaK=(1-fC)*K.PCaK*PhiCaK*gA+fC*K.PCaKp*PhiCaK*gB;
-  // IKr, IKs, IK1, IKb
-  const xrss=1/(1+ex(-(v+8.337)/6.789)),txrf=12.98+1/(0.3652*ex((v-31.66)/3.869)+4.123e-5*ex(-(v-47.78)/20.38)),txrs=1.865+1/(0.06629*ex((v-34.7)/7.355)+1.128e-5*ex(-(v-29.74)/25.94));
-  const Axrf=1/(1+ex((v+54.81)/38.21)),xr=Axrf*s.xrf+(1-Axrf)*s.xrs,rkr=1/(1+ex((v+55)/75))/(1+ex((v-10)/30));
-  const IKr=K.GKr*Math.sqrt(ko/5.4)*xr*rkr*(v-EK);
-  const xs1ss=1/(1+ex(-(v+11.6)/8.932)),txs1=817.3+1/(2.326e-4*ex((v+48.28)/17.8)+0.001292*ex(-(v+210)/230)),txs2=1/(0.01*ex((v-50)/20)+0.0193*ex(-(v+66.54)/31));
-  const KsCa=1+0.6/(1+Math.pow(3.8e-5/s.cai,1.4)),IKs=K.GKs*KsCa*s.xs1*s.xs2*(v-EKs);
-  const xk1ss=1/(1+ex(-(v+2.5538*ko+144.59)/(1.5692*ko+3.8115))),txk1=122.2/(ex(-(v+127.2)/20.36)+ex((v+236.8)/69.33));
-  const rk1=1/(1+ex((v+105.8-2.6*ko)/9.493)),IK1=K.GK1*Math.sqrt(ko)*rk1*s.xk1*(v-EK);
-  const IKb=K.GKb*(v-0)*0+K.GKb/(1+ex(-(v-14.48)/18.34))*(v-EK);
-  // INaCa
-  const hca=ex(0.167*vfrt),hna=ex(0.5224*vfrt);
-  const h7=1+(nao/88.12)*(1+1/hna),h8=nao/(88.12*hna*h7),h9=1/h7,k3p=h9*6e4,k3pp=h8*5e3,k3=k3p+k3pp;
-  function ncx(na,ca){
-    const h1=1+(na/88.12)*(1+hna),h2=na*hna/(88.12*h1),h3=1/h1,h4=1+(na/15)*(1+na/5),h5=na*na/(h4*15*5),h6=1/h4;
-    const k4pp=h2*5e3,k4=h3*6e4/hca+k4pp,k6=h6*ca*1.5e6,k7=h5*h2*6e4,k8=h8*K.h11*6e4,k1=K.k1,k2=5e3,k5=5e3;
-    const x1=k2*k4*(k7+k6)+k5*k7*(k2+k3),x2=k1*k7*(k4+k5)+k4*k6*(k1+k8),x3=k1*k3*(k7+k6)+k8*k6*(k2+k3),x4=k2*k8*(k4+k5)+k3*k5*(k1+k8);
-    const sm=x1+x2+x3+x4,E1=x1/sm,E2=x2/sm,E3=x3/sm,E4=x4/sm;
-    const allo=1/(1+(150e-6/ca)*(150e-6/ca));
-    const JNa=3*(E4*k7-E1*k8)+E3*k4pp-E2*k3pp,JCa=E2*k2-E1*k1;
-    return [allo,JNa+2*JCa];
-  }
-  const ni=ncx(s.nai,s.cai),nss=ncx(s.nass,s.cass);
-  const INaCa_i=0.8*K.Gncx*ni[0]*ni[1],INaCa_ss=0.2*K.Gncx*nss[0]*nss[1];
-  // INaK
-  const Knao=27.78*ex((1+0.155)*vfrt/3),Knai=9.073*ex(-0.155*vfrt/3);
-  const Pn=4.2/(1+1e-7/1.698e-7+s.nai/224+s.ki/292);
-  const t1=Math.pow(1+s.nai/Knai,3)+Math.pow(1+s.ki/0.5,2)-1,t2=Math.pow(1+nao/Knao,3)+Math.pow(1+ko/0.3582,2)-1;
-  const a1=949.5*Math.pow(s.nai/Knai,3)/t1,b2=39.4*Math.pow(nao/Knao,3)/t2,a3=1899*Math.pow(ko/0.3582,2)/t2,b3=79300*Pn*1e-7/(1+9.8/1.698e-7),b4=40*Math.pow(s.ki/0.5,2)/t1;
-  const a2=687.2,a4=K.a4,b1=K.b1;
-  const y1=a4*a1*a2+b2*b4*b3+a2*b4*b3+b3*a1*a2,y2=b2*b1*b4+a1*a2*a3+a3*b1*b4+a2*a3*b4,y3=a2*a3*a4+b3*b2*b1+b2*b1*a4+a3*a4*b1,y4=b4*b3*b2+a3*a4*a1+b2*a4*a1+b3*b2*a1;
-  const ys=y1+y2+y3+y4,JnaK=3*(y1/ys*a3-y2/ys*b3),JkK=2*(y4/ys*b1-y3/ys*a1);
-  const INaK=K.Pnak*(JnaK+JkK);
-  const INab=3.75e-10*vffrtn*(s.nai*e1-nao)/(e1-1),ICab=2.5e-8*4*vffrtn*(s.cai*e2-0.341*cao)/(e2-1),IpCa=0.0005*s.cai/(0.0005+s.cai);
-  // Ca: RyR, SERCA, difusion
-  const Jrel_inf=K.relM*K.arel*(-ICaL0)/(1+Math.pow(1.5/s.cajsr,8)),taur=Math.max(4.75/(1+0.0123/s.cajsr),0.001);
-  const Jrel_infp=K.relM*K.arelp*(-ICaL0)/(1+Math.pow(1.5/s.cajsr,8)),taurp=Math.max(1.25*4.75/(1+0.0123/s.cajsr),0.001);
-  const Jrel=(1-fC)*s.Jrelnp+fC*s.Jrelp;
-  const Jupnp=K.up*0.004375*s.cai/(s.cai+0.00092),Jupp=K.up*2.75*0.004375*s.cai/(s.cai+0.00092-0.00017),Jleak=0.0039375*s.cansr/15;
-  const Jup=(1-fC)*Jupnp+fC*Jupp-Jleak;
-  const Jdiff=(s.cass-s.cai)/0.2,JdNa=(s.nass-s.nai)/2,JdK=(s.kss-s.ki)/2,Jtr=(s.cansr-s.cajsr)/100;
-  const Bcai=1/(1+K.cmdn*0.00238/Math.pow(0.00238+s.cai,2)+0.07*0.0005/Math.pow(0.0005+s.cai,2));
-  const Bcass=1/(1+0.047*0.00087/Math.pow(0.00087+s.cass,2)+1.124*0.0087/Math.pow(0.0087+s.cass,2));
-  const Bcajsr=1/(1+10*0.8/Math.pow(0.8+s.cajsr,2));
-  const ICaLt=ICaL0+ICaNa+ICaK;
-  const dv=-(INa+INaL+Ito+ICaL0+ICaNa+ICaK+IKr+IKs+IK1+INaCa_i+INaCa_ss+INaK+INab+IKb+IpCa+ICab+Ist);
-  const dki=-((Ito+IKr+IKs+IK1+IKb+Ist)-2*INaK)*Acap/(FA*vmyo)+JdK*vss/vmyo;
-  const dkss=-ICaK*Acap/(FA*vss)-JdK;
-  const dnai=-(INa+INaL+3*INaCa_i+3*INaK+INab)*Acap/(FA*vmyo)+JdNa*vss/vmyo;
-  const dnass=-(ICaNa+3*INaCa_ss)*Acap/(FA*vss)-JdNa;
-  const dcass=Bcass*(-(ICaL0-2*INaCa_ss)*Acap/(2*FA*vss)+Jrel*vjsr/vss-Jdiff);
-  const dcai=Bcai*(-((IpCa+ICab)-2*INaCa_i)*Acap/(2*FA*vmyo)-Jup*vnsr/vmyo+Jdiff*vss/vmyo);
-  const dcansr=Jup-Jtr*vjsr/vnsr,dcajsr=Bcajsr*(Jtr-Jrel);
-  const dCaMK=0.05*CaMKb*(CaMKb+s.CaMKt)-0.00068*s.CaMKt;
-  // actualizar compuertas (Rush-Larsen)
-  s.m=rl(s.m,mss,tm,dt);s.hf=rl(s.hf,hss,thf,dt);s.hs=rl(s.hs,hss,ths,dt);s.j=rl(s.j,hss,tj,dt);s.hsp=rl(s.hsp,hssp,3*ths,dt);s.jp=rl(s.jp,hss,1.46*tj,dt);
-  s.mL=rl(s.mL,mLss,tm,dt);s.hL=rl(s.hL,hLss,200,dt);s.hLp=rl(s.hLp,hLssp,600,dt);
-  s.a=rl(s.a,ass,ta,dt);s.iF=rl(s.iF,iss,tiF,dt);s.iS=rl(s.iS,iss,tiS,dt);s.ap=rl(s.ap,assp,ta,dt);s.iFp=rl(s.iFp,iss,dti*tiF,dt);s.iSp=rl(s.iSp,iss,dti*tiS,dt);
-  s.d=rl(s.d,dss,td,dt);s.ff=rl(s.ff,fss,tff,dt);s.fs=rl(s.fs,fss,tfs,dt);s.fcaf=rl(s.fcaf,fss,tfcaf,dt);s.fcas=rl(s.fcas,fss,tfcas,dt);
-  s.jca=rl(s.jca,fss,75,dt);s.ffp=rl(s.ffp,fss,2.5*tff,dt);s.fcafp=rl(s.fcafp,fss,2.5*tfcaf,dt);
-  s.nca=km2n>1e-9?rl(s.nca,anca*1000/km2n,1/km2n,dt):s.nca+dt*(anca*1000-s.nca*km2n);
-  s.xrf=rl(s.xrf,xrss,txrf,dt);s.xrs=rl(s.xrs,xrss,txrs,dt);s.xs1=rl(s.xs1,xs1ss,txs1,dt);s.xs2=rl(s.xs2,xs1ss,txs2,dt);s.xk1=rl(s.xk1,xk1ss,txk1,dt);
-  s.Jrelnp=rl(s.Jrelnp,Jrel_inf,taur,dt);s.Jrelp=rl(s.Jrelp,Jrel_infp,taurp,dt);
-  s.CaMKt+=dt*dCaMK;s.ki+=dt*dki;s.kss+=dt*dkss;s.nai+=dt*dnai;s.nass+=dt*dnass;s.cass+=dt*dcass;s.cai+=dt*dcai;s.cansr+=dt*dcansr;s.cajsr+=dt*dcajsr;
-  s.v+=dt*dv;s.dv=dv;s.t+=dt;
-  I.INa=INa;I.INaL=INaL;I.Ito=Ito;I.ICaL=ICaLt;I.IKr=IKr;I.IKs=IKs;I.IK1=IK1;I.INaCa=INaCa_i+INaCa_ss;I.INaK=INaK;
-}
-// paso adaptativo y marcapaso
-function advance1(){
-  const ph=S.t%P.BCL,adv=Math.abs(S.dv);
-  const dt=(ph<1.5||adv>2)?0.005:adv>0.3?0.01:0.025;
-  step(dt,ph<0.5?-80:0);return dt;
-}
-prep();
+### Fisiología renal
 
-const SS={"0":{"v":-87.99321,"CaMKt":0.01235283,"cass":8.42628e-05,"nai":7.247255,"nass":7.24734,"ki":144.6179,"kss":144.6179,"cansr":1.607385,"cajsr":1.560675,"cai":8.536174e-05,"m":0.00735055,"hf":0.6978058,"hs":0.697789,"j":0.6976945,"hsp":0.454597,"jp":0.6976312,"mL":0.0001885731,"hL":0.5010815,"hLp":0.2696929,"a":0.001001685,"iF":0.9995535,"iS":0.5908877,"ap":0.0005103856,"iFp":0.9995535,"iSp":0.6436098,"d":2.345611e-09,"ff":1.0,"fs":0.9107872,"fcaf":1.0,"fcas":0.9998213,"jca":0.9999768,"ffp":1.0,"fcafp":1.0,"nca":0.002667642,"xrf":8.081058e-06,"xrs":0.4508171,"xs1":0.2702173,"xs2":0.0001930355,"xk1":0.996762,"Jrelnp":2.44631e-07,"Jrelp":3.056279e-07},"1":{"v":-87.9113,"CaMKt":0.01547973,"cass":7.438858e-05,"nai":7.815876,"nass":7.815956,"ki":143.8813,"kss":143.8813,"cansr":1.961667,"cajsr":1.904535,"cai":7.535796e-05,"m":0.007411338,"hf":0.6949606,"hs":0.6949504,"j":0.6948917,"hsp":0.4512872,"jp":0.6948507,"mL":0.0001915294,"hL":0.5011529,"hLp":0.2752894,"a":0.001007228,"iF":0.9995471,"iS":0.9995398,"ap":0.0005132116,"iFp":0.9995471,"iSp":0.9995455,"d":2.391456e-09,"ff":1.0,"fs":0.9224314,"fcaf":1.0,"fcas":0.999889,"jca":0.9999844,"ffp":1.0,"fcafp":1.0,"nca":0.001652783,"xrf":8.147501e-06,"xrs":0.4239972,"xs1":0.242523,"xs2":0.00019479,"xk1":0.9967833,"Jrelnp":4.53527e-07,"Jrelp":5.667937e-07},"2":{"v":-87.65123,"CaMKt":0.02403191,"cass":9.219795e-05,"nai":8.875711,"nass":8.875842,"ki":142.6616,"kss":142.6615,"cansr":2.013239,"cajsr":1.945904,"cai":9.442092e-05,"m":0.007607696,"hf":0.6858267,"hs":0.6858033,"j":0.6856698,"hsp":0.4406809,"jp":0.685577,"mL":0.0002012278,"hL":0.4844701,"hLp":0.2485414,"a":0.001025045,"iF":0.9995259,"iS":0.5582747,"ap":0.0005222944,"iFp":0.9995259,"iSp":0.6053113,"d":2.54313e-09,"ff":1.0,"fs":0.8772907,"fcaf":1.0,"fcas":0.9996269,"jca":0.9999533,"ffp":1.0,"fcafp":1.0,"nca":0.003762363,"xrf":8.692132e-06,"xrs":0.4854926,"xs1":0.326338,"xs2":0.0002005927,"xk1":0.9968508,"Jrelnp":1.714069e-06,"Jrelp":2.142146e-06}};
-const defs=[
- ["Na","Conductancia I_Na",0,2,.05,v=>Math.round(v*100)+" %"],
- ["NaL","Corriente I_NaL (Na⁺ tardía)",0,5,.1,v=>Math.round(v*100)+" %"],
- ["to","Conductancia I_to",0,2,.05,v=>Math.round(v*100)+" %"],
- ["CaL","Permeabilidad I_CaL",0,2,.05,v=>Math.round(v*100)+" %"],
- ["Kr","Conductancia I_Kr",0,2,.05,v=>Math.round(v*100)+" %"],
- ["Ks","Conductancia I_Ks",0,2,.05,v=>Math.round(v*100)+" %"],
- ["K1","Conductancia I_K1",0,2,.05,v=>Math.round(v*100)+" %"],
- ["NaCa","Intercambiador I_NaCa",0,2,.05,v=>Math.round(v*100)+" %"],
- ["NaK","Bomba Na⁺/K⁺",0,2,.05,v=>Math.round(v*100)+" %"],
- ["Up","Recaptación SERCA",0,2,.05,v=>Math.round(v*100)+" %"],
- ["Rel","Liberación del RS (RyR)",0,2,.05,v=>Math.round(v*100)+" %"],
- ["Ko","[K⁺] extracelular",3.5,8,.1,v=>v.toFixed(1)+" mM"],
- ["BCL","Ciclo de estimulación",300,3000,50,v=>v+" ms"],
- ["spd","Velocidad objetivo",.1,2,.1,v=>"×"+v.toFixed(1)]
-];
-const ctl=document.getElementById("ctl"),outs={};
-defs.forEach(([k,n,mn,mx,st,fmt])=>{
-  const l=document.createElement("label");
-  l.innerHTML=n+'<span></span><input type="range" min="'+mn+'" max="'+mx+'" step="'+st+'">';
-  const i=l.querySelector("input"),s=l.querySelector("span");
-  const upd=()=>{s.textContent=fmt(P[k]);};
-  i.value=P[k];upd();
-  i.oninput=()=>{P[k]=+i.value;upd();prep();if(k==="BCL"){clearBuf();}};
-  outs[k]=()=>{i.value=P[k];upd();};
-  ctl.appendChild(l);
-});
-const ctSel=document.getElementById("ct"),ov=document.getElementById("ov");
-ctSel.onchange=()=>{P.ct=+ctSel.value;reset();};
+| Simulación | Archivo |
+|---|---|
+| Modelo integrado de fisiología glomerular | `modelo_integrado_fisiologia_glomerular.html` |
 
-// ---- medidas por latido
-let beat=-1,rest=-87,pk=-1e9,maxdv=0,tUp=0,tb0=0,cmax=0,apdB=NaN;
-let apdS=NaN,restS=NaN,pkS=NaN,dvS=NaN,casS=NaN;
-let cb={t:[],V:[]},lastBeat=null,refBeat=null,nextB=0;
-function mReset(){beat=-1;apdS=restS=pkS=dvS=casS=NaN;cb={t:[],V:[]};lastBeat=null;nextB=0;}
-function measure(){
-  const nb=Math.floor(S.t/P.BCL);
-  if(nb!==beat){
-    if(beat>=0){pkS=pk;dvS=maxdv;casS=cmax*1e6;restS=rest;apdS=apdB;if(cb.t.length)lastBeat=cb;}
-    beat=nb;rest=S.v;pk=-1e9;maxdv=0;tUp=0;cmax=0;apdB=NaN;tb0=S.t;cb={t:[],V:[]};nextB=0;
-  }
-  const tb=S.t-tb0;
-  if(S.v>pk)pk=S.v;
-  if(S.dv>maxdv&&tb<5){maxdv=S.dv;tUp=tb;}
-  if(S.cai>cmax)cmax=S.cai;
-  if(isNaN(apdB)&&tb>tUp+5&&S.v<rest+0.1*(pk-rest)&&pk>-20){apdB=tb-tUp;apdS=apdB;}
-  if(tb>=nextB){nextB+=0.5;cb.t.push(tb);cb.V.push(S.v);}
-}
-// ---- buffer de trazas
-const SDT=0.5;let buf,nextS=0,run=true,effSpd=1;
-function clearBuf(){buf={t:[],V:[],INa:[],INaL:[],Ito:[],ICaL:[],IKr:[],IKs:[],IK1:[],INaCa:[],INaK:[],Cai:[],Cass:[],Cajsr:[],Nai:[]};nextS=S.t;}
-function sample(){
-  buf.t.push(S.t);buf.V.push(S.v);
-  for(const k of ["INa","INaL","Ito","ICaL","IKr","IKs","IK1","INaCa","INaK"])buf[k].push(I[k]);
-  buf.Cai.push(S.cai*1e6);buf.Cass.push(S.cass*1e6);buf.Cajsr.push(S.cajsr);buf.Nai.push(S.nai);
-}
-const winMs=()=>Math.min(Math.max(P.BCL*3,1500),4000);
-function advance(simMs,budgetMs){
-  const t0=performance.now();let done=0,n=0;
-  while(done<simMs){
-    done+=advance1();measure();
-    if(S.t>=nextS){nextS=S.t+SDT;sample();}
-    if(++n>=100){n=0;if(performance.now()-t0>budgetMs)break;}
-  }
-  const ex=buf.t.length-Math.round(winMs()/SDT);
-  if(ex>0)for(const k in buf)buf[k].splice(0,ex);
-  return done;
-}
-function reset(){
-  prep();S=Object.assign(init(),SS[P.ct]||{});S.t=0;S.dv=0;
-  mReset();clearBuf();
-}
-// ---- dibujo
-const cv=document.getElementById("cv"),cx=cv.getContext("2d"),cv2=document.getElementById("cv2"),cx2=cv2.getContext("2d");
-const sel=document.getElementById("sel"),unit=document.getElementById("unit");
-const units={INa:"µA/µF",INaL:"µA/µF",Ito:"µA/µF",ICaL:"µA/µF",IKr:"µA/µF",IKs:"µA/µF",IK1:"µA/µF",INaCa:"µA/µF",INaK:"µA/µF",Cai:"nM",Cass:"nM",Cajsr:"mM",Nai:"mM"};
-sel.onchange=()=>{unit.textContent=units[sel.value];};sel.onchange();
-const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-function fit(c){const r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;
-  if(c.width!==Math.round(r.width*d)){c.width=Math.round(r.width*d);c.height=Math.round(r.height*d);}return d;}
-function frame(c,x,ymin,ymax,ticks,fmt,xt,t0,W){
-  const d=fit(c),w=c.width,h=c.height,pl=50*d,pr=8*d,pt=8*d,pb=20*d;
-  x.clearRect(0,0,w,h);x.font=(11*d)+"px system-ui";x.fillStyle=css("--mut");x.strokeStyle=css("--line");x.lineWidth=d;
-  ticks.forEach(t=>{const y=pt+(1-(t-ymin)/(ymax-ymin))*(h-pt-pb);x.beginPath();x.moveTo(pl,y);x.lineTo(w-pr,y);x.stroke();x.textAlign="right";x.fillText(fmt(t),pl-4*d,y+4*d);});
-  x.textAlign="center";
-  for(let tt=Math.ceil(t0/xt)*xt;tt<=t0+W;tt+=xt)x.fillText(Math.round(tt)+" ms",pl+(tt-t0)/W*(w-pl-pr),h-5*d);
-  return {d,w,h,pl,pr,pt,pb,X:t=>pl+(t-t0)/W*(w-pl-pr),Y:v=>pt+(1-(v-ymin)/(ymax-ymin))*(h-pt-pb)};
-}
-function line(x,g,T,A,col,dash){
-  x.strokeStyle=col;x.lineWidth=2*g.d;x.setLineDash(dash?[6*g.d,4*g.d]:[]);x.beginPath();
-  for(let i=0;i<T.length;i++){const xx=g.X(T[i]),yy=g.Y(A[i]);i?x.lineTo(xx,yy):x.moveTo(xx,yy);}
-  x.stroke();x.setLineDash([]);
-}
-function draw(){
-  if(ov.checked){
-    const W=Math.min(P.BCL,700),g=frame(cv,cx,-100,60,[-80,-40,0,40],v=>v+" mV",100,0,W);
-    if(refBeat)line(cx,g,refBeat.t,refBeat.V,css("--tr"),true);
-    const cur=lastBeat||cb;if(cur.t.length>1)line(cx,g,cur.t,cur.V,css("--ap"),false);
-  }else{
-    const T=buf.t;const W=winMs(),t1=T.length?T[T.length-1]:W,g=frame(cv,cx,-100,60,[-80,-40,0,40],v=>v+" mV",500,t1-W,W);
-    if(T.length>1)line(cx,g,T,buf.V,css("--ap"),false);
-  }
-  const a=buf[sel.value];let lo=Infinity,hi=-Infinity;
-  for(const v of a){if(v<lo)lo=v;if(v>hi)hi=v;}
-  if(!isFinite(lo)){lo=-1;hi=1;}
-  const pad=(hi-lo)*.1||1e-6;lo-=pad;hi+=pad;const r=hi-lo,dg=r<0.05?3:r<3?2:r<30?1:0;
-  const T=buf.t,W=winMs(),t1=T.length?T[T.length-1]:W;
-  const g2=frame(cv2,cx2,lo,hi,[lo+r*.2,lo+r*.5,lo+r*.8],v=>v.toFixed(dg),500,t1-W,W);
-  if(T.length>1)line(cx2,g2,T,a,css("--tr"),false);
-  document.getElementById("rV").textContent=S.v.toFixed(1);
-  document.getElementById("rA").textContent=isNaN(apdS)?"–":apdS.toFixed(0);
-  document.getElementById("rR").textContent=isNaN(restS)?"–":restS.toFixed(1);
-  document.getElementById("rP").textContent=isNaN(pkS)?"–":pkS.toFixed(1);
-  document.getElementById("rD").textContent=isNaN(dvS)?"–":dvS.toFixed(0);
-  document.getElementById("rC").textContent=isNaN(casS)?"–":casS.toFixed(0);
-}
-let last=performance.now();
-function loop(now){
-  const dtw=Math.min(now-last,50);last=now;
-  if(run){const got=advance(dtw*P.spd,11);effSpd=effSpd*0.9+0.1*(got/(dtw||1));
-    document.getElementById("eff").textContent="Velocidad real: ×"+effSpd.toFixed(2);}
-  draw();requestAnimationFrame(loop);
-}
-document.getElementById("bp").onclick=e=>{run=!run;e.target.textContent=run?"Pausar":"Continuar";};
-document.getElementById("br").onclick=reset;
-document.getElementById("bs").onclick=()=>{const b=lastBeat||cb;if(b.t.length>1)refBeat={t:b.t.slice(),V:b.V.slice()};};
-document.getElementById("bz").onclick=()=>{const c=P.ct;P={...DEF,ct:c};for(const k in outs)outs[k]();refBeat=null;reset();};
-reset();
-requestAnimationFrame(t=>{last=t;loop(t);});
-</script>
-</body>
-</html>
+## Destacados de la simulación ECG y bucle presión-volumen
+
+- Las gráficas se recalculan al instante al cambiar precarga, poscarga, contractilidad o frecuencia. La casilla **Actualizar al instante** permite en cambio ver la transición gradual latido a latido.
+- **Restablecer parámetros** devuelve todos los controles y el ritmo a sus valores iniciales.
+- **Inducir fibrilación auricular**: sin onda P ni sístole auricular, con intervalos RR irregulares.
+- **Inducir fibrilación ventricular**: ECG caótico, sin eyección y con caída progresiva de la presión arterial. Se revierte con **Desfibrilar**.
+
+## Estructura del repositorio
+
+```
+FisioSist/
+├── index.html          # Página de inicio con las tarjetas de cada simulación
+├── README.md
+└── simulaciones/
+    ├── ecg_bucle_presion_volumen.html
+    ├── intercambio_capilar.html
+    └── ...             # una página HTML por simulación
+```
+
+Cada simulación es un único archivo HTML con su propio código y estilos.
+
+## Uso
+
+**En línea:** abre el sitio web indicado arriba y elige una simulación desde la página de inicio.
+
+**En tu computador:** descarga el repositorio y abre `index.html` con cualquier navegador moderno (Chrome, Firefox, Edge o Safari). No requiere servidor ni instalación.
+
+## Publicación en GitHub Pages
+
+1. En el repositorio, ve a **Settings → Pages**.
+2. En **Source**, elige **Deploy from a branch**.
+3. Selecciona la rama `main` y la carpeta `/ (root)`, y presiona **Save**.
+4. Tras 1 o 2 minutos el sitio queda disponible. Para ver cambios recientes, recarga con Ctrl+F5.
+
+## Agregar una nueva simulación
+
+1. Copia el archivo `.html` a la carpeta `simulaciones/`. Usa nombres en minúsculas, sin tildes ni espacios (por ejemplo, `mi_simulacion.html`).
+2. En `index.html`, dentro del bloque `<div class="grid">` de la sección que corresponda, agrega:
+
+```html
+<a class="card" href="simulaciones/mi_simulacion.html">
+  <h3>Título de la simulación</h3>
+  <p>Descripción breve.</p>
+  <span>Abrir simulación →</span>
+</a>
+```
+
+3. Si pertenece a un tema nuevo, agrega antes un encabezado `<h2>Nombre de la sección</h2>` y un nuevo `<div class="grid">`.
+4. Sube los cambios al repositorio.
+
+## Dependencias externas
+
+Casi todas las simulaciones funcionan sin conexión. Algunas cargan recursos desde internet:
+
+- **Chart.js** (cdnjs.cloudflare.com): lo usa `modelo_frank_starling.html` para los gráficos. Sin conexión esa simulación no muestra sus gráficos.
+- **Google Fonts**: tipografías de varias páginas. Sin conexión se usan tipografías del sistema y todo sigue funcionando.
+
+## Referencias de los modelos
+
+- Fabbri A, et al. (2017). Computational analysis of the human sinus node action potential. *eLife*.
+- O'Hara T, Virág L, Varró A, Rudy Y (2011). Simulation of the undiseased human cardiac ventricular action potential. *PLoS Computational Biology*.
+- Weibel ER (1963). *Morphometry of the Human Lung*. Springer.
+
+## Aviso
+
+Estas simulaciones son modelos simplificados con fines **educativos**. Los valores corresponden a situaciones típicas de adulto sano o son ilustrativos, y no deben usarse para tomar decisiones clínicas.
+
+## Licencia
+
+Pendiente de definir por los autores. Mientras no se indique una licencia, todos los derechos quedan reservados.
