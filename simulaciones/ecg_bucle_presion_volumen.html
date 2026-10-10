@@ -258,7 +258,7 @@ function resync(){
 fitAll();resync();
 let last=performance.now();
 function frame(t){
- const dt=Math.min((t-last)/1000,.05);last=t;
+ const dt=Math.max(0,Math.min((t-last)/1000,.05));last=t;
  if(need){need=false;if(inst&&rhythm!=='vf')resync()}
  if(!paused){const n=Math.ceil(dt*P.speed/DT);
   for(let i=0;i<n;i++){step();if(++ns%8==0){buf.push(cur);if(buf.length>N)buf.shift()}}}

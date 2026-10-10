@@ -969,7 +969,7 @@ const syncPause=()=>{pb.textContent=paused?'Reanudar animación':'Pausar animaci
 pb.addEventListener('click',()=>{paused=!paused;syncPause()});syncPause();
 let last=performance.now();
 function frame(now){
-  const dt=Math.min(.05,(now-last)/1000);last=now;readColors();
+  const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;readColors();
   const run=RUN[active];
   try{run.forEach(k=>mods[k].draw(paused?0:dt))}catch(e){console.error(e)}
   requestAnimationFrame(frame);

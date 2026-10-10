@@ -330,7 +330,7 @@ function drawB(dt){
  }
 }
 function frame(now){
- const dt=Math.min(.1,(now-last)/1000)*sp;last=now;
+ const dt=Math.max(0,Math.min(.1,(now-last)/1000))*sp;last=now;
  if(playing){t+=dt*.7;if(t>=T)t-=T;$('sl').value=Math.round(t/T*1000);clock+=dt;}
  drawA();drawP();drawB(playing?dt:0);
  requestAnimationFrame(frame);

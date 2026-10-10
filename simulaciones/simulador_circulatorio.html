@@ -655,7 +655,7 @@ function updateDiagram() {
 // ---------- bucle
 let last = performance.now(), lastRead = 0;
 function frame(nowMs) {
-  const dtReal = Math.min((nowMs - last) / 1000, 0.05);
+  const dtReal = Math.max(0, Math.min((nowMs - last) / 1000, 0.05));
   last = nowMs;
   if (running) {
     let todo = dtReal * speed;

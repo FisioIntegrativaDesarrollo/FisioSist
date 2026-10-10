@@ -1,0 +1,772 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Física de fluidos y hemodinámica del sistema circulatorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: circuito desplegado como pieza central, columna de controles fija a la derecha en pantallas anchas, tarjetas de ecuaciones debajo. */
+:root{
+  --bg:#EDF1F5; --surface:#FAFBFD; --fg:#111B25; --muted:#586674; --line:#D2DAE2; --grid:#E1E7ED;
+  --art:#C4263F; --ven:#2C5E92; --flow:#0E857A; --warn:#A8620A; --plaque:#B9A27A;
+  --f-display:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
+  --f-body:'IBM Plex Sans','Helvetica Neue',Arial,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E151C; --surface:#151E27; --fg:#E6ECF1; --muted:#93A1AE; --line:#26323E; --grid:#1F2A35;
+    --art:#F0566B; --ven:#6FA3DA; --flow:#3CC4B3; --warn:#E0A23A; --plaque:#8C7A58;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E151C; --surface:#151E27; --fg:#E6ECF1; --muted:#93A1AE; --line:#26323E; --grid:#1F2A35;
+  --art:#F0566B; --ven:#6FA3DA; --flow:#3CC4B3; --warn:#E0A23A; --plaque:#8C7A58;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-body);padding-inline:16px;padding-block:22px 56px;font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin-inline:auto}
+:focus-visible{outline:2px solid var(--ven);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+h1{font:700 clamp(28px,5vw,40px)/1.05 var(--f-display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+.lede{margin:0;color:var(--muted);max-width:66ch}
+.presetrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.plabel{flex:0 0 118px;font:600 11px var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+@media(max-width:620px){.plabel{flex-basis:100%}}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.stagenote{margin:2px 0 0;color:var(--muted);font-size:13.5px;max-width:78ch}
+.stagenote strong{color:var(--fg);font-weight:600}
+.pill{font:500 13px var(--f-body);color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+.pill:hover{border-color:var(--ven)}
+.pill[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.layout{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+@media(min-width:980px){
+  .layout{grid-template-columns:minmax(0,1fr) 300px}
+  .layout>.card{grid-column:1}
+  .layout>.controls{grid-column:2;grid-row:1 / span 6;align-self:start;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+}
+h2{font:700 19px/1.2 var(--f-display);letter-spacing:-.01em;margin:0 0 4px;text-wrap:balance}
+.sub{margin:0 0 12px;color:var(--muted);font-size:14px;max-width:70ch}
+.eq{font:400 13px/1.5 var(--f-mono);background:var(--bg);border-radius:6px;padding:8px 10px;margin:0 0 12px;overflow-x:auto;white-space:nowrap}
+canvas{display:block;width:100%}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.tools .sp{flex:1}
+.btn{font:500 13px var(--f-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 11px;cursor:pointer}
+.btn[aria-pressed="true"]{border-color:var(--ven);color:var(--ven);font-weight:600}
+.cap{margin:8px 0 0;font-size:12.5px;color:var(--muted)}
+/* controles */
+.controls h2{margin-bottom:10px}
+.grp{margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid var(--line)}
+.grp:last-of-type{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.grp h3{font:600 11px var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-bottom:8px}
+.ctl label{font-size:13.5px}
+.ctl .val{font:500 13px var(--f-mono);text-align:right}
+.ctl input{grid-column:1 / -1;width:100%;margin:2px 0;accent-color:var(--ven)}
+.hint{grid-column:1 / -1;font-size:12px;color:var(--muted);margin:0}
+/* indicadores */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 16px;margin:0}
+.m{min-width:0}
+.m dt{font:600 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.m dd{margin:2px 0 0}
+.m .n{font:500 22px/1.2 var(--f-mono)}
+.m .u{font:400 12px var(--f-mono);color:var(--muted);margin-left:4px}
+.m .s{display:block;font-size:12.5px;color:var(--muted)}
+.chip{display:inline-block;font:600 11px var(--f-body);letter-spacing:.04em;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.chip.ok{color:var(--flow)} .chip.warn{color:var(--warn)} .chip.crit{color:var(--art)}
+.sec{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.sec h3{font:600 14px var(--f-body);margin:0 0 8px}
+.wallrow{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.wallrow canvas{width:190px;height:190px;flex:none}
+.wallrow .metrics{flex:1;min-width:220px}
+.note{margin:0;color:var(--muted);font-size:13px;max-width:78ch}
+/* tablas de símbolos */
+.sym{margin:0 0 14px}
+.sym details{border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.sym summary{cursor:pointer;display:flex;justify-content:space-between;gap:12px;padding:8px 12px;font:600 13px var(--f-body);list-style:none}
+.sym summary::-webkit-details-marker{display:none}
+.sym summary::after{content:'Ocultar';font-weight:400;font-size:12px;color:var(--muted)}
+.sym details:not([open]) summary::after{content:'Mostrar'}
+.syl{margin:0}
+.sy{display:grid;grid-template-columns:76px minmax(0,1fr);gap:2px 12px;padding:9px 12px;border-top:1px solid var(--line)}
+.sy dt{font:500 15px/1.3 var(--f-mono);overflow-wrap:anywhere}
+.sy dd{margin:0;font-size:14px;min-width:0}
+.sy dd strong{font-weight:600}
+.sy-m{display:flex;flex-wrap:wrap;gap:2px 16px;margin-top:4px;font:400 12px/1.4 var(--f-mono);color:var(--muted)}
+.sy-m b{font-weight:500;color:var(--fg)}
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Física de fluidos y hemodinámica del sistema circulatorio</h1>
+  <p class="lede">Simulador interactivo de un circuito sistémico simplificado, donde cada control cambia una variable física. Las ecuaciones de continuidad, Poiseuille, Windkessel, Reynolds y Laplace se calculan en vivo y mueven todos los gráficos a la vez. La etapa de la vida cambia el tamaño de los vasos y los valores de reposo. Bajo cada ecuación hay una tabla con el significado, la unidad y el valor actual de cada símbolo.</p>
+  <div class="presetrow">
+    <span class="plabel" id="lb-stage">Etapa de la vida</span>
+    <div class="presets" id="stages" role="group" aria-labelledby="lb-stage">
+      <button type="button" class="pill" data-st="neonato" aria-pressed="false">Recién nacido</button>
+      <button type="button" class="pill" data-st="nino" aria-pressed="false">Niño</button>
+      <button type="button" class="pill" data-st="adulto" aria-pressed="true">Adulto</button>
+      <button type="button" class="pill" data-st="mayor" aria-pressed="false">Adulto mayor</button>
+      <button type="button" class="pill" data-st="embarazo" aria-pressed="false">Embarazo</button>
+    </div>
+  </div>
+  <p class="stagenote"><strong id="stage-n"></strong> <span id="stage-t"></span></p>
+  <div class="presetrow">
+    <span class="plabel" id="lb-sit">Situación</span>
+    <div class="presets" id="sits" role="group" aria-labelledby="lb-sit">
+      <button type="button" class="pill" data-p="reposo" aria-pressed="true">Reposo</button>
+      <button type="button" class="pill" data-p="ejercicio" aria-pressed="false">Ejercicio</button>
+      <button type="button" class="pill" data-p="hipertension" aria-pressed="false">Hipertensión</button>
+      <button type="button" class="pill" data-p="rigidez" aria-pressed="false">Arterias rígidas</button>
+      <button type="button" class="pill" data-p="anemia" aria-pressed="false">Anemia</button>
+      <button type="button" class="pill" data-p="estenosis" aria-pressed="false">Estenosis 75 %</button>
+      <button type="button" class="pill" data-p="aneurisma" aria-pressed="false">Aneurisma</button>
+    </div>
+  </div>
+  <div class="presetrow">
+    <span class="plabel">Símbolos</span>
+    <button type="button" class="btn" id="b-sym">Ocultar definiciones</button>
+  </div>
+</header>
+
+<main class="layout">
+
+<section class="card" id="c-circuit">
+  <h2>Circuito sistémico</h2>
+  <p class="sub">El grosor del tubo sigue el área total de sección (escala logarítmica) y el color sigue la presión. Los puntos avanzan con la velocidad calculada, comprimida para que los capilares no parezcan detenidos.</p>
+  <p class="eq">Continuidad: Q = A₁·v₁ = A₂·v₂ &nbsp;→&nbsp; v = Q / A &nbsp;·&nbsp; GC = FC × VS</p>
+  <div class="sym" data-g="cont"></div>
+  <div class="tools">
+    <button type="button" class="btn" id="b-pause" aria-pressed="false">Pausar</button>
+    <span class="sp"></span>
+    <button type="button" class="btn" data-speed="0.1" aria-pressed="false">0,1×</button>
+    <button type="button" class="btn" data-speed="0.25" aria-pressed="false">0,25×</button>
+    <button type="button" class="btn" data-speed="0.5" aria-pressed="true">0,5×</button>
+    <button type="button" class="btn" data-speed="1" aria-pressed="false">1×</button>
+  </div>
+  <canvas id="cv-circuit" style="height:270px" role="img" aria-label="Circuito sistémico animado desde el corazón hasta la vena cava"></canvas>
+</section>
+
+<aside class="card controls" aria-label="Controles del modelo">
+  <h2>Controles</h2>
+  <div class="grp">
+    <h3>Corazón</h3>
+    <div class="ctl"><label for="in-hr">Frecuencia cardíaca</label><span class="val" id="v-hr"></span><input id="in-hr" type="range" min="40" max="180" step="1" value="72"></div>
+    <div class="ctl"><label for="in-sv">Volumen sistólico</label><span class="val" id="v-sv"></span><input id="in-sv" type="range" min="30" max="130" step="1" value="70"><p class="hint" id="h-co"></p></div>
+  </div>
+  <div class="grp">
+    <h3>Vasos</h3>
+    <div class="ctl"><label for="in-f">Radio de arteriolas</label><span class="val" id="v-f"></span><input id="in-f" type="range" min="60" max="150" step="1" value="100"><p class="hint">La resistencia de las arteriolas cambia con 1/r⁴.</p></div>
+    <div class="ctl"><label for="in-c">Compliancia arterial</label><span class="val" id="v-c"></span><input id="in-c" type="range" min="0.5" max="3" step="0.05" value="1.5"><p class="hint">Menos compliancia equivale a arterias más rígidas.</p></div>
+  </div>
+  <div class="grp">
+    <h3>Sangre</h3>
+    <div class="ctl"><label for="in-hct">Hematocrito</label><span class="val" id="v-hct"></span><input id="in-hct" type="range" min="20" max="70" step="1" value="45"><p class="hint" id="h-eta"></p></div>
+  </div>
+  <div class="grp">
+    <h3>Lesiones locales</h3>
+    <div class="ctl"><label for="in-sten">Estrechamiento arterial</label><span class="val" id="v-sten"></span><input id="in-sten" type="range" min="0" max="90" step="1" value="0"><p class="hint" id="h-sten"></p></div>
+    <div class="ctl"><label for="in-aneu">Dilatación de la aorta</label><span class="val" id="v-aneu"></span><input id="in-aneu" type="range" min="1" max="3" step="0.05" value="1"><p class="hint">Multiplica el radio de la aorta.</p></div>
+  </div>
+</aside>
+
+<section class="card" id="c-wave">
+  <h2>Presión y flujo en la aorta</h2>
+  <p class="sub">Modelo Windkessel: las arterias se estiran en sístole, guardan sangre y la devuelven en diástole. La línea punteada es la caída exponencial teórica de la diástole.</p>
+  <p class="eq" id="eq-wave"></p>
+  <div class="sym" data-g="wk"></div>
+  <canvas id="cv-wave" style="height:260px" role="img" aria-label="Presión aórtica y flujo de entrada durante un latido"></canvas>
+</section>
+
+<section class="card" id="c-profile">
+  <h2>Área, velocidad y presión por tramo</h2>
+  <p class="sub">La velocidad baja donde el área total crece y vuelve a subir en las venas. La presión cae sobre todo en las arteriolas, que concentran la mayor resistencia.</p>
+  <p class="eq">v = Q / A &nbsp;·&nbsp; ΔP = Q·R &nbsp;·&nbsp; R = 8ηL / (π r⁴)</p>
+  <div class="sym" data-g="poi"></div>
+  <canvas id="cv-profile" style="height:360px" role="img" aria-label="Área total, velocidad media y presión media en cada tramo del circuito"></canvas>
+  <p class="cap">Valores medios de un adulto en reposo como referencia de área y reparto de resistencias. Área y velocidad usan escala logarítmica.</p>
+</section>
+
+<section class="card" id="c-indic">
+  <h2>Indicadores de la aorta</h2>
+  <p class="sub">Qué régimen de flujo hay en la aorta y qué tan rígido está el árbol arterial, calculado con el gasto y la geometría actuales.</p>
+  <dl class="metrics" style="margin-bottom:6px">
+    <div class="m"><dt>Gasto cardíaco</dt><dd><span class="n" id="m-co"></span><span class="u">L/min</span></dd></div>
+    <div class="m"><dt>Presión arterial</dt><dd><span class="n" id="m-bp"></span><span class="u">mmHg</span><span class="s" id="m-map"></span></dd></div>
+    <div class="m"><dt>Resistencia periférica</dt><dd><span class="n" id="m-r"></span><span class="u">mmHg·s/mL</span><span class="s" id="m-rsi"></span></dd></div>
+    <div class="m"><dt>Constante RC</dt><dd><span class="n" id="m-tau"></span><span class="u">s</span><span class="s">caída de la presión en diástole</span></dd></div>
+    <div class="m"><dt>Velocidad de onda</dt><dd><span class="n" id="m-pwv"></span><span class="u">m/s</span><span class="s" id="m-pwvs"></span></dd></div>
+  </dl>
+  <div class="sec">
+    <h3>Resistencia periférica y presión media</h3>
+    <p class="eq">R = (PAM − P<sub>v</sub>) / GC &nbsp;·&nbsp; PAM = P<sub>v</sub> + GC·R</p>
+    <div class="sym" data-g="res"></div>
+  </div>
+  <div class="sec">
+    <h3>Rigidez arterial: velocidad de onda de pulso</h3>
+    <p class="eq">Bramwell–Hill: c = √( V / (ρ·C) )</p>
+    <div class="sym" data-g="pwv"></div>
+  </div>
+  <div class="sec">
+    <h3>Reynolds: laminar o turbulento</h3>
+    <p class="eq" id="eq-re"></p>
+    <div class="sym" data-g="re"></div>
+    <dl class="metrics">
+      <div class="m"><dt>Re medio</dt><dd><span class="n" id="m-rem"></span><span class="s"><span class="chip" id="m-regm"></span></span></dd></div>
+      <div class="m"><dt>Re en el pico</dt><dd><span class="n" id="m-rep"></span><span class="s"><span class="chip" id="m-regp"></span></span></dd></div>
+      <div class="m"><dt>Esfuerzo en la pared</dt><dd><span class="n" id="m-wss"></span><span class="u">Pa</span><span class="s">medio, según Poiseuille</span></dd></div>
+    </dl>
+    <p class="eq" style="margin-top:14px">Esfuerzo en la pared: τ<sub>w</sub> = 4ηQ / (π r³)</p>
+    <div class="sym" data-g="tw"></div>
+  </div>
+  <div class="sec">
+    <h3>Womersley: ¿perfil parabólico o plano?</h3>
+    <p class="eq" id="eq-wo"></p>
+    <div class="sym" data-g="wo"></div>
+    <dl class="metrics">
+      <div class="m"><dt>Número de Womersley</dt><dd><span class="n" id="m-alpha"></span><span class="s" id="m-alphas"></span></dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="card" id="c-sten">
+  <h2>Estenosis de una arteria</h2>
+  <p class="sub" id="t-sten"></p>
+  <p class="eq" id="eq-sten"></p>
+  <div class="sym" data-g="ste"></div>
+  <canvas id="cv-sten" style="height:270px" role="img" aria-label="Arteria con estrechamiento, partículas y presión lateral a lo largo del vaso"></canvas>
+  <p class="cap">Flujo estacionario. Los colores de los puntos van de azul (lento) a rojo (rápido); la velocidad visual está comprimida.</p>
+  <dl class="metrics" style="margin-top:14px">
+    <div class="m"><dt>Velocidad aguas arriba</dt><dd><span class="n" id="m-v0"></span><span class="u">cm/s</span></dd></div>
+    <div class="m"><dt>Velocidad en el cuello</dt><dd><span class="n" id="m-vs"></span><span class="u">cm/s</span><span class="s" id="m-vsx"></span></dd></div>
+    <div class="m"><dt>Caída de presión</dt><dd><span class="n" id="m-dp"></span><span class="u">mmHg</span><span class="s" id="m-dpb"></span></dd></div>
+    <div class="m"><dt>Reynolds en el cuello</dt><dd><span class="n" id="m-res"></span><span class="s"><span class="chip" id="m-regs"></span></span></dd></div>
+    <div class="m"><dt>Esfuerzo en la pared</dt><dd><span class="n" id="m-wsss"></span><span class="u">Pa</span><span class="s" id="m-wssx"></span></dd></div>
+    <div class="m"><dt>Flujo del territorio</dt><dd><span class="n" id="m-flow"></span><span class="u">% del normal</span></dd></div>
+  </dl>
+  <div class="sec">
+    <h3>Flujo según el grado de estrechamiento</h3>
+    <canvas id="cv-sweep" style="height:190px" role="img" aria-label="Flujo relativo del territorio en función del estrechamiento"></canvas>
+    <p class="cap" id="cap-sweep"></p>
+  </div>
+</section>
+
+<section class="card" id="c-wall">
+  <h2>Pared del vaso</h2>
+  <p class="sub">Ley de Laplace: a igual presión, un vaso más ancho carga más tensión. Al dilatarse, la pared además se adelgaza, y el esfuerzo crece con el cuadrado del radio.</p>
+  <p class="eq">T = P·r &nbsp;·&nbsp; σ = P·r / h &nbsp;·&nbsp; con la pared adelgazando como h ∝ 1/r</p>
+  <div class="sym" data-g="lap"></div>
+  <div class="wallrow">
+    <canvas id="cv-wall" role="img" aria-label="Sección transversal de la aorta con distinto radio y espesor"></canvas>
+    <dl class="metrics">
+      <div class="m"><dt>Presión sistólica</dt><dd><span class="n" id="m-wp"></span><span class="u">mmHg</span></dd></div>
+      <div class="m"><dt>Radio</dt><dd><span class="n" id="m-wr"></span><span class="u">cm</span></dd></div>
+      <div class="m"><dt>Espesor de pared</dt><dd><span class="n" id="m-wh"></span><span class="u">mm</span></dd></div>
+      <div class="m"><dt>Tensión T</dt><dd><span class="n" id="m-wt"></span><span class="u">N/m</span></dd></div>
+      <div class="m"><dt>Esfuerzo σ</dt><dd><span class="n" id="m-ws"></span><span class="u">kPa</span><span class="s" id="m-wsx"></span></dd></div>
+      <div class="m"><dt>Capilar (r = 4 µm, 25 mmHg)</dt><dd><span class="n" id="m-wc"></span><span class="u">N/m</span><span class="s" id="m-wcx"></span></dd></div>
+    </dl>
+  </div>
+</section>
+
+</main>
+
+<p class="note" style="margin-top:18px">Límites del modelo: parámetros concentrados con el corazón como fuente de flujo, sin circulación pulmonar, sin autorregulación ni reclutamiento capilar. El reparto de áreas y resistencias es el de un adulto promedio en reposo, escalado para cada etapa según el tamaño de la aorta. Las etapas usan valores típicos de referencia, que varían entre personas, y la viscosidad sigue un ajuste empírico con el hematocrito. Sirve para ver tendencias, no para diagnosticar.</p>
+</div>
+
+<script>
+// ==MODEL==
+const RHO=1060, MMHG=133.322, PV=5, ETA0=3.5e-3;
+const SEG=[
+  {n:'Aorta',s:'Aorta',A:3,share:.02,w:1},
+  {n:'Arterias',s:'Art.',A:20,share:.10,w:.8},
+  {n:'Arteriolas',s:'Arteriol.',A:40,share:.50,w:.4},
+  {n:'Capilares',s:'Capil.',A:2500,share:.22,w:.08},
+  {n:'Vénulas',s:'Vénul.',A:250,share:.08,w:.02},
+  {n:'Venas',s:'Venas',A:80,share:.06,w:0},
+  {n:'Vena cava',s:'V. cava',A:8,share:.02,w:0}
+];
+const visc=h=>1.2e-3*(1+2.5*h+3.9*h*h);            // Pa·s, ajuste empírico con el hematocrito
+// Valores de reposo por etapa. sf escala las áreas de todos los tramos (aorta adulta = 3 cm²),
+// hw es el espesor de la aorta, Vart el volumen arterial (para la velocidad de onda) y r0 el radio de la arteria del panel de estenosis.
+const STAGES={
+  neonato:{n:'Recién nacido',hr:140,sv:4.5,c:0.09,hct:53,MAP:55,sf:0.094,hw:0.0004,Vart:1.6e-5,r0:0.00125,svDec:1,
+    rg:{hr:[90,200,1],sv:[2,9,0.1],c:[0.04,0.3,0.01]},
+    t:'Corazón pequeño y rápido, con un gasto de unos 0,6 L/min y presión media cercana a 55 mmHg. La aorta mide unos 6 mm, la pared es muy delgada y el hematocrito es alto, lo que aumenta la viscosidad. El modelo no incluye el cierre del ductus arterioso ni del foramen oval.'},
+  nino:{n:'Niño de 7 años',hr:95,sv:38,c:0.55,hct:40,MAP:76,sf:0.433,hw:0.001,Vart:1.2e-4,r0:0.0025,svDec:0,
+    rg:{hr:[60,160,1],sv:[15,70,1],c:[0.25,1.4,0.05]},
+    t:'Frecuencia más alta que en el adulto, presión más baja (alrededor de 100/60) y arterias muy elásticas. El gasto por kilo de peso es mayor que en el adulto, con una aorta de 13 mm.'},
+  adulto:{n:'Adulto',hr:72,sv:70,c:1.2,hct:45,MAP:93,sf:1,hw:0.002,Vart:3.5e-4,r0:0.004,svDec:0,
+    rg:{hr:[40,180,1],sv:[30,130,1],c:[0.4,3,0.05]},
+    t:'Valores de referencia del adulto joven en reposo, que son la base del resto de las etapas.'},
+  mayor:{n:'Adulto mayor',hr:70,sv:62,c:0.55,hct:41,MAP:104,sf:1.4,hw:0.0024,Vart:5e-4,r0:0.0042,svDec:0,
+    rg:{hr:[40,160,1],sv:[30,110,1],c:[0.25,2,0.05]},
+    t:'Las arterias se rigidizan: baja la compliancia, la onda de pulso viaja más rápido y suben la presión sistólica y la de pulso. La aorta se ensancha, la pared se engrosa y el gasto cae algo.'},
+  embarazo:{n:'Embarazo a término',hr:88,sv:78,c:1.45,hct:34,MAP:85,sf:1.07,hw:0.002,Vart:3.8e-4,r0:0.004,svDec:0,
+    rg:{hr:[50,160,1],sv:[40,120,1],c:[0.7,3,0.05]},
+    t:'El gasto sube cerca de un 40 %, las resistencias bajan y el plasma crece más que los glóbulos rojos, por eso el hematocrito baja. Las arterias se vuelven más distensibles. El modelo no incluye la compresión de la vena cava ni el flujo uterino.'}
+};
+
+function solve(s){
+  const stg=STAGES[s.stage];
+  const T=60/s.hr, f=s.f/100, eta=visc(s.hct/100), er=eta/visc(stg.hct/100);
+  const Q=s.sv*s.hr/60;                            // gasto medio, mL/s
+  const R0=(stg.MAP-PV)/(stg.sv*stg.hr/60);        // resistencia de reposo de la etapa, mmHg·s/mL
+  const A=SEG.map(g=>g.A*stg.sf);                  // áreas totales de la etapa, cm²
+  const sh=SEG.map((g,i)=>g.share*R0*er*(i===2?1/Math.pow(f,4):1));
+  const R=sh.reduce((a,b)=>a+b,0);
+  const Ts=Math.min(0.35*Math.sqrt(T),0.6*T);
+  const qp=s.sv*Math.PI/(2*Ts);
+  const qin=t=>t<Ts?qp*Math.sin(Math.PI*t/Ts):0;
+  const N=720, dt=T/N, a=Math.exp(-dt/(R*s.c));
+  const P=new Float32Array(N+1);
+  let p=PV+Q*R;
+  for(let beat=0;beat<80;beat++){
+    const p0=p;
+    for(let i=0;i<N;i++){P[i]=p;p=PV+(p-PV)*a+R*qin((i+.5)*dt)*(1-a);}
+    P[N]=p;
+    if(Math.abs(p-p0)<0.004)break;
+  }
+  let sys=-1e9,dia=1e9;
+  for(let i=0;i<=N;i++){sys=Math.max(sys,P[i]);dia=Math.min(dia,P[i]);}
+  const MAP=PV+Q*R;
+  const Pm=[],v=[];let acc=0;
+  SEG.forEach((g,i)=>{Pm.push(MAP-Q*(acc+sh[i]/2));acc+=sh[i];v.push(Q/A[i]);});
+  // aorta
+  const ra=Math.sqrt(A[0]/Math.PI)/100, D=2*ra;
+  const vm=Q*1e-6/(A[0]*1e-4), vp=qp*1e-6/(A[0]*1e-4);
+  const om=2*Math.PI/T;
+  const Csi=s.c*1e-6/MMHG;
+  return {T,Ts,qp,qin,N,P,Q,R,sh,MAP,sys,dia,tau:R*s.c,eta,Pm,v,A,stg,ra,D,vm,vp,
+    Rem:RHO*vm*D/eta, Rep:RHO*vp*D/eta, alpha:ra*Math.sqrt(om*RHO/eta),
+    wss:4*eta*Q*1e-6/(Math.PI*Math.pow(ra,3)), pwv:Math.sqrt(stg.Vart/(RHO*Csi))};
+}
+
+function stenosis(s,M){
+  const eta=M.eta, r0=M.stg.r0, A0=Math.PI*r0*r0, L=2.5*r0, Kt=1.52;
+  const Rb=M.R/0.07*MMHG*1e6, dp=(M.MAP-PV)*MMHG;
+  const run=d=>{
+    const rs=r0*d, As=A0*d*d;
+    const Rv=8*eta*L/(Math.PI*Math.pow(rs,4));
+    const k=Kt*RHO/2*Math.pow(A0/As-1,2)/(A0*A0);
+    const b=Rb+Rv;
+    const Q=k>0?(-b+Math.sqrt(b*b+4*k*dp))/(2*k):dp/b;
+    return {Q,rs,As,Rv,k};
+  };
+  const d=1-s.sten/100, n=run(1), m=run(d);
+  const loss=m.Rv*m.Q+m.k*m.Q*m.Q;                 // Pa
+  const v0=m.Q/A0, vs=m.Q/m.As;
+  const sweep=[];let crit=null;
+  for(let i=0;i<=95;i++){const r=run(1-i/100).Q/n.Q;sweep.push(r);if(crit===null&&r<0.9)crit=i;}
+  return {d,Q:m.Q,A0,As:m.As,r0,rs:m.rs,v0,vs,Rv:m.Rv,k:m.k,loss:loss/MMHG,
+    dpThroat:(0.5*RHO*(vs*vs-v0*v0)+m.Rv*m.Q)/MMHG,
+    Res:RHO*vs*2*m.rs/eta, wss:4*eta*m.Q/(Math.PI*Math.pow(m.rs,3)), wss0:4*eta*m.Q/(Math.PI*Math.pow(r0,3)),
+    rel:m.Q/n.Q, sweep, crit};
+}
+// ==/MODEL==
+
+const $=id=>document.getElementById(id);
+const MONO="'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace", SANS="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif";
+const S={stage:'adulto',hr:72,sv:70,f:100,c:1.2,hct:45,sten:0,aneu:1};
+// Cada situación se expresa como cambio respecto de los valores de reposo de la etapa elegida.
+const SIT={
+  reposo:{},
+  ejercicio:{hrx:1.6,svx:1.2,f:150,cx:.93},
+  hipertension:{hrx:1.04,f:88,cx:.67},
+  rigidez:{cx:.4},
+  anemia:{hctx:.56,hrx:1.32,svx:1.14},
+  estenosis:{sten:75},
+  aneurisma:{aneu:2.2}
+};
+const fmt=(v,d=1)=>v.toLocaleString('es-CL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const sstep=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
+const COL={};
+function readColors(){const cs=getComputedStyle(document.documentElement);['bg','surface','fg','muted','line','grid','art','ven','flow','warn','plaque'].forEach(k=>{COL[k]=cs.getPropertyValue('--'+k).trim();});}
+function rgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return [n>>16&255,n>>8&255,n&255];}
+function alpha(c,a){const A=rgb(c);return `rgba(${A[0]},${A[1]},${A[2]},${a})`;}
+function mixc(a,b,t,al=1){const A=rgb(a),B=rgb(b);return `rgba(${Math.round(A[0]+(B[0]-A[0])*t)},${Math.round(A[1]+(B[1]-A[1])*t)},${Math.round(A[2]+(B[2]-A[2])*t)},${al})`;}
+function tx(x,s,X,Y,size=11,color,align='left',font=MONO,weight=400){x.font=`${weight} ${size}px ${font}`;x.fillStyle=color||COL.fg;x.textAlign=align;x.textBaseline='alphabetic';x.fillText(s,X,Y);}
+function ln(x,x1,y1,x2,y2,color,w=1,dash){x.beginPath();x.setLineDash(dash||[]);x.lineWidth=w;x.strokeStyle=color;x.moveTo(x1,y1);x.lineTo(x2,y2);x.stroke();x.setLineDash([]);}
+function fit(cv){
+  const r=cv.getBoundingClientRect(), d=Math.min(window.devicePixelRatio||1,2);
+  const w=Math.max(1,Math.round(r.width*d)), h=Math.max(1,Math.round(r.height*d));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+  const x=cv.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,r.width,r.height);
+  return {x,w:r.width,h:r.height};
+}
+
+let M=null, ST=null;
+const cv={};['circuit','wave','profile','sten','sweep','wall'].forEach(k=>{cv[k]=$('cv-'+k);});
+
+/* ---------- actualizar números ---------- */
+function setT(id,v){const e=$(id);if(e)e.textContent=v;}
+function regime(re){return re<2000?['laminar','ok']:re<4000?['transición','warn']:['turbulento','crit'];}
+function setChip(id,re){const r=regime(re),e=$(id);e.textContent=r[0];e.className='chip '+r[1];}
+function update(){
+  M=solve(S); ST=stenosis(S,M);
+  const stg=M.stg, co=M.Q*60/1000, cod=co<1?2:1;
+  setT('v-hr',S.hr+' lpm'); setT('v-sv',fmt(S.sv,stg.svDec)+' mL'); setT('v-f',S.f+' %'); setT('v-c',fmt(S.c,2)+' mL/mmHg');
+  setT('v-hct',S.hct+' %'); setT('v-sten',S.sten+' %'); setT('v-aneu','× '+fmt(S.aneu,2));
+  setT('h-co','Gasto cardíaco = FC × VS = '+fmt(co,cod)+' L/min');
+  setT('h-sten','Reducción del diámetro en una arteria de '+fmt(stg.r0*2000,1)+' mm.');
+  setT('t-sten','Una arteria de '+fmt(stg.r0*2000,1)+' mm de diámetro y '+fmt(stg.r0*2500,1)+' mm de zona estrecha irriga el 7 % del gasto cardíaco. Al estrecharla, la velocidad sube, la presión lateral cae y el flujo del territorio solo cede cuando el estrechamiento ya es muy grande.');
+  setT('h-eta','Viscosidad η = '+fmt(M.eta*1000,1)+' mPa·s');
+  $('eq-wave').innerHTML='C·dP/dt = Q<sub>in</sub>(t) − (P − P<sub>v</sub>)/R &nbsp;·&nbsp; R = '+fmt(M.R,2)+' mmHg·s/mL, C = '+fmt(S.c,2)+' mL/mmHg, RC = '+fmt(M.tau,2)+' s';
+  setT('m-co',fmt(co,cod));
+  setT('m-bp',fmt(M.sys,0)+' / '+fmt(M.dia,0));
+  setT('m-map','media '+fmt(M.MAP,0)+' · pulso '+fmt(M.sys-M.dia,0));
+  setT('m-r',fmt(M.R,2)); setT('m-rsi','= '+fmt(M.R*1.33322,2)+' × 10⁸ Pa·s/m³');
+  setT('m-tau',fmt(M.tau,2));
+  setT('m-pwv',fmt(M.pwv,1)); setT('m-pwvs',M.pwv<7?'arterias elásticas':M.pwv<10?'rigidez moderada':'arterias rígidas');
+  $('eq-re').innerHTML='Re = ρ·v·D / η = '+RHO+' kg/m³ × v × '+fmt(M.D*100,2)+' cm / '+fmt(M.eta*1000,1)+' mPa·s &nbsp;·&nbsp; v medio = '+fmt(M.vm*100,0)+' cm/s, v pico = '+fmt(M.vp*100,0)+' cm/s';
+  setT('m-rem',fmt(M.Rem,0)); setChip('m-regm',M.Rem);
+  setT('m-rep',fmt(M.Rep,0)); setChip('m-regp',M.Rep);
+  setT('m-wss',fmt(M.wss,2));
+  $('eq-wo').innerHTML='α = r·√(ω·ρ/η) = '+fmt(M.ra*100,2)+' cm × √('+fmt(2*Math.PI/M.T,1)+' rad/s × ρ / η)';
+  setT('m-alpha',fmt(M.alpha,1)); setT('m-alphas',M.alpha>10?'perfil plano, domina la inercia':M.alpha>1?'perfil intermedio':'perfil parabólico');
+  // estenosis
+  $('eq-sten').innerHTML='A₀v₀ = A<sub>s</sub>v<sub>s</sub> &nbsp;·&nbsp; ΔP = ½ρ(v<sub>s</sub>² − v₀²) + 8ηLQ/(πr⁴) + K<sub>t</sub>(ρ/2)(A₀/A<sub>s</sub> − 1)²v₀²';
+  setT('m-v0',fmt(ST.v0*100,1)); setT('m-vs',fmt(ST.vs*100,1));
+  setT('m-vsx','× '+fmt(ST.vs/ST.v0,1)+' (continuidad)');
+  setT('m-dp',fmt(ST.loss,1)); setT('m-dpb','lateral en el cuello: −'+fmt(ST.dpThroat,1));
+  setT('m-res',fmt(ST.Res,0)); setChip('m-regs',ST.Res);
+  setT('m-wsss',fmt(ST.wss,1)); setT('m-wssx','sin estenosis: '+fmt(ST.wss0,1)+' Pa');
+  setT('m-flow',fmt(ST.rel*100,0));
+  setT('cap-sweep',ST.crit===null?'Con la presión y la viscosidad actuales el flujo se mantiene sobre el 90 % del normal en todo el rango.':'Con la presión y la viscosidad actuales, el flujo baja del 90 % del normal cuando el diámetro se reduce cerca de '+ST.crit+' %. Antes de eso la arteria casi no limita el flujo.');
+  // pared
+  const k=S.aneu, r=M.ra*k, hh=stg.hw/k, T=M.sys*MMHG*r, sig=T/hh/1000, Tc=25*MMHG*4e-6;
+  setT('m-wp',fmt(M.sys,0)); setT('m-wr',fmt(r*100,2)); setT('m-wh',fmt(hh*1000,2));
+  setT('m-wt',fmt(T,0)); setT('m-ws',fmt(sig,0)); setT('m-wsx',k===1?'referencia':'× '+fmt(k*k,1)+' respecto a la aorta normal');
+  setT('m-wc',fmt(Tc,3)); setT('m-wcx','la aorta soporta '+fmt(T/Tc,0)+' veces más tensión');
+  renderLive();
+}
+
+/* ---------- circuito ---------- */
+const parts=Array.from({length:240},()=>({x:Math.random(),y:Math.random()*2-1}));
+let U=SEG.map(()=>0);                              // grosor relativo de cada tramo, se recalcula con las áreas de la etapa
+const dg=a=>a<1?2:a<10?1:0;
+function halfAt(xn,hmax){
+  const p=xn*7-0.5;let u;
+  if(p<=0)u=U[0];else if(p>=6)u=U[6];else{const i=Math.floor(p);u=U[i]+(U[i+1]-U[i])*sstep(p-i);}
+  return 6+(hmax-6)*u;
+}
+function interpP(ph){const f=ph*M.N,i=Math.min(M.N-1,Math.floor(f)),u=f-i;return M.P[i]*(1-u)+M.P[i+1]*u;}
+let simT=0, speed=0.5, paused=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function drawCircuit(dts){
+  const {x,w}=fit(cv.circuit);
+  U=M.A.map(a=>clamp(Math.log(a/0.2)/Math.log(4000/0.2),0,1));
+  const narrow=w<560, bx0=narrow?60:84, bx1=w-14, bw=bx1-bx0, sw=bw/7, cy=106, hmax=48;
+  const tt=simT%M.T, Pao=interpP(tt/M.T), Qin=M.qin(tt);
+  const Qs=SEG.map(g=>M.Q+g.w*(Qin-M.Q));
+  const Ps=SEG.map((g,i)=>M.Pm[i]+g.w*(Pao-M.MAP));
+  const pmax=Math.max(M.sys,110);
+  // divisores
+  for(let i=1;i<7;i++)ln(x,bx0+i*sw,cy-hmax-6,bx0+i*sw,cy+hmax+60,COL.grid,1,[2,4]);
+  // tubo
+  const gr=x.createLinearGradient(bx0,0,bx1,0);
+  const stops=Ps.map(p=>mixc(COL.ven,COL.art,clamp((p-PV)/(pmax-PV),0,1),0.42));
+  gr.addColorStop(0,stops[0]);
+  stops.forEach((c,i)=>gr.addColorStop((i+.5)/7,c));
+  gr.addColorStop(1,stops[6]);
+  x.beginPath();
+  for(let px=bx0;px<=bx1;px+=3)x.lineTo(px,cy-halfAt((px-bx0)/bw,hmax));
+  for(let px=bx1;px>=bx0;px-=3)x.lineTo(px,cy+halfAt((px-bx0)/bw,hmax));
+  x.closePath();x.fillStyle=gr;x.fill();x.lineWidth=1.5;x.strokeStyle=alpha(COL.fg,.45);x.stroke();
+  // partículas
+  x.fillStyle=alpha(COL.fg,.8);
+  for(const p of parts){
+    const i=Math.min(6,Math.floor(p.x*7)), v=Math.max(0,Qs[i])/M.A[i];
+    p.x+=28*Math.pow(v,0.35)*dts/bw;
+    if(p.x>=1){p.x-=1;p.y=Math.random()*2-1;}
+    const px=bx0+p.x*bw, py=cy+p.y*halfAt(p.x,hmax)*0.82;
+    x.beginPath();x.arc(px,py,1.9,0,6.283);x.fill();
+  }
+  // corazón
+  const hs=0.62+0.38*Math.min(1,Math.cbrt(M.stg.sf)), sc=(1-0.16*(Qin/M.qp))*hs, hx=narrow?30:42;
+  x.save();x.translate(hx,cy);x.scale(sc,sc);
+  x.beginPath();x.moveTo(0,16);x.bezierCurveTo(-28,-6,-16,-30,0,-13);x.bezierCurveTo(16,-30,28,-6,0,16);
+  x.fillStyle=COL.art;x.fill();x.restore();
+  tx(x,'Corazón',hx,cy+38,10,COL.muted,'center',SANS);
+  // nombres y valores
+  SEG.forEach((g,i)=>{
+    const cx=bx0+(i+.5)*sw, nm=sw<80?g.s:g.n, yN=cy-hmax-10-(sw<70&&i%2?13:0);
+    tx(x,nm,cx,yN,sw<80?10:12,COL.fg,'center',SANS,600);
+    tx(x,fmt(M.A[i],dg(M.A[i])),cx,cy+hmax+22,10.5,COL.fg,'center');
+    tx(x,fmt(v2(i),v2(i)<1?2:1),cx,cy+hmax+38,10.5,COL.flow,'center');
+    tx(x,fmt(Ps[i],0),cx,cy+hmax+54,10.5,COL.art,'center');
+  });
+  function v2(i){return M.v[i];}
+  tx(x,'A (cm²)',6,cy+hmax+22,9.5,COL.muted);
+  tx(x,'v (cm/s)',6,cy+hmax+38,9.5,COL.muted);
+  tx(x,'P (mmHg)',6,cy+hmax+54,9.5,COL.muted);
+  tx(x,'t = '+fmt(tt,2)+' s · P = '+fmt(Pao,0)+' mmHg · Q = '+fmt(Qin,0)+' mL/s',6,16,11,COL.muted);
+  tx(x,'v y P: valores medios; la pulsación se amortigua hacia los capilares',6,cy+hmax+82,10.5,COL.muted,'left',SANS);
+}
+
+/* ---------- onda de presión ---------- */
+function drawWave(){
+  const {x,w,h}=fit(cv.wave);
+  const L=46,R=46,Tm=14,B=30,pw=w-L-R,ph=h-Tm-B;
+  const pmin=Math.max(0,Math.floor((M.dia-15)/20)*20), pmax=Math.ceil((M.sys+10)/20)*20;
+  const qmax=[8,20,40,80,100,200,400,600,800].find(v=>v>=M.qp*1.05)||1000;
+  const X=t=>L+t/M.T*pw, YP=p=>Tm+ph*(1-(p-pmin)/(pmax-pmin)), YQ=q=>Tm+ph*(1-q/qmax);
+  for(let p=pmin;p<=pmax;p+=20){const y=YP(p);ln(x,L,y,L+pw,y,COL.grid);tx(x,String(p),L-6,y+4,10,COL.art,'right');}
+  for(let i=0;i<=4;i++){const q=qmax*i/4;tx(x,String(Math.round(q)),L+pw+6,YQ(q)+4,10,COL.flow,'left');}
+  const tick=M.T>1?0.25:M.T>0.55?0.2:0.1;
+  for(let t=0;t<=M.T+1e-6;t+=tick){ln(x,X(t),Tm+ph,X(t),Tm+ph+4,COL.muted);tx(x,fmt(t,2),X(t),Tm+ph+17,10,COL.muted,'center');}
+  tx(x,'mmHg',L-6,9,10,COL.art,'right');tx(x,'mL/s',L+pw+6,9,10,COL.flow,'left');tx(x,'t (s)',L+pw,h-3,10,COL.muted,'right');
+  // flujo
+  const dt=M.T/M.N;
+  x.beginPath();x.moveTo(X(0),YQ(0));
+  for(let i=0;i<=M.N;i++)x.lineTo(X(i*dt),YQ(M.qin(i*dt)));
+  x.lineTo(X(M.T),YQ(0));x.closePath();x.fillStyle=alpha(COL.flow,.2);x.fill();
+  x.beginPath();for(let i=0;i<=M.N;i++){const X1=X(i*dt),Y1=YQ(M.qin(i*dt));i?x.lineTo(X1,Y1):x.moveTo(X1,Y1);}
+  x.lineWidth=1.5;x.strokeStyle=COL.flow;x.stroke();
+  // PAM
+  ln(x,L,YP(M.MAP),L+pw,YP(M.MAP),alpha(COL.fg,.4),1,[2,4]);
+  tx(x,'PAM '+fmt(M.MAP,0),L+pw-4,YP(M.MAP)-5,10,COL.muted,'right');
+  // presión
+  x.beginPath();for(let i=0;i<=M.N;i++){const X1=X(i*dt),Y1=YP(M.P[i]);i?x.lineTo(X1,Y1):x.moveTo(X1,Y1);}
+  x.lineWidth=2.5;x.strokeStyle=COL.art;x.lineJoin='round';x.stroke();
+  // exponencial teórica en diástole
+  const iS=Math.round(M.Ts/M.T*M.N), Ps=M.P[iS];
+  x.beginPath();x.setLineDash([4,4]);
+  for(let i=iS;i<=M.N;i++){const t=i*dt,p=PV+(Ps-PV)*Math.exp(-(t-M.Ts)/M.tau);const X1=X(t),Y1=YP(p);i===iS?x.moveTo(X1,Y1):x.lineTo(X1,Y1);}
+  x.lineWidth=1.5;x.strokeStyle=COL.fg;x.stroke();x.setLineDash([]);
+  tx(x,'P = P₀·e^(−t/RC)',X(M.Ts+(M.T-M.Ts)*0.5),YP(PV+(Ps-PV)*Math.exp(-(M.T-M.Ts)*0.5/M.tau))-9,10.5,COL.fg,'center');
+  tx(x,'PS '+fmt(M.sys,0),X(M.Ts*0.5)+8,YP(M.sys)-6,10.5,COL.art,'left',MONO,500);
+  tx(x,'PD '+fmt(M.dia,0),L+6,YP(M.dia)+15,10.5,COL.art,'left',MONO,500);
+  // cursor
+  const tt=simT%M.T, cx=X(tt), P1=interpP(tt/M.T), Q1=M.qin(tt);
+  ln(x,cx,Tm,cx,Tm+ph,alpha(COL.fg,.5),1);
+  x.fillStyle=COL.art;x.beginPath();x.arc(cx,YP(P1),4.5,0,6.283);x.fill();
+  x.fillStyle=COL.flow;x.beginPath();x.arc(cx,YQ(Q1),4,0,6.283);x.fill();
+}
+
+/* ---------- perfil por tramo ---------- */
+function drawProfile(){
+  const {x,w,h}=fit(cv.profile);
+  const L=8,R=8,top=6,bot=26,gap=12,rh=(h-top-bot-gap*2)/3, sw=(w-L-R)/7, narrow=sw<62;
+  const rows=[
+    {lab:'Área total (cm²)',vals:M.A,log:true,min:0.1,max:10000,col:alpha(COL.fg,.55),dg:null},
+    {lab:'Velocidad media (cm/s)',vals:M.v,log:true,min:0.01,max:300,col:COL.flow,dg:null},
+    {lab:'Presión media (mmHg)',vals:M.Pm,log:false,min:0,max:Math.ceil((M.MAP+5)/20)*20,col:COL.art,dg:0}
+  ];
+  rows.forEach((r,ri)=>{
+    const y0=top+ri*(rh+gap), base=y0+rh, barMax=rh-30;
+    tx(x,r.lab,L,y0+11,11,COL.muted,'left',SANS,600);
+    ln(x,L,base,w-R,base,COL.line);
+    r.vals.forEach((v,i)=>{
+      const f=r.log?(Math.log10(Math.max(v,r.min))-Math.log10(r.min))/(Math.log10(r.max)-Math.log10(r.min)):v/r.max;
+      const bh=Math.max(2,clamp(f,0,1)*barMax), bw=sw*0.56, cx=L+(i+.5)*sw;
+      x.fillStyle=r.col;x.fillRect(cx-bw/2,base-bh,bw,bh);
+      const dg=r.dg===null?(v<1?2:v<10?1:0):r.dg;
+      tx(x,fmt(v,dg),cx,base-bh-4,10.5,COL.fg,'center');
+    });
+  });
+  SEG.forEach((g,i)=>tx(x,narrow?g.s:g.n,L+(i+.5)*sw,h-8,narrow?10:12,COL.fg,'center',SANS,500));
+}
+
+/* ---------- estenosis ---------- */
+const sp=Array.from({length:80},()=>({x:Math.random(),y:(Math.random()*2-1)*0.9}));
+function drawSten(dts){
+  const {x,w,h}=fit(cv.sten);
+  const artH=Math.round(h*0.56), cy=artH/2+14, r0=Math.min(artH*0.3,46), xc=w*0.46, ww=Math.max(24,w*0.09), d=ST.d;
+  const rr=px=>r0*(1-(1-d)*Math.exp(-Math.pow((px-xc)/ww,4)));
+  // luz del vaso
+  x.beginPath();
+  for(let px=0;px<=w;px+=3)x.lineTo(px,cy-rr(px));
+  for(let px=w;px>=0;px-=3)x.lineTo(px,cy+rr(px));
+  x.closePath();x.fillStyle=alpha(COL.art,.1);x.fill();
+  // placa
+  [-1,1].forEach(sg=>{
+    x.beginPath();x.moveTo(0,cy+sg*r0);x.lineTo(w,cy+sg*r0);
+    for(let px=w;px>=0;px-=3)x.lineTo(px,cy+sg*rr(px));
+    x.closePath();x.fillStyle=COL.plaque;x.fill();
+  });
+  ln(x,0,cy-r0,w,cy-r0,alpha(COL.fg,.5),2);ln(x,0,cy+r0,w,cy+r0,alpha(COL.fg,.5),2);
+  // partículas
+  const v0=ST.Q/ST.A0;
+  for(const p of sp){
+    const px0=p.x*w, r=rr(px0), vm=v0*Math.pow(r0/r,2), u=2*vm*(1-p.y*p.y);
+    p.x+=110*Math.sqrt(u)*dts/w;
+    if(p.x>1){p.x-=1;p.y=(Math.random()*2-1)*0.9;}
+    const px=p.x*w, py=cy+p.y*rr(px);
+    x.fillStyle=mixc(COL.ven,COL.art,clamp(u/3,0,1),0.95);
+    x.beginPath();x.arc(px,py,2.1,0,6.283);x.fill();
+  }
+  tx(x,'v₀ = '+fmt(ST.v0*100,1)+' cm/s',8,14,11,COL.muted);
+  tx(x,'vₛ = '+fmt(ST.vs*100,1)+' cm/s',xc,14,11,COL.art,'center',MONO,500);
+  // presión lateral
+  const y0=artH+34, y1=h-18, N=Math.ceil(w/3)+1, pin=M.MAP, ps=[];
+  for(let i=0;i<N;i++){
+    const px=i*3, r=rr(px)/r0*ST.r0, v=ST.Q/(Math.PI*r*r);
+    const ramp=sstep((px-(xc-ww))/(3*ww));
+    ps.push(pin-0.5*RHO*(v*v-v0*v0)/MMHG-ST.loss*ramp);
+  }
+  let pmin=Math.min(...ps);const pmax=pin;if(pmax-pmin<6)pmin=pmax-6;
+  const Y=p=>y1-(p-pmin)/(pmax-pmin)*(y1-y0);
+  ln(x,0,y1,w,y1,COL.line);
+  x.beginPath();ps.forEach((p,i)=>i?x.lineTo(i*3,Y(p)):x.moveTo(0,Y(p)));
+  x.lineWidth=2.2;x.strokeStyle=COL.art;x.stroke();
+  x.lineTo((N-1)*3,y1);x.lineTo(0,y1);x.closePath();x.fillStyle=alpha(COL.art,.12);x.fill();
+  tx(x,'presión lateral media',8,y0-8,10.5,COL.muted,'left',SANS,600);
+  tx(x,fmt(pmax,0)+' mmHg',w-6,y0-8,10.5,COL.fg,'right');
+  tx(x,fmt(ps[N-1],0)+' mmHg',w-6,Y(ps[N-1])-6,10.5,COL.fg,'right');
+  tx(x,'zona estrecha',xc,y1+13,10.5,COL.muted,'center',SANS);
+}
+function drawSweep(){
+  const {x,w,h}=fit(cv.sweep);
+  const L=40,R=12,Tm=10,B=30,pw=w-L-R,ph=h-Tm-B;
+  const X=s=>L+s/95*pw, Y=r=>Tm+ph*(1-r);
+  [0,.25,.5,.75,1].forEach(r=>{ln(x,L,Y(r),L+pw,Y(r),COL.grid);tx(x,Math.round(r*100)+' %',L-6,Y(r)+4,10,COL.muted,'right');});
+  for(let s=0;s<=90;s+=10){ln(x,X(s),Tm+ph,X(s),Tm+ph+4,COL.muted);tx(x,s+' %',X(s),Tm+ph+17,10,COL.muted,'center');}
+  tx(x,'estrechamiento del diámetro',L+pw,h-3,10.5,COL.muted,'right',SANS);
+  tx(x,'flujo del territorio',L+6,Tm+12,10.5,COL.muted,'left',SANS,600);
+  if(ST.crit!==null){ln(x,X(ST.crit),Tm,X(ST.crit),Tm+ph,alpha(COL.warn,.8),1,[3,3]);tx(x,ST.crit+' %',X(ST.crit)-4,Tm+24,10.5,COL.warn,'right',MONO,500);}
+  x.beginPath();ST.sweep.forEach((r,i)=>i?x.lineTo(X(i),Y(r)):x.moveTo(X(0),Y(r)));
+  x.lineTo(X(95),Y(0));x.lineTo(X(0),Y(0));x.closePath();x.fillStyle=alpha(COL.flow,.14);x.fill();
+  x.beginPath();ST.sweep.forEach((r,i)=>i?x.lineTo(X(i),Y(r)):x.moveTo(X(0),Y(r)));
+  x.lineWidth=2.2;x.strokeStyle=COL.flow;x.stroke();
+  const cs=clamp(S.sten,0,95);
+  ln(x,X(cs),Tm,X(cs),Tm+ph,alpha(COL.fg,.5),1);
+  x.fillStyle=COL.art;x.beginPath();x.arc(X(cs),Y(ST.rel),5,0,6.283);x.fill();
+}
+
+/* ---------- pared ---------- */
+function drawWall(){
+  const {x,w,h}=fit(cv.wall);
+  const cx=w/2, cy=h/2, k=S.aneu, r0=26, rp=r0*k, hp=7/k;
+  x.beginPath();x.setLineDash([3,3]);x.arc(cx,cy,r0,0,6.283);x.lineWidth=1;x.strokeStyle=COL.muted;x.stroke();x.setLineDash([]);
+  x.beginPath();x.arc(cx,cy,rp,0,6.283);x.fillStyle=alpha(COL.art,.12);x.fill();
+  const t=clamp((k*k-1)/8,0,1);
+  x.beginPath();x.arc(cx,cy,rp+hp/2,0,6.283);x.lineWidth=hp;x.strokeStyle=mixc(COL.ven,COL.art,t);x.stroke();
+  tx(x,'r × '+fmt(k,2),cx,cy+4,12,COL.fg,'center',MONO,500);
+}
+
+/* ---------- glosario de símbolos ---------- */
+// s: símbolo, n: nombre, d: definición, u: unidad, f: valor actual del modelo (función) o x: valor fijo.
+const DEF={
+  Q:{s:'Q',n:'Caudal',d:'Volumen de sangre que atraviesa una sección del vaso cada segundo. En el circuito completo es igual al gasto cardíaco.',u:'m³/s (aquí mL/s)',f:()=>fmt(M.Q,0)+' mL/s'},
+  A:{s:'A',n:'Área de sección',d:'Superficie transversal por la que circula la sangre. En un tramo con muchos vasos en paralelo se suma el área de todos (área total).',u:'m² (aquí cm²)',f:()=>'aorta '+fmt(M.A[0],dg(M.A[0]))+' cm²'},
+  v:{s:'v',n:'Velocidad media',d:'Distancia que avanza la sangre por segundo, promediada en toda la sección. Disminuye donde el área total aumenta.',u:'m/s (aquí cm/s)',f:()=>'aorta '+fmt(M.v[0],1)+' cm/s'},
+  GC:{s:'GC',n:'Gasto cardíaco',d:'Sangre que bombea el ventrículo en un minuto. Es el producto de la frecuencia cardíaca por el volumen sistólico.',u:'L/min',f:()=>{const c=M.Q*.06;return fmt(c,c<1?2:1)+' L/min';}},
+  FC:{s:'FC',n:'Frecuencia cardíaca',d:'Número de latidos por minuto.',u:'lpm',f:()=>S.hr+' lpm'},
+  VS:{s:'VS',n:'Volumen sistólico',d:'Sangre que expulsa el ventrículo en cada latido.',u:'mL',f:()=>fmt(S.sv,M.stg.svDec)+' mL'},
+  dP:{s:'ΔP',n:'Diferencia de presión',d:'Caída de presión entre dos puntos del circuito. Es lo que empuja la sangre contra la resistencia. Entre la aorta y la vena cava vale PAM − P<sub>v</sub>.',u:'mmHg (1 mmHg = 133,3 Pa)',f:()=>fmt(M.MAP-PV,0)+' mmHg (aorta a vena cava)'},
+  R:{s:'R',n:'Resistencia hidrodinámica',d:'Oposición del conjunto de vasos al paso de la sangre. Es ΔP dividido por Q y depende de la viscosidad, del largo y del radio.',u:'mmHg·s/mL (1 mmHg·s/mL = 1,33×10⁸ Pa·s/m³)',f:()=>fmt(M.R,2)+' mmHg·s/mL'},
+  eta:{s:'η',n:'Viscosidad',d:'Medida del roce interno de la sangre al fluir. Sube cuando aumenta el hematocrito.',u:'Pa·s (aquí mPa·s)',f:()=>fmt(M.eta*1000,1)+' mPa·s'},
+  L:{s:'L',n:'Longitud',d:'Largo del tramo de vaso en el que se calcula la caída de presión. En el panel de estenosis es el largo de la zona estrecha.',u:'m (aquí mm)',f:()=>'zona estrecha '+fmt(M.stg.r0*2500,1)+' mm'},
+  r:{s:'r',n:'Radio interior',d:'Mitad del diámetro del vaso. En Poiseuille aparece a la cuarta potencia: reducir el radio a la mitad multiplica la resistencia por 16.',u:'m (aquí cm o mm)',f:()=>'aorta '+fmt(M.ra*100,2)+' cm'},
+  Hct:{s:'Hct',n:'Hematocrito',d:'Fracción del volumen de la sangre ocupada por glóbulos rojos. A mayor hematocrito, mayor viscosidad.',u:'% del volumen',f:()=>S.hct+' %'},
+  f:{s:'f',n:'Radio relativo de las arteriolas',d:'Control de la página. 100 % es el valor de reposo de la etapa. La resistencia de las arteriolas es proporcional a 1/r⁴, así que cambia mucho con pequeñas variaciones de radio.',u:'% del reposo',f:()=>S.f+' %'},
+  PAM:{s:'PAM',n:'Presión arterial media',d:'Promedio de la presión aórtica durante un latido. Se cumple PAM = P<sub>v</sub> + GC·R.',u:'mmHg',f:()=>fmt(M.MAP,0)+' mmHg'},
+  PV:{s:'P<sub>v</sub>',n:'Presión venosa',d:'Presión en el extremo venoso del circuito, adonde regresa la sangre. El modelo la mantiene fija.',u:'mmHg',f:()=>PV+' mmHg (fija)'},
+  C:{s:'C',n:'Compliancia arterial',d:'Volumen extra que almacena el árbol arterial por cada mmHg que sube la presión. Es baja en arterias rígidas y alta en arterias elásticas.',u:'mL/mmHg',f:()=>fmt(S.c,2)+' mL/mmHg'},
+  P:{s:'P(t)',n:'Presión aórtica',d:'Presión en la aorta en cada instante del latido. Su máximo es la presión sistólica y su mínimo la diastólica.',u:'mmHg',f:()=>fmt(M.sys,0)+' / '+fmt(M.dia,0)+' mmHg'},
+  Qin:{s:'Q<sub>in</sub>(t)',n:'Flujo de entrada',d:'Caudal que pasa por la válvula aórtica hacia la aorta. Es cero en diástole y en sístole se modela como media onda de seno cuya área es el volumen sistólico.',u:'mL/s',f:()=>'pico '+fmt(M.qp,0)+' mL/s'},
+  t:{s:'t',n:'Tiempo',d:'Instante dentro del latido, medido desde el inicio de la sístole.',u:'s',f:()=>'latido de '+fmt(M.T,2)+' s'},
+  RC:{s:'RC',n:'Constante de tiempo',d:'Producto de la resistencia por la compliancia. En diástole, cada RC segundos la diferencia entre P y P<sub>v</sub> se reduce a cerca de un 37 %.',u:'s',f:()=>fmt(M.tau,2)+' s'},
+  PSPD:{s:'PS · PD',n:'Presión sistólica y diastólica',d:'Valores máximo y mínimo de la presión aórtica en un latido.',u:'mmHg',f:()=>fmt(M.sys,0)+' / '+fmt(M.dia,0)+' mmHg'},
+  PP:{s:'PP',n:'Presión de pulso',d:'Diferencia entre la presión sistólica y la diastólica. Aumenta cuando las arterias son más rígidas o el volumen sistólico es mayor.',u:'mmHg',f:()=>fmt(M.sys-M.dia,0)+' mmHg'},
+  rho:{s:'ρ',n:'Densidad de la sangre',d:'Masa por unidad de volumen. Se usa el mismo valor en todas las etapas.',u:'kg/m³',x:RHO+' kg/m³ (fija)'},
+  D:{s:'D',n:'Diámetro del vaso',d:'Dos veces el radio.',u:'m (aquí cm)',f:()=>'aorta '+fmt(M.D*100,2)+' cm'},
+  Re:{s:'Re',n:'Número de Reynolds',d:'Cociente entre las fuerzas de inercia y las viscosas. Con valores bajos el flujo es laminar y con valores altos aparecen remolinos. En esta página, menos de 2.000 es laminar, entre 2.000 y 4.000 transición y más de 4.000 turbulento.',u:'sin unidades',f:()=>'medio '+fmt(M.Rem,0)+', pico '+fmt(M.Rep,0)},
+  alpha:{s:'α',n:'Número de Womersley',d:'Compara las fuerzas de inercia del flujo pulsátil con las viscosas. Con α pequeño el perfil de velocidades es parabólico y con α grande se aplana.',u:'sin unidades',f:()=>fmt(M.alpha,1)},
+  omega:{s:'ω',n:'Frecuencia angular',d:'Velocidad de giro del latido: 2π dividido por la duración del latido.',u:'rad/s',f:()=>fmt(2*Math.PI/M.T,1)+' rad/s'},
+  tauw:{s:'τ<sub>w</sub>',n:'Esfuerzo cortante en la pared',d:'Fuerza de roce que ejerce el flujo sobre la pared por unidad de superficie. El endotelio la detecta y responde a ella.',u:'Pa',f:()=>'aorta '+fmt(M.wss,2)+' Pa (media)'},
+  c:{s:'c',n:'Velocidad de onda de pulso',d:'Rapidez con que viaja la onda de presión por la pared arterial. Es mucho mayor que la velocidad de la sangre y aumenta con la rigidez.',u:'m/s',f:()=>fmt(M.pwv,1)+' m/s'},
+  V:{s:'V',n:'Volumen del árbol arterial',d:'Volumen de sangre contenido en las arterias de cada etapa.',u:'m³ (aquí L)',f:()=>{const l=M.stg.Vart*1000;return fmt(l,l<0.1?3:2)+' L';}},
+  A0:{s:'A<sub>0</sub>',n:'Área de la arteria sana',d:'Sección de la arteria antes de la estrechez.',u:'m² (aquí mm²)',f:()=>fmt(ST.A0*1e6,1)+' mm²'},
+  As:{s:'A<sub>s</sub>',n:'Área en la estrechez',d:'Sección en la zona más angosta. Depende del porcentaje de estrechamiento del diámetro.',u:'m² (aquí mm²)',f:()=>fmt(ST.As*1e6,1)+' mm²'},
+  v0:{s:'v<sub>0</sub>',n:'Velocidad aguas arriba',d:'Velocidad media en la parte sana de la arteria.',u:'m/s (aquí cm/s)',f:()=>fmt(ST.v0*100,1)+' cm/s'},
+  vs:{s:'v<sub>s</sub>',n:'Velocidad en la estrechez',d:'Velocidad media en la zona angosta. Por continuidad vale v<sub>0</sub>·A<sub>0</sub>/A<sub>s</sub>.',u:'m/s (aquí cm/s)',f:()=>fmt(ST.vs*100,1)+' cm/s'},
+  rs:{s:'r',n:'Radio de la estrechez',d:'Radio de la arteria en la zona más angosta. En el término viscoso se usa este radio.',u:'m (aquí mm)',f:()=>fmt(ST.rs*1000,2)+' mm'},
+  dPs:{s:'ΔP',n:'Caída de presión en la estrechez',d:'Suma de tres términos: el cambio de energía cinética por la aceleración del flujo (Bernoulli), la pérdida viscosa (Poiseuille) y la pérdida por remolinos (K<sub>t</sub>).',u:'mmHg',f:()=>'pérdida '+fmt(ST.loss,1)+' mmHg'},
+  Kt:{s:'K<sub>t</sub>',n:'Coeficiente de pérdida',d:'Constante empírica que representa la energía que se pierde en remolinos al salir de la estrechez.',u:'sin unidades',x:'1,52 (valor habitual en la literatura)'},
+  T:{s:'T',n:'Tensión de pared',d:'Fuerza que soporta la pared por cada metro de longitud del vaso. Crece con la presión y con el radio.',u:'N/m',f:()=>fmt(M.sys*MMHG*M.ra*S.aneu,0)+' N/m'},
+  sigma:{s:'σ',n:'Esfuerzo de pared',d:'Fuerza por unidad de área de la pared. Es la tensión dividida por el espesor, por eso aumenta mucho cuando la pared se adelgaza.',u:'kPa',f:()=>fmt(M.sys*MMHG*M.ra*S.aneu/(M.stg.hw/S.aneu)/1000,0)+' kPa'},
+  Pm:{s:'P',n:'Presión transmural',d:'Diferencia de presión entre el interior y el exterior del vaso. Aquí se usa la presión sistólica.',u:'mmHg',f:()=>fmt(M.sys,0)+' mmHg'},
+  rw:{s:'r',n:'Radio de la aorta',d:'Radio del vaso, multiplicado por el control de dilatación.',u:'m (aquí cm)',f:()=>fmt(M.ra*S.aneu*100,2)+' cm'},
+  h:{s:'h',n:'Espesor de pared',d:'Grosor de la pared del vaso. Al dilatarse la aorta se adelgaza en proporción inversa al radio.',u:'m (aquí mm)',f:()=>fmt(M.stg.hw*1000/S.aneu,2)+' mm'}
+};
+const GR={
+  cont:['Q','A','v','GC','FC','VS'],
+  wk:['C','P','Qin','PV','R','RC','t','PSPD','PP'],
+  poi:['v','Q','A','dP','R','eta','L','r'],
+  res:['R','PAM','PV','GC','Hct','f'],
+  pwv:['c','V','rho','C'],
+  re:['Re','rho','v','D','eta'],
+  tw:['tauw','eta','Q','r'],
+  wo:['alpha','omega','r','rho','eta'],
+  ste:['A0','As','v0','vs','rs','dPs','Q','L','eta','rho','Kt'],
+  lap:['T','sigma','Pm','rw','h']
+};
+let LIVE=[];
+function renderSym(){
+  document.querySelectorAll('.sym').forEach(h=>{
+    const rows=GR[h.dataset.g].map(k=>{const d=DEF[k];
+      return `<div class="sy"><dt>${d.s}</dt><dd><strong>${d.n}.</strong> ${d.d}<span class="sy-m"><span>Unidad: ${d.u}</span><span>En el modelo: <b class="sy-v" data-k="${k}"></b></span></span></dd></div>`;}).join('');
+    h.innerHTML=`<details open><summary>Símbolos de esta ecuación</summary><dl class="syl">${rows}</dl></details>`;
+  });
+  LIVE=Array.from(document.querySelectorAll('.sy-v'));
+}
+function renderLive(){for(const e of LIVE){const d=DEF[e.dataset.k];e.textContent=d.f?d.f():d.x;}}
+let symOpen=true;
+$('b-sym').addEventListener('click',()=>{
+  symOpen=!symOpen;
+  document.querySelectorAll('.sym details').forEach(d=>{d.open=symOpen;});
+  $('b-sym').textContent=symOpen?'Ocultar definiciones':'Mostrar definiciones';
+});
+
+/* ---------- eventos y bucle ---------- */
+['hr','sv','f','c','hct','sten','aneu'].forEach(key=>{
+  const el=$('in-'+key);
+  el.addEventListener('input',()=>{S[key]=parseFloat(el.value);markSit(null);update();});
+});
+function markSit(name){document.querySelectorAll('#sits .pill').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.p===name)));}
+function markStage(key){document.querySelectorAll('#stages .pill').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.st===key)));}
+function setRange(id,r){const e=$(id);e.min=r[0];e.max=r[1];e.step=r[2];}
+function snap(v,r){return parseFloat((Math.round(clamp(v,r[0],r[1])/r[2])*r[2]).toFixed(3));}
+function applySit(name){
+  const g=STAGES[S.stage], p=SIT[name], rg=g.rg;
+  S.hr=snap(g.hr*(p.hrx||1),rg.hr); S.sv=snap(g.sv*(p.svx||1),rg.sv); S.c=snap(g.c*(p.cx||1),rg.c);
+  S.hct=Math.round(clamp(g.hct*(p.hctx||1),20,70)); S.f=p.f||100; S.sten=p.sten||0; S.aneu=p.aneu||1;
+  ['hr','sv','c','hct','f','sten','aneu'].forEach(k=>{$('in-'+k).value=S[k];});
+  markSit(name);update();
+}
+function applyStage(key){
+  const g=STAGES[key];S.stage=key;
+  setRange('in-hr',g.rg.hr);setRange('in-sv',g.rg.sv);setRange('in-c',g.rg.c);
+  setT('stage-n',g.n+'.');setT('stage-t',g.t);
+  markStage(key);applySit('reposo');
+}
+document.querySelectorAll('#stages .pill').forEach(b=>b.addEventListener('click',()=>applyStage(b.dataset.st)));
+document.querySelectorAll('#sits .pill').forEach(b=>b.addEventListener('click',()=>applySit(b.dataset.p)));
+function setPause(v){paused=v;const b=$('b-pause');b.textContent=v?'Reanudar':'Pausar';b.setAttribute('aria-pressed',String(v));}
+$('b-pause').addEventListener('click',()=>setPause(!paused));
+document.querySelectorAll('[data-speed]').forEach(b=>b.addEventListener('click',()=>{
+  speed=parseFloat(b.dataset.speed);
+  document.querySelectorAll('[data-speed]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));
+}));
+setPause(paused);
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.max(0,Math.min(0.05,(now-last)/1000));last=now;
+  const ds=paused?0:dt*speed;
+  simT+=ds;
+  requestAnimationFrame(frame);
+  readColors();
+  try{drawCircuit(ds);drawWave();drawProfile();drawSten(ds);drawSweep();drawWall();}catch(e){console.error(e)}
+}
+renderSym();
+applyStage('adulto');
+requestAnimationFrame(frame);
+</script>
+
+</body></html>
