@@ -97,6 +97,14 @@ input[type=range]{width:100%;accent-color:var(--air);margin:2px 0}
 .note .lbl{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-right:8px}
 .foot{margin-top:36px;font:12px/1.5 var(--mono);color:var(--muted);max-width:90ch}
 sub,sup{line-height:0}
+.defs{margin:14px 0 4px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.defs summary{cursor:pointer;padding:10px 14px;font:600 14px var(--body);color:var(--air);list-style:none}
+.defs summary::-webkit-details-marker{display:none}
+.defs summary::before{content:"+";display:inline-block;width:1.2em;font-family:var(--mono)}
+.defs[open] summary::before{content:"−"}
+.defs dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px 22px;margin:0;padding:4px 16px 16px;border-top:1px solid var(--line)}
+.defs dt{font:600 14px var(--body)}
+.defs dd{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
 </style>
 
@@ -154,6 +162,10 @@ sub,sup{line-height:0}
           <h2>Poiseuille y Reynolds</h2>
           <p class="formula"><span>R = 8ηL / (π r<sup>4</sup>)</span><span>ΔP = R · V̇</span><span>Re = ρ v D / η</span></p>
         </div>
+        <details class="defs">
+          <summary>Definiciones (9)</summary>
+          <dl><div><dt>Flujo (V̇)</dt><dd>Volumen de aire que atraviesa una sección de la vía aérea por unidad de tiempo (L/s o L/min).</dd></div><div><dt>Resistencia (R)</dt><dd>Oposición de la vía aérea al flujo: es el cociente entre la diferencia de presión y el flujo (ΔP / V̇), en cmH₂O·s/L.</dd></div><div><dt>Viscosidad (η)</dt><dd>Fricción interna de un fluido: cuanto mayor es, más presión se necesita para moverlo.</dd></div><div><dt>Ley de Poiseuille</dt><dd>En flujo laminar la resistencia de un tubo es R = 8ηL / (π r⁴): crece linealmente con la longitud y con la inversa de la cuarta potencia del radio.</dd></div><div><dt>Flujo laminar</dt><dd>Flujo ordenado en capas paralelas, con perfil parabólico: el aire avanza más rápido en el centro que junto a la pared. La caída de presión es proporcional al flujo.</dd></div><div><dt>Flujo turbulento</dt><dd>Flujo con remolinos y mezcla caótica. La caída de presión crece con el cuadrado del flujo (ΔP ≈ K₂·V̇²) y se gasta más energía.</dd></div><div><dt>Número de Reynolds (Re)</dt><dd>Cociente adimensional entre fuerzas de inercia y fuerzas viscosas: Re = ρ v D / η. Valores bajos indican flujo laminar y valores altos, turbulento.</dd></div><div><dt>Densidad (ρ)</dt><dd>Masa por unidad de volumen del gas. Menor densidad implica menor Re y menos tendencia a la turbulencia.</dd></div><div><dt>Heliox</dt><dd>Mezcla de helio y oxígeno, menos densa que el aire. Disminuye el Re y la presión necesaria cuando el flujo es turbulento.</dd></div></dl>
+        </details>
         <div class="sub">
           <h3>A. El radio manda: resistencia en flujo laminar</h3>
           <div class="grid2">
@@ -192,6 +204,10 @@ sub,sup{line-height:0}
           <h2>Continuidad en el árbol bronquial (modelo de Weibel)</h2>
           <p class="formula"><span>Q = A · v</span><span>A<sub>total</sub> = 2<sup>n</sup> · π d² / 4</span><span>Pe = v · L / D</span></p>
         </div>
+        <details class="defs">
+          <summary>Definiciones (9)</summary>
+          <dl><div><dt>Generación</dt><dd>Nivel de ramificación del árbol bronquial: la tráquea es la generación 0 y cada división dicotómica suma una (2ⁿ ramas en la generación n).</dd></div><div><dt>Modelo de Weibel</dt><dd>Descripción anatómica simplificada del pulmón con 23 generaciones de ramas dicotómicas simétricas, desde la tráquea hasta los sacos alveolares.</dd></div><div><dt>Zona de conducción</dt><dd>Generaciones iniciales (aprox. 0 a 16) que solo transportan aire y no intercambian gases. Su volumen es el espacio muerto anatómico.</dd></div><div><dt>Zona respiratoria</dt><dd>Generaciones finales (aprox. 17 a 23) con alvéolos en sus paredes, donde ocurre el intercambio de gases.</dd></div><div><dt>Área total de sección</dt><dd>Suma de las áreas de todas las ramas de una generación. Aumenta con cada división, aunque cada rama sea más estrecha.</dd></div><div><dt>Ecuación de continuidad</dt><dd>Q = A · v. Con un flujo dado, si el área total crece la velocidad media del gas disminuye.</dd></div><div><dt>Convección</dt><dd>Transporte del gas por movimiento de conjunto del aire (flujo). Domina en las vías de conducción.</dd></div><div><dt>Difusión</dt><dd>Movimiento de moléculas por agitación térmica, de mayor a menor concentración. Domina en los últimos conductos y en los alvéolos.</dd></div><div><dt>Número de Péclet (Pe)</dt><dd>Compara el transporte por convección con el por difusión: Pe = v · L / D. Pe alto indica que el flujo domina; Pe bajo, que domina la difusión.</dd></div></dl>
+        </details>
         <div class="sub">
           <div class="grid2">
             <div class="viz">
@@ -215,6 +231,10 @@ sub,sup{line-height:0}
           <h2>Más velocidad, menos presión</h2>
           <p class="formula"><span>p + ½ρv² = constante</span><span>ΔP ≈ ½ρ(v₂² − v₁²)</span></p>
         </div>
+        <details class="defs">
+          <summary>Definiciones (9)</summary>
+          <dl><div><dt>Presión lateral (estática)</dt><dd>Presión que el fluido ejerce sobre la pared de la vía aérea.</dd></div><div><dt>Presión dinámica</dt><dd>Término ½ρv² asociado al movimiento del gas: aumenta con el cuadrado de la velocidad.</dd></div><div><dt>Principio de Bernoulli</dt><dd>En un flujo estacionario sin fricción la suma de presión lateral y presión dinámica se mantiene constante: donde el gas acelera, la presión lateral baja.</dd></div><div><dt>Estenosis</dt><dd>Estrechamiento de la vía aérea. El gas acelera al pasar por ella y la presión lateral cae en ese punto.</dd></div><div><dt>Presión pleural</dt><dd>Presión en el espacio entre pulmón y pared torácica. En la espiración forzada se vuelve positiva y comprime las vías.</dd></div><div><dt>Punto de igual presión</dt><dd>Lugar de la vía aérea donde la presión interna iguala a la pleural. Desde allí hacia la boca la vía tiende a comprimirse.</dd></div><div><dt>Retroceso elástico</dt><dd>Fuerza con que el pulmón tiende a volver a su tamaño de reposo; impulsa el aire durante la espiración.</dd></div><div><dt>Limitación del flujo</dt><dd>Situación en que el flujo espiratorio alcanza un máximo que no aumenta con más esfuerzo, porque la vía se comprime.</dd></div><div><dt>Curva flujo-volumen</dt><dd>Gráfico del flujo espiratorio en función del volumen pulmonar durante una maniobra forzada; es la base de la espirometría.</dd></div></dl>
+        </details>
         <div class="sub">
           <h3>A. Estrechamiento de la vía aérea (tráquea de 18 mm)</h3>
           <div class="grid2">
@@ -252,6 +272,10 @@ sub,sup{line-height:0}
           <h2>Laplace y surfactante</h2>
           <p class="formula"><span>P = 2T / r</span></p>
         </div>
+        <details class="defs">
+          <summary>Definiciones (6)</summary>
+          <dl><div><dt>Tensión superficial (T)</dt><dd>Fuerza por unidad de longitud que aparece en la interfaz entre el aire y la capa de líquido que recubre el alvéolo (N/m).</dd></div><div><dt>Ley de Laplace</dt><dd>Para un alvéolo esférico con una sola interfaz aire-líquido, P = 2T / r: a igual tensión, el alvéolo más pequeño tiene mayor presión.</dd></div><div><dt>Surfactante</dt><dd>Mezcla de fosfolípidos y proteínas, producida por los neumocitos tipo II, que reduce la tensión superficial, más cuanto más pequeño es el alvéolo.</dd></div><div><dt>Interdependencia alveolar</dt><dd>Cada alvéolo comunica con otros; si sus presiones son distintas, el aire pasa del de mayor presión al de menor.</dd></div><div><dt>Atelectasia</dt><dd>Colapso de alvéolos o de zonas del pulmón, que quedan sin aire.</dd></div><div><dt>Síndrome de dificultad respiratoria del recién nacido</dt><dd>Cuadro del prematuro por déficit de surfactante: alvéolos inestables, pulmón rígido y atelectasias.</dd></div></dl>
+        </details>
         <div class="sub">
           <div class="grid2">
             <div class="viz">
@@ -274,6 +298,10 @@ sub,sup{line-height:0}
           <h2>Distensibilidad y constante de tiempo</h2>
           <p class="formula"><span>C = ΔV / ΔP</span><span>τ = R · C</span><span>V(t) = C·ΔP·(1 − e<sup>−t/τ</sup>)</span></p>
         </div>
+        <details class="defs">
+          <summary>Definiciones (7)</summary>
+          <dl><div><dt>Distensibilidad (C)</dt><dd>Cambio de volumen por unidad de cambio de presión (C = ΔV / ΔP, en L/cmH₂O). Mide qué tan fácil se expande el pulmón.</dd></div><div><dt>Elastancia (E)</dt><dd>Inverso de la distensibilidad (E = 1 / C): mide cuánto se resiste el pulmón a ser estirado.</dd></div><div><dt>Resistencia (R)</dt><dd>Oposición de las vías aéreas al flujo de aire (ΔP / V̇).</dd></div><div><dt>Constante de tiempo (τ)</dt><dd>Producto R · C. Es el tiempo en que el pulmón completa el 63 % de un cambio de volumen; en 3τ completa el 95 %.</dd></div><div><dt>Tiempo espiratorio</dt><dd>Duración de la espiración en cada ciclo respiratorio. Debe ser mayor que unos 3τ para que el pulmón se vacíe.</dd></div><div><dt>Atrapamiento aéreo</dt><dd>Aire que queda en el pulmón al final de la espiración porque el tiempo no alcanza para vaciarlo, y se acumula respiración tras respiración.</dd></div><div><dt>Auto-PEEP</dt><dd>Presión positiva al final de la espiración causada por el aire atrapado, sin que ningún ventilador la haya programado.</dd></div></dl>
+        </details>
         <div class="sub">
           <div class="grid2">
             <div class="viz">
@@ -296,6 +324,10 @@ sub,sup{line-height:0}
           <h2>Ley de Fick en la membrana alvéolo-capilar</h2>
           <p class="formula"><span>V̇<sub>gas</sub> ∝ A · D · (P₁ − P₂) / T</span></p>
         </div>
+        <details class="defs">
+          <summary>Definiciones (8)</summary>
+          <dl><div><dt>Ley de Fick</dt><dd>La velocidad de difusión de un gas a través de una membrana es proporcional al área y al gradiente de presión parcial, e inversamente proporcional al espesor.</dd></div><div><dt>Membrana alvéolo-capilar</dt><dd>Barrera muy delgada (epitelio alveolar, intersticio y endotelio capilar) a través de la cual difunden el O₂ y el CO₂.</dd></div><div><dt>Presión parcial</dt><dd>Presión que ejerce un gas dentro de una mezcla. El gradiente de presiones parciales impulsa la difusión.</dd></div><div><dt>Coeficiente de difusión (D)</dt><dd>Depende de la solubilidad del gas y de su masa molecular. El CO₂ difunde unas 20 veces más rápido que el O₂ por su mayor solubilidad.</dd></div><div><dt>Capacidad de difusión</dt><dd>Cantidad de gas que pasa por la membrana por minuto y por cada mmHg de gradiente (mL/min/mmHg).</dd></div><div><dt>Tiempo de tránsito capilar</dt><dd>Tiempo que un glóbulo rojo pasa en el capilar alveolar: unos 0,75 s en reposo y menos en ejercicio.</dd></div><div><dt>Limitación por difusión</dt><dd>Situación en que la sangre sale del capilar sin haberse equilibrado con el gas alveolar, porque la membrana es muy gruesa, el área es pequeña o el tránsito es muy rápido.</dd></div><div><dt>Hipoxemia</dt><dd>Disminución de la presión parcial de O₂ en la sangre arterial.</dd></div></dl>
+        </details>
         <div class="sub">
           <div class="grid2">
             <div class="viz">
@@ -318,6 +350,10 @@ sub,sup{line-height:0}
           <h2>Humidificación y calentamiento del aire</h2>
           <p class="formula"><span>T(x) = T<sub>cuerpo</sub> − (T<sub>cuerpo</sub> − T<sub>ins</sub>) · e<sup>−x/λ</sup></span><span>Meta: 37 °C y 44 mg H₂O / L</span></p>
         </div>
+        <details class="defs">
+          <summary>Definiciones (8)</summary>
+          <dl><div><dt>Humedad absoluta</dt><dd>Masa de vapor de agua por volumen de gas (mg H₂O/L). A 37 °C el aire saturado contiene unos 44 mg/L.</dd></div><div><dt>Humedad relativa</dt><dd>Porcentaje de vapor de agua presente respecto del máximo que el gas puede contener a esa temperatura.</dd></div><div><dt>Saturación isotérmica (ISB)</dt><dd>Punto de la vía aérea donde el gas inspirado alcanza 37 °C y 100 % de humedad relativa.</dd></div><div><dt>Mucosa nasal</dt><dd>Epitelio muy irrigado y de gran superficie que entrega calor y agua al aire inspirado.</dd></div><div><dt>Longitud característica (λ)</dt><dd>Distancia en que la diferencia de temperatura con el cuerpo se reduce a 1/e (≈ 37 %); crece con el flujo.</dd></div><div><dt>Transferencia de calor y masa</dt><dd>Paso de calor y de vapor de agua desde la mucosa al aire que circula, impulsado por la diferencia con el valor corporal.</dd></div><div><dt>Vía aérea artificial</dt><dd>Tubo endotraqueal u otro dispositivo que evita la nariz y la boca; obliga a humidificar el gas con un equipo.</dd></div><div><dt>Aclaramiento mucociliar</dt><dd>Mecanismo por el que los cilios desplazan el moco con partículas hacia la faringe; requiere moco hidratado.</dd></div></dl>
+        </details>
         <div class="sub">
           <div class="grid2">
             <div class="viz">
@@ -341,6 +377,10 @@ sub,sup{line-height:0}
           <h2>Compresión dinámica y aceleración del flujo</h2>
           <p class="formula"><span>v = V̇ / A</span><span>Presión dinámica = ½ρv²</span><span>V̇<sub>máx</sub> ≈ P<sub>el</sub> / R<sub>aguas arriba</sub></span></p>
         </div>
+        <details class="defs">
+          <summary>Definiciones (8)</summary>
+          <dl><div><dt>Glotis</dt><dd>Espacio entre las cuerdas vocales; su cierre y apertura controlan la fase de compresión de la tos.</dd></div><div><dt>Fases de la tos</dt><dd>Cuatro tiempos: inspiración profunda, compresión con la glotis cerrada, apertura de la glotis y fase explosiva de espiración.</dd></div><div><dt>Presión transmural</dt><dd>Presión dentro de la vía menos la que la rodea. Si es negativa, la vía se comprime.</dd></div><div><dt>Compresión dinámica</dt><dd>Estrechamiento de la tráquea y los bronquios durante la espiración forzada o la tos, por presión transmural negativa.</dd></div><div><dt>Velocidad lineal (v)</dt><dd>Rapidez del gas en un punto de la vía: v = V̇ / A. Con igual flujo, a menor área, mayor velocidad.</dd></div><div><dt>Presión dinámica</dt><dd>Término ½ρv² que expresa la energía cinética del gas; es la que arrastra el moco.</dd></div><div><dt>Flujo pico de la tos</dt><dd>Flujo máximo alcanzado durante una tos; se usa para valorar la eficacia del reflejo.</dd></div><div><dt>Tos asistida</dt><dd>Técnicas manuales o mecánicas que aumentan la inspiración o la compresión para producir más flujo y velocidad.</dd></div></dl>
+        </details>
         <div class="sub">
           <div class="grid2">
             <div class="viz">
