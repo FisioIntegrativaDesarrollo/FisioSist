@@ -1,0 +1,941 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Física de fluidos en el sistema respiratorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: mapa del pulmón fijo a la izquierda, seis módulos con pestañas a la derecha; en cada módulo, visualización a la izquierda y controles a la derecha. */
+:root{
+  --bg:#EDF2F3; --surface:#FFFFFF; --surface-2:#E3ECEE; --ink:#10242C; --muted:#4F666E;
+  --line:#C6D5D9; --grid:#DAE5E8;
+  --air:#0A7683; --air-soft:#C4E6EA;
+  --blood:#C23B37; --blood-soft:#F4D6D2;
+  --warn:#A85F00;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A1519; --surface:#102128; --surface-2:#17303A; --ink:#E5EFF2; --muted:#93AAB2;
+    --line:#244049; --grid:#1B343D;
+    --air:#4CC3CF; --air-soft:#14444B;
+    --blood:#F0766C; --blood-soft:#4A2522;
+    --warn:#E3B04B; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A1519; --surface:#102128; --surface-2:#17303A; --ink:#E5EFF2; --muted:#93AAB2;
+  --line:#244049; --grid:#1B343D;
+  --air:#4CC3CF; --air-soft:#14444B;
+  --blood:#F0766C; --blood-soft:#4A2522;
+  --warn:#E3B04B; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);padding-inline:16px}
+.wrap{max-width:1240px;margin:0 auto;padding-block:28px 64px}
+.top{display:flex;gap:20px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:26px}
+.top h1{font:700 clamp(28px,4.2vw,46px)/1.05 var(--display);letter-spacing:-.02em;margin:0 0 10px;text-wrap:balance;max-width:20ch}
+.top p{margin:0;max-width:62ch;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 14px;font:500 13px var(--body);cursor:pointer}
+.btn:hover{border-color:var(--air)}
+:focus-visible{outline:2px solid var(--air);outline-offset:2px}
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);gap:36px}
+@media (max-width:1060px){.shell{grid-template-columns:minmax(0,1fr)}.map{display:none}}
+.map{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start}
+.map svg{width:100%;height:auto;display:block}
+.map .cap{font:11px/1.4 var(--mono);color:var(--muted);margin:8px 0 0}
+.lung path{fill:var(--surface);stroke:var(--line);stroke-width:2;transition:stroke .2s}
+.lung.on path{stroke:var(--air);stroke-width:3}
+.br{fill:none;stroke:var(--muted);stroke-linecap:round;opacity:.55;transition:stroke .2s,opacity .2s}
+.br.on{stroke:var(--air);opacity:1}
+.lar{fill:var(--muted);opacity:.55}
+.lar.on{fill:var(--air);opacity:1}
+.nas{fill:var(--surface);stroke:var(--muted);stroke-width:2;opacity:.8}
+.nas.on{fill:var(--air-soft);stroke:var(--air);opacity:1}
+.alv{fill:var(--surface);stroke:var(--muted);stroke-width:2;opacity:.8}
+.alv.on{fill:var(--air-soft);stroke:var(--air);opacity:1}
+.mk{cursor:pointer}
+.mk circle{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.mk text{font:500 11px var(--mono);fill:var(--muted);text-anchor:middle;dominant-baseline:central}
+.mk.on circle{fill:var(--air);stroke:var(--air)}
+.mk.on text{fill:var(--bg)}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:6px}
+.tab{flex:none;border:0;border-bottom:3px solid transparent;background:none;color:var(--muted);padding:10px 14px 9px;font:500 14px var(--body);cursor:pointer;white-space:nowrap}
+.tab b{font:500 11px var(--mono);margin-right:7px;color:var(--muted)}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--air)}
+.tab[aria-selected="true"] b{color:var(--air)}
+.mod-head{padding-block:22px 6px}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--air);margin:0 0 6px}
+.mod-head h2{font:700 clamp(22px,3vw,30px)/1.15 var(--display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.formula{font:500 15px/1.6 var(--mono);color:var(--ink);margin:10px 0 0;display:flex;flex-wrap:wrap;gap:4px 26px}
+.sub{padding-block:22px;border-top:1px solid var(--line)}
+.sub:first-of-type{border-top:0}
+.sub h3{font:600 17px var(--body);margin:0 0 14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.viz{display:grid;gap:12px;min-width:0}
+.viz figure{margin:0;min-width:0}
+.viz figcaption{font:11.5px var(--mono);color:var(--muted);margin:0 0 5px}
+canvas{display:block;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:14px;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:999px;padding:5px 12px;font:500 12.5px var(--body);cursor:pointer}
+.chip:hover{border-color:var(--air)}
+.ctls{display:grid;gap:12px}
+.ctl{display:grid;gap:3px;font-size:13.5px}
+.ctl-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.ctl output{font:500 13px var(--mono);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--air);margin:2px 0}
+.reads{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px;margin:0;padding-top:14px;border-top:1px solid var(--line)}
+.rd dt{font:11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.rd dd{margin:2px 0 0;font:500 16px/1.25 var(--mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.rd dd.ok{color:var(--air)} .rd dd.bad{color:var(--blood)} .rd dd.mid{color:var(--warn)}
+.note{max-width:70ch;margin:16px 0 0}
+.note p{margin:0 0 6px}
+.note .lbl{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-right:8px}
+.foot{margin-top:36px;font:12px/1.5 var(--mono);color:var(--muted);max-width:90ch}
+sub,sup{line-height:0}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Física de fluidos en el sistema respiratorio</h1>
+      <p>Ocho módulos interactivos, uno por cada tema: flujo, ramificación, Bernoulli, Laplace, mecánica pulmonar, difusión, acondicionamiento del aire y tos. Mueve los controles y observa cómo cambian el flujo, la presión y el volumen. Los valores son típicos de un adulto sano y los modelos están simplificados para enseñar.</p>
+    </div>
+    <button class="btn" id="pause" type="button" aria-pressed="false">Pausar animación</button>
+  </header>
+
+  <div class="shell">
+    <aside class="map" aria-label="Mapa del pulmón">
+      <svg viewBox="0 -36 240 326" id="lungmap" role="img" aria-label="Esquema del pulmón con ocho zonas numeradas, una por módulo">
+        <g class="lung" data-m="5"><path d="M112 96 C62 96 26 150 28 226 C30 262 72 270 100 262 C110 258 112 240 112 220 Z"/><path d="M128 96 C178 96 214 150 212 226 C210 262 168 270 140 262 C130 258 128 240 128 220 Z"/></g>
+        <path class="nas" data-m="7" d="M103 -6 C96 -20 106 -32 120 -32 C134 -32 144 -20 137 -6 Z"/>
+        <rect class="lar" data-m="3 8" x="109" y="12" width="22" height="17" rx="6"/>
+        <path class="br" data-m="1 3 7 8" d="M120 30 V108" style="stroke-width:11"/>
+        <path class="br" data-m="1 2" d="M120 108 L82 150 M120 108 L158 150" style="stroke-width:8"/>
+        <path class="br" data-m="2" d="M82 150 L56 186 M82 150 L96 192 M158 150 L184 186 M158 150 L144 192" style="stroke-width:5.5"/>
+        <path class="br" data-m="2" d="M56 186 L44 214 M56 186 L68 218 M96 192 L88 222 M96 192 L106 220 M184 186 L196 214 M184 186 L172 218 M144 192 L152 222 M144 192 L134 220" style="stroke-width:3"/>
+        <circle class="alv" data-m="4 6" cx="44" cy="221" r="7"/><circle class="alv" data-m="4 6" cx="68" cy="225" r="7"/>
+        <circle class="alv" data-m="4 6" cx="88" cy="229" r="7"/><circle class="alv" data-m="4 6" cx="106" cy="227" r="7"/>
+        <circle class="alv" data-m="4 6" cx="196" cy="221" r="7"/><circle class="alv" data-m="4 6" cx="172" cy="225" r="7"/>
+        <circle class="alv" data-m="4 6" cx="152" cy="229" r="7"/><circle class="alv" data-m="4 6" cx="134" cy="227" r="7"/>
+        <g class="mk" data-go="1" transform="translate(146,68)"><circle r="10"/><text>1</text></g>
+        <g class="mk" data-go="2" transform="translate(58,138)"><circle r="10"/><text>2</text></g>
+        <g class="mk" data-go="3" transform="translate(152,20)"><circle r="10"/><text>3</text></g>
+        <g class="mk" data-go="4" transform="translate(66,252)"><circle r="10"/><text>4</text></g>
+        <g class="mk" data-go="5" transform="translate(208,120)"><circle r="10"/><text>5</text></g>
+        <g class="mk" data-go="6" transform="translate(172,252)"><circle r="10"/><text>6</text></g>
+        <g class="mk" data-go="7" transform="translate(160,-16)"><circle r="10"/><text>7</text></g>
+        <g class="mk" data-go="8" transform="translate(94,66)"><circle r="10"/><text>8</text></g>
+      </svg>
+      <p class="cap">Resalta la zona del pulmón que estudia el módulo activo.</p>
+    </aside>
+
+    <main>
+      <div class="tabs" role="tablist" aria-label="Módulos">
+        <button class="tab" role="tab" id="t1" aria-controls="m1" data-n="1"><b>1</b>Flujo</button>
+        <button class="tab" role="tab" id="t2" aria-controls="m2" data-n="2"><b>2</b>Ramificación</button>
+        <button class="tab" role="tab" id="t3" aria-controls="m3" data-n="3"><b>3</b>Bernoulli</button>
+        <button class="tab" role="tab" id="t4" aria-controls="m4" data-n="4"><b>4</b>Alvéolos</button>
+        <button class="tab" role="tab" id="t5" aria-controls="m5" data-n="5"><b>5</b>Mecánica</button>
+        <button class="tab" role="tab" id="t6" aria-controls="m6" data-n="6"><b>6</b>Difusión</button>
+        <button class="tab" role="tab" id="t7" aria-controls="m7" data-n="7"><b>7</b>Humidificación</button>
+        <button class="tab" role="tab" id="t8" aria-controls="m8" data-n="8"><b>8</b>Tos</button>
+      </div>
+
+      <!-- MÓDULO 1 -->
+      <section id="m1" role="tabpanel" aria-labelledby="t1" hidden>
+        <div class="mod-head">
+          <p class="eyebrow">Módulo 1 · Flujo en las vías aéreas</p>
+          <h2>Poiseuille y Reynolds</h2>
+          <p class="formula"><span>R = 8ηL / (π r<sup>4</sup>)</span><span>ΔP = R · V̇</span><span>Re = ρ v D / η</span></p>
+        </div>
+        <div class="sub">
+          <h3>A. El radio manda: resistencia en flujo laminar</h3>
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Tubo con flujo laminar · línea punteada = calibre normal</figcaption><canvas id="c1a" data-h="190" role="img" aria-label="Tubo con partículas de aire que avanzan más rápido al centro"></canvas></figure>
+              <figure><figcaption>Resistencia relativa según el radio (escala logarítmica)</figcaption><canvas id="c1b" data-h="170" role="img" aria-label="Curva de resistencia contra radio"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p1a"></div><div class="ctls" id="s1a"></div><dl class="reads" id="r1a"></dl></div>
+          </div>
+          <div class="note">
+            <p>Si el radio baja a la mitad, la resistencia sube 16 veces y, con la misma presión, el flujo cae a 1/16. La longitud pesa mucho menos, porque entra en forma lineal.</p>
+            <p><span class="lbl">En clínica</span>Una broncoconstricción pequeña, el edema de mucosa o un tubo endotraqueal estrecho multiplican el trabajo respiratorio.</p>
+          </div>
+        </div>
+        <div class="sub">
+          <h3>B. ¿Laminar o turbulento? Número de Reynolds</h3>
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Flujo en la generación elegida</figcaption><canvas id="c1c" data-h="170" role="img" aria-label="Tubo con líneas de flujo ordenadas o caóticas según Reynolds"></canvas></figure>
+              <figure><figcaption>Re según la generación (escala logarítmica)</figcaption><canvas id="c1d" data-h="170" role="img" aria-label="Número de Reynolds por generación bronquial"></canvas></figure>
+              <figure><figcaption>Caída de presión según el flujo: ΔP = K₁·V̇ + K₂·V̇² (valores ilustrativos)</figcaption><canvas id="c1e" data-h="170" role="img" aria-label="Caída de presión contra flujo para aire y heliox"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p1b"></div><div class="ctls" id="s1b"></div><dl class="reads" id="r1b"></dl></div>
+          </div>
+          <div class="note">
+            <p>Bajo Re ≈ 2.000 el flujo es laminar y sobre ≈ 4.000 es turbulento. Son los umbrales de un tubo recto; en las vías reales las ramificaciones hacen que la turbulencia aparezca antes. El flujo se reparte en 2<sup>n</sup> ramas, así que Re cae rápido con la generación. En régimen turbulento ΔP depende de V̇², y el heliox, al ser menos denso, reduce ese término a un tercio.</p>
+            <p><span class="lbl">En clínica</span>Tos, ejercicio y obstrucciones altas generan turbulencia. El heliox ayuda justo en esos casos.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÓDULO 2 -->
+      <section id="m2" role="tabpanel" aria-labelledby="t2" hidden>
+        <div class="mod-head">
+          <p class="eyebrow">Módulo 2 · Geometría ramificada</p>
+          <h2>Continuidad en el árbol bronquial (modelo de Weibel)</h2>
+          <p class="formula"><span>Q = A · v</span><span>A<sub>total</sub> = 2<sup>n</sup> · π d² / 4</span><span>Pe = v · L / D</span></p>
+        </div>
+        <div class="sub">
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Canal equivalente: el ancho es el área total de sección (escala log). Los puntos son moléculas de gas.</figcaption><canvas id="c2a" data-h="220" role="img" aria-label="Canal que se ensancha de la tráquea al alvéolo; las partículas se frenan y luego difunden"></canvas></figure>
+              <figure><figcaption>Área total de sección (cm²)</figcaption><canvas id="c2b" data-h="150" role="img" aria-label="Área total por generación"></canvas></figure>
+              <figure><figcaption>Velocidad media del gas (cm/s)</figcaption><canvas id="c2c" data-h="150" role="img" aria-label="Velocidad media por generación"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p2"></div><div class="ctls" id="s2"></div><dl class="reads" id="r2"></dl></div>
+          </div>
+          <div class="note">
+            <p>Cada generación duplica el número de ramas. Aunque cada rama es más fina, el área total crece de 2,5 cm² en la tráquea a cerca de 1 m² en la generación 23, así que por continuidad la velocidad cae de metros por segundo a décimas de milímetro por segundo. Cuando el número de Péclet baja de 1, la difusión pesa más que la convección.</p>
+            <p><span class="lbl">En clínica</span>El gas fresco avanza en bloque por las vías de conducción. En la zona respiratoria el oxígeno llega al alvéolo sobre todo por difusión.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÓDULO 3 -->
+      <section id="m3" role="tabpanel" aria-labelledby="t3" hidden>
+        <div class="mod-head">
+          <p class="eyebrow">Módulo 3 · Bernoulli y estenosis</p>
+          <h2>Más velocidad, menos presión</h2>
+          <p class="formula"><span>p + ½ρv² = constante</span><span>ΔP ≈ ½ρ(v₂² − v₁²)</span></p>
+        </div>
+        <div class="sub">
+          <h3>A. Estrechamiento de la vía aérea (tráquea de 18 mm)</h3>
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Los puntos aceleran en la estenosis; su color marca la velocidad</figcaption><canvas id="c3a" data-h="190" role="img" aria-label="Tubo con estenosis central y partículas que aceleran"></canvas></figure>
+              <figure><figcaption>Presión lateral a lo largo del tubo (cmH₂O respecto a la entrada, sin pérdidas)</figcaption><canvas id="c3b" data-h="160" role="img" aria-label="Perfil de presión con caída en la estenosis"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p3a"></div><div class="ctls" id="s3a"></div><dl class="reads" id="r3a"></dl></div>
+          </div>
+          <div class="note">
+            <p>La presión que se pierde crece con el cuadrado de la velocidad, o sea con el cuadrado del flujo: al duplicar V̇ la caída se multiplica por cuatro. En la realidad parte de esa presión no se recupera aguas abajo, por turbulencia.</p>
+            <p><span class="lbl">En clínica</span>Estenosis traqueal, ronquido y apnea obstructiva: la faringe se estrecha, la presión lateral baja y la pared tiende a colapsar.</p>
+          </div>
+        </div>
+        <div class="sub">
+          <h3>B. Espiración forzada y limitación del flujo</h3>
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Vía aérea durante la espiración: alvéolo a la izquierda, boca a la derecha</figcaption><canvas id="c3c" data-h="140" role="img" aria-label="Vía aérea que se comprime aguas abajo del punto de igual presión"></canvas></figure>
+              <figure><figcaption>Flujo espiratorio (L/s) según el esfuerzo (cmH₂O). Modelo ilustrativo.</figcaption><canvas id="c3d" data-h="190" role="img" aria-label="Flujo contra esfuerzo con meseta"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p3b"></div><div class="ctls" id="s3b"></div><dl class="reads" id="r3b"></dl></div>
+          </div>
+          <div class="note">
+            <p>Al soplar, la presión dentro de la vía cae hasta igualar la pleural en el punto de igual presión. Desde ahí hacia la boca la vía se comprime y el flujo máximo queda fijado por el retroceso elástico y la resistencia aguas arriba, no por el esfuerzo. Por eso la espirometría usa la curva flujo-volumen.</p>
+            <p><span class="lbl">En clínica</span>En el enfisema baja el retroceso elástico y en el asma sube la resistencia: en ambos baja el flujo máximo.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÓDULO 4 -->
+      <section id="m4" role="tabpanel" aria-labelledby="t4" hidden>
+        <div class="mod-head">
+          <p class="eyebrow">Módulo 4 · Tensión superficial</p>
+          <h2>Laplace y surfactante</h2>
+          <p class="formula"><span>P = 2T / r</span></p>
+        </div>
+        <div class="sub">
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Dos alvéolos conectados. El aire va del que tiene más presión al que tiene menos.</figcaption><canvas id="c4a" data-h="290" role="img" aria-label="Dos alvéolos comunicados; el pequeño se vacía en el grande si no hay surfactante"></canvas></figure>
+              <figure><figcaption>Presión según el radio (cmH₂O)</figcaption><canvas id="c4b" data-h="190" role="img" aria-label="Presión de Laplace contra radio con y sin surfactante"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p4"></div><div class="ctls" id="s4"></div><dl class="reads" id="r4"></dl></div>
+          </div>
+          <div class="note">
+            <p>Sin surfactante la tensión es la del agua (70 mN/m) y la presión sube cuando el radio baja: el alvéolo pequeño empuja su aire hacia el grande y se colapsa. El surfactante baja la tensión más cuanto más pequeño es el alvéolo, así que las presiones se parejan y el sistema se estabiliza. Los valores son ilustrativos.</p>
+            <p><span class="lbl">En clínica</span>El síndrome de dificultad respiratoria del recién nacido prematuro es un déficit de surfactante: alvéolos inestables, pulmón rígido y atelectasias.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÓDULO 5 -->
+      <section id="m5" role="tabpanel" aria-labelledby="t5" hidden>
+        <div class="mod-head">
+          <p class="eyebrow">Módulo 5 · Mecánica pulmonar</p>
+          <h2>Distensibilidad y constante de tiempo</h2>
+          <p class="formula"><span>C = ΔV / ΔP</span><span>τ = R · C</span><span>V(t) = C·ΔP·(1 − e<sup>−t/τ</sup>)</span></p>
+        </div>
+        <div class="sub">
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Pulmón de un compartimento con presión constante en inspiración y espiración pasiva (I:E = 1:2). El tiempo corre acelerado.</figcaption><canvas id="c5a" data-h="170" role="img" aria-label="Globo que representa el pulmón inflándose y vaciándose"></canvas></figure>
+              <figure><figcaption>Volumen sobre la CRF (mL) en 8 respiraciones seguidas</figcaption><canvas id="c5b" data-h="220" role="img" aria-label="Volumen contra tiempo en ocho respiraciones"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p5"></div><div class="ctls" id="s5"></div><dl class="reads" id="r5"></dl></div>
+          </div>
+          <div class="note">
+            <p>En una constante de tiempo el pulmón completa el 63 % del cambio de volumen y en tres, el 95 %. Si el tiempo espiratorio es menor que unos 3τ, queda aire atrapado: cada respiración parte de un volumen mayor y aparece presión positiva al final de la espiración (auto-PEEP).</p>
+            <p><span class="lbl">En clínica</span>Enfisema y asma tienen τ larga: conviene respirar más lento o espirar más tiempo. La fibrosis tiene τ corta y se vacía rápido.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÓDULO 6 -->
+      <section id="m6" role="tabpanel" aria-labelledby="t6" hidden>
+        <div class="mod-head">
+          <p class="eyebrow">Módulo 6 · Intercambio de gases</p>
+          <h2>Ley de Fick en la membrana alvéolo-capilar</h2>
+          <p class="formula"><span>V̇<sub>gas</sub> ∝ A · D · (P₁ − P₂) / T</span></p>
+        </div>
+        <div class="sub">
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Cada punto es una molécula de O₂. Los puntos que cruzan por segundo representan V̇gas.</figcaption><canvas id="c6a" data-h="250" role="img" aria-label="Alvéolo, membrana y capilar con moléculas de oxígeno cruzando"></canvas></figure>
+              <figure><figcaption>PO₂ de la sangre capilar durante su paso por el alvéolo (mmHg)</figcaption><canvas id="c6b" data-h="200" role="img" aria-label="PO2 capilar contra tiempo"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p6"></div><div class="chips" id="p6b"></div><div class="ctls" id="s6"></div><dl class="reads" id="r6"></dl></div>
+          </div>
+          <div class="note">
+            <p>La difusión baja si disminuye el área (enfisema) o aumenta el espesor (fibrosis, edema), o si cae la presión alveolar de O₂ (altura). Modelo de un compartimento: la sangre se acerca al valor alveolar de forma exponencial, con una constante que crece con el espesor y baja con el área.</p>
+            <p><span class="lbl">En clínica</span>En reposo la sangre tarda unos 0,75 s en pasar y sobra tiempo. En esfuerzo pasa en 0,3 s y un pulmón con difusión limitada ya no alcanza a equilibrarse: aparece hipoxemia.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÓDULO 7 -->
+      <section id="m7" role="tabpanel" aria-labelledby="t7" hidden>
+        <div class="mod-head">
+          <p class="eyebrow">Módulo 7 · Vías superiores</p>
+          <h2>Humidificación y calentamiento del aire</h2>
+          <p class="formula"><span>T(x) = T<sub>cuerpo</sub> − (T<sub>cuerpo</sub> − T<sub>ins</sub>) · e<sup>−x/λ</sup></span><span>Meta: 37 °C y 44 mg H₂O / L</span></p>
+        </div>
+        <div class="sub">
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Del orificio de entrada al alvéolo (43 cm). El color indica la temperatura; el anillo indica vapor de agua.</figcaption><canvas id="c7a" data-h="200" role="img" aria-label="Vía aérea coloreada según la temperatura del aire a lo largo del recorrido"></canvas></figure>
+              <figure><figcaption>Temperatura del gas (°C) según la distancia recorrida (cm)</figcaption><canvas id="c7b" data-h="170" role="img" aria-label="Temperatura contra distancia"></canvas></figure>
+              <figure><figcaption>Humedad absoluta (mg/L) según la distancia recorrida (cm)</figcaption><canvas id="c7c" data-h="170" role="img" aria-label="Humedad absoluta contra distancia"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p7"></div><div class="chips" id="p7b"></div><div class="ctls" id="s7"></div><dl class="reads" id="r7"></dl></div>
+          </div>
+          <div class="note">
+            <p>La mucosa nasal, muy irrigada y con gran superficie, entrega calor y agua al aire que pasa. El aire llega a 37 °C y casi 100 % de humedad relativa antes de entrar a los bronquios. El punto donde lo logra es el límite de saturación isotérmica (ISB). Es transferencia de calor y masa: el aire se acerca de forma exponencial al valor corporal, y la distancia necesaria crece con el flujo y con el tiempo de contacto que se pierde al saltarse la nariz.</p>
+            <p><span class="lbl">En clínica</span>Un tubo endotraqueal se salta la vía superior: sin humidificador el ISB baja hacia los bronquios, el moco se seca y el epitelio se daña. En el asma inducida por ejercicio influye la pérdida de agua y calor de la vía aérea.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÓDULO 8 -->
+      <section id="m8" role="tabpanel" aria-labelledby="t8" hidden>
+        <div class="mod-head">
+          <p class="eyebrow">Módulo 8 · Mecánica de la tos</p>
+          <h2>Compresión dinámica y aceleración del flujo</h2>
+          <p class="formula"><span>v = V̇ / A</span><span>Presión dinámica = ½ρv²</span><span>V̇<sub>máx</sub> ≈ P<sub>el</sub> / R<sub>aguas arriba</sub></span></p>
+        </div>
+        <div class="sub">
+          <div class="grid2">
+            <div class="viz">
+              <figure><figcaption>Los cuatro tiempos de la tos (cámara lenta). Pulmón a la izquierda, boca a la derecha; los puntos amarillos son moco.</figcaption><canvas id="c8a" data-h="210" role="img" aria-label="Vía aérea con glotis, tráquea que se comprime y moco que sale en la explosión"></canvas></figure>
+              <figure><figcaption>Flujo (L/s): negativo = inspiración, positivo = espiración</figcaption><canvas id="c8b" data-h="160" role="img" aria-label="Flujo contra tiempo durante la tos"></canvas></figure>
+              <figure><figcaption>Presión pleural (cmH₂O)</figcaption><canvas id="c8c" data-h="140" role="img" aria-label="Presión pleural contra tiempo durante la tos"></canvas></figure>
+            </div>
+            <div class="panel"><div class="chips" id="p8"></div><div class="ctls" id="s8"></div><dl class="reads" id="r8"></dl></div>
+          </div>
+          <div class="note">
+            <p>La tos tiene cuatro tiempos: inspiración profunda, compresión con la glotis cerrada, apertura de la glotis y explosión. Con la glotis cerrada la presión pleural sube sin flujo. Al abrirse, la presión dentro de la tráquea cae por debajo de la que la rodea y la tráquea se comprime. Por continuidad, un área menor con el mismo flujo da una velocidad mayor, y esa presión dinámica arrastra el moco de la pared. El flujo máximo lo fija la limitación del flujo del módulo 3: más esfuerzo ya no lo sube, pero comprime más la tráquea y acelera más el aire. Los valores son del orden de magnitud real, no mediciones.</p>
+            <p><span class="lbl">En clínica</span>Una tos débil por enfermedad neuromuscular, una inspiración corta por dolor o cirugía, o una vía obstruida dan poco flujo y poca velocidad, y el moco queda adherido. Por eso se mide el flujo pico de la tos y se usa la tos asistida.</p>
+          </div>
+        </div>
+      </section>
+      <p class="foot">Modelos simplificados con fines didácticos: valores típicos de adulto sano, geometría de Weibel (1963) y parámetros ilustrativos donde se indica. No sirven para decisiones clínicas.</p>
+    </main>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const nf=(x,d=1)=>Number(x).toLocaleString('es-CL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const rand=(a,b)=>a+Math.random()*(b-a);
+const randn=()=>{let u=0,v=0;while(!u)u=Math.random();v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const smooth=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
+const PI=Math.PI;
+const FONT='11px "IBM Plex Mono",ui-monospace,monospace';
+
+/* ---------- colores del tema ---------- */
+const C={};
+const CN={bg:'--bg',surface:'--surface',surface2:'--surface-2',ink:'--ink',muted:'--muted',line:'--line',grid:'--grid',air:'--air',airSoft:'--air-soft',blood:'--blood',bloodSoft:'--blood-soft',warn:'--warn'};
+function readColors(){const s=getComputedStyle(document.documentElement);for(const k in CN)C[k]=s.getPropertyValue(CN[k]).trim()}
+const hex=s=>{s=(s||'').trim();if(s[0]!=='#')return[128,128,128];if(s.length===4)s='#'+[...s.slice(1)].map(c=>c+c).join('');return[1,3,5].map(i=>parseInt(s.slice(i,i+2),16))};
+const mix=(a,b,t)=>{const A=hex(a),B=hex(b);return`rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')})`};
+const rgba=(c,al)=>`rgba(${hex(c).join(',')},${al})`;
+
+/* ---------- canvas, controles, lecturas ---------- */
+function mk(id){
+  const el=$('#'+id);el.style.height=el.dataset.h+'px';
+  const o={el,ctx:el.getContext('2d'),w:0,h:0};
+  const fit=()=>{const r=el.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);o.w=r.width;o.h=r.height;el.width=Math.round(r.width*d);el.height=Math.round(r.height*d);o.ctx.setTransform(d,0,0,d,0,0)};
+  new ResizeObserver(fit).observe(el);fit();return o;
+}
+function ctl(parent,{id,label,min,max,step,value,unit='',dec=0,onChange}){
+  const w=document.createElement('label');w.className='ctl';
+  w.innerHTML=`<span class="ctl-top"><span>${label}</span><output></output></span><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}">`;
+  parent.appendChild(w);
+  const inp=w.querySelector('input'),out=w.querySelector('output');
+  const upd=()=>{out.textContent=nf(inp.value,dec)+(unit?' '+unit:'')};
+  inp.addEventListener('input',()=>{upd();onChange&&onChange(+inp.value)});upd();
+  return{set(v){inp.value=v;upd()}};
+}
+function chips(parent,items){
+  items.forEach(([l,f])=>{const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=l;b.addEventListener('click',f);parent.appendChild(b)});
+}
+function reads(el,defs){
+  el.innerHTML=defs.map(([k,l])=>`<div class="rd"><dt>${l}</dt><dd data-k="${k}">–</dd></div>`).join('');
+  const m={};el.querySelectorAll('dd').forEach(d=>m[d.dataset.k]=d);
+  return(k,v,cls='')=>{const d=m[k];if(d.textContent!==v)d.textContent=v;if(d.className!==cls)d.className=cls};
+}
+const sample=(f,a,b,n)=>Array.from({length:n+1},(_,i)=>{const x=a+(b-a)*i/n;return[x,f(x)]});
+
+/* ---------- gráfico genérico ---------- */
+function chart(o,c){
+  const{ctx,w,h}=o;if(!w)return null;ctx.clearRect(0,0,w,h);
+  const pl=c.pl||50,pr=12,pt=12,pb=c.xlabel?34:24,iw=w-pl-pr,ih=h-pt-pb;
+  const Lg=v=>c.ylog?Math.log10(Math.max(v,1e-12)):v;
+  const a=Lg(c.y0),b=Lg(c.y1);
+  const X=x=>pl+(x-c.x0)/(c.x1-c.x0)*iw,Y=y=>pt+ih-(Lg(y)-a)/(b-a)*ih;
+  ctx.save();ctx.font=FONT;
+  (c.bands||[]).forEach(bd=>{const x0=X(bd.x0),x1=X(bd.x1),y0=bd.y1!=null?Y(bd.y1):pt,y1=bd.y0!=null?Y(bd.y0):pt+ih;ctx.fillStyle=rgba(bd.color,bd.alpha||.16);ctx.fillRect(x0,y0,x1-x0,y1-y0);if(bd.label){ctx.fillStyle=C.muted;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(bd.label,x0+5,pt+4)}});
+  ctx.lineWidth=1;ctx.strokeStyle=C.grid;ctx.fillStyle=C.muted;
+  (c.yt||[]).forEach(t=>{const y=Y(t.v);ctx.beginPath();ctx.moveTo(pl,y);ctx.lineTo(pl+iw,y);ctx.stroke();ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(t.l,pl-7,y)});
+  (c.xt||[]).forEach(t=>{const x=X(t.v);ctx.beginPath();ctx.moveTo(x,pt);ctx.lineTo(x,pt+ih);ctx.stroke();ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(t.l,x,pt+ih+6)});
+  ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(pl,pt);ctx.lineTo(pl,pt+ih);ctx.lineTo(pl+iw,pt+ih);ctx.stroke();
+  if(c.xlabel){ctx.fillStyle=C.muted;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(c.xlabel,pl+iw/2,h-2)}
+  ctx.save();ctx.beginPath();ctx.rect(pl,pt,iw,ih);ctx.clip();
+  (c.hl||[]).forEach(l=>{ctx.strokeStyle=l.color||C.muted;ctx.lineWidth=1.2;ctx.setLineDash(l.dash||[4,4]);const y=Y(l.y);ctx.beginPath();ctx.moveTo(pl,y);ctx.lineTo(pl+iw,y);ctx.stroke()});
+  (c.vl||[]).forEach(l=>{ctx.strokeStyle=l.color||C.muted;ctx.lineWidth=1.2;ctx.setLineDash(l.dash||[4,4]);const x=X(l.x);ctx.beginPath();ctx.moveTo(x,pt);ctx.lineTo(x,pt+ih);ctx.stroke()});
+  (c.series||[]).forEach(s=>{ctx.beginPath();s.pts.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));ctx.strokeStyle=s.color;ctx.lineWidth=s.width||2.2;ctx.setLineDash(s.dash||[]);ctx.lineJoin='round';ctx.stroke()});
+  ctx.restore();ctx.setLineDash([]);
+  (c.vl||[]).forEach(l=>{if(!l.label)return;ctx.fillStyle=l.color||C.muted;ctx.textBaseline='bottom';const x=X(l.x),right=x<pl+iw*.7;ctx.textAlign=right?'left':'right';ctx.fillText(l.label,x+(right?4:-4),pt+ih-3)});
+  (c.hl||[]).forEach(l=>{if(!l.label)return;ctx.fillStyle=l.color||C.muted;ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText(l.label,pl+iw-4,Y(l.y)-2)});
+  (c.markers||[]).forEach(m=>{const x=X(m.x),y=Y(m.y);ctx.beginPath();ctx.arc(x,y,5.5,0,PI*2);ctx.fillStyle=m.color;ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=C.surface;ctx.stroke();if(m.label){ctx.fillStyle=m.color;ctx.textBaseline='middle';const right=x<pl+iw*.6;ctx.textAlign=right?'left':'right';const yy=clamp(y+(m.dy||0),pt+8,pt+ih-8);ctx.fillText(m.label,x+(right?10:-10),yy)}});
+  ctx.restore();
+  return{X,Y,pl,pt,iw,ih};
+}
+const logT=(vals,fmt)=>vals.map(v=>({v,l:fmt?fmt(v):nf(v,0)}));
+const gt=v=>v>=1?nf(v,0):v>=0.1?nf(v,1):v>=0.01?nf(v,2):nf(v,3);
+
+/* ---------- datos de Weibel ---------- */
+const WD=[18,12.2,8.3,5.6,4.5,3.5,2.8,2.3,1.86,1.54,1.30,1.09,0.95,0.82,0.74,0.66,0.60,0.54,0.50,0.47,0.45,0.43,0.41,0.41];
+const WL=[120,47.6,19,7.6,12.7,10.7,9,8,6.7,5.9,5,4.7,3.9,3.3,2.7,2.3,2.0,1.65,1.41,1.17,0.99,0.83,0.70,0.59];
+const AIR={n:'Aire',rho:1.14,eta:1.9e-5,K1:1.2,K2:0.3};
+const HEL={n:'Heliox 80/20',rho:0.38,eta:2.1e-5,K1:1.2*2.1/1.9,K2:0.3*0.38/1.14};
+const ATOT=WD.map((d,z)=>Math.pow(2,z)*PI*Math.pow(d/20,2)); // cm²
+const Re=(z,Q,g)=>4*g.rho*(Q*1e-3)/(Math.pow(2,z)*PI*(WD[z]*1e-3)*g.eta);
+const interp=(arr,zf)=>{const i=Math.min(22,Math.floor(zf)),f=zf-i;return Math.exp(Math.log(arr[i])*(1-f)+Math.log(arr[i+1])*f)};
+
+/* ---------- partículas ---------- */
+const parts=(n,fn)=>Array.from({length:n},()=>fn());
+function tube(ctx,x0,x1,cy,half,refHalf){
+  ctx.fillStyle=C.bloodSoft;ctx.fillRect(x0,cy-half-10,x1-x0,10);ctx.fillRect(x0,cy+half,x1-x0,10);
+  ctx.fillStyle=C.surface2;ctx.fillRect(x0,cy-half,x1-x0,2*half);
+  ctx.strokeStyle=C.blood;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,cy-half);ctx.lineTo(x1,cy-half);ctx.moveTo(x0,cy+half);ctx.lineTo(x1,cy+half);ctx.stroke();
+  if(refHalf){ctx.setLineDash([5,4]);ctx.strokeStyle=C.muted;ctx.lineWidth=1;ctx.strokeRect(x0,cy-refHalf,x1-x0,2*refHalf);ctx.setLineDash([])}
+}
+function label(ctx,t,x,y,col,al='left',bl='top'){ctx.font=FONT;ctx.fillStyle=col||C.muted;ctx.textAlign=al;ctx.textBaseline=bl;ctx.fillText(t,x,y)}
+function arrow(ctx,x0,y0,x1,y1,col,w=1.6){ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();const a=Math.atan2(y1-y0,x1-x0),s=5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1-s*Math.cos(a-.5),y1-s*Math.sin(a-.5));ctx.lineTo(x1-s*Math.cos(a+.5),y1-s*Math.sin(a+.5));ctx.closePath();ctx.fill()}
+
+const mods={};
+
+/* =========================================================
+   MÓDULO 1A · Poiseuille
+   ========================================================= */
+{
+  const o1=mk('c1a'),o2=mk('c1b');
+  const S={r:100,L:100,dP:1.5},R0=1.5;
+  const P=parts(80,()=>({x:Math.random(),y:rand(-1,1)}));
+  const set=reads($('#r1a'),[['R','Resistencia'],['Rr','Resistencia relativa'],['Q','Flujo'],['v','Velocidad media relativa']]);
+  const sr=ctl($('#s1a'),{id:'a-r',label:'Radio de la vía aérea',min:30,max:130,step:1,value:100,unit:'% del normal',onChange:v=>S.r=v});
+  const sl=ctl($('#s1a'),{id:'a-l',label:'Longitud',min:50,max:200,step:5,value:100,unit:'% del normal',onChange:v=>S.L=v});
+  const sp=ctl($('#s1a'),{id:'a-p',label:'Presión motriz ΔP',min:0.5,max:6,step:0.1,value:1.5,unit:'cmH₂O',dec:1,onChange:v=>S.dP=v});
+  const apply=(r,L,p)=>{S.r=r;S.L=L;S.dP=p;sr.set(r);sl.set(L);sp.set(p)};
+  chips($('#p1a'),[['Normal',()=>apply(100,100,1.5)],['Asma leve',()=>apply(80,100,1.5)],['Asma grave',()=>apply(50,100,1.5)],['Edema de mucosa',()=>apply(70,100,1.5)],['Tubo endotraqueal',()=>apply(45,150,1.5)]]);
+  const calc=()=>{const R=R0*(S.L/100)/Math.pow(S.r/100,4),Q=S.dP/R;return{R,Q,vr:Q/Math.pow(S.r/100,2),Rr:R/R0}};
+  mods[1]={draw(dt){
+    const s=calc();
+    set('R',nf(s.R,1)+' cmH₂O·s/L',s.Rr>4?'bad':s.Rr>1.5?'mid':'ok');set('Rr','×'+nf(s.Rr,s.Rr<10?1:0));set('Q',nf(s.Q,2)+' L/s',s.Q<0.5?'bad':'');set('v','×'+nf(s.vr,2));
+    // tubo
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);
+      const ref=h*.36,half=ref*S.r/100,cy=h/2+4,Lp=(w-40)*clamp(.3+.35*S.L/100,.3,1),x0=(w-Lp)/2,x1=x0+Lp;
+      tube(ctx,x0,x1,cy,half,ref);
+      const vr=clamp(s.vr,0,5);
+      P.forEach(p=>{p.x+=90*vr*2*(1-p.y*p.y)*dt/Lp;if(p.x>1){p.x=0;p.y=rand(-1,1)}ctx.fillStyle=C.air;ctx.beginPath();ctx.arc(x0+p.x*Lp,cy+p.y*half*.9,2.4,0,PI*2);ctx.fill()});
+      const xa=x0+Lp*.8;for(let yy=-.8;yy<=.81;yy+=.4){const len=30*(1-yy*yy)*2*clamp(s.vr,0,2.5)/2;if(len>3)arrow(ctx,xa,cy+yy*half*.9,xa+len,cy+yy*half*.9,C.warn,1.6)}
+      label(ctx,'r = '+S.r+' % · L = '+S.L+' %',x0,8);label(ctx,'perfil parabólico: v máx = 2 · v media',x1,h-6,C.muted,'right','bottom');
+    }
+    // curva R(r)
+    chart(o2,{x0:30,x1:130,y0:.3,y1:300,ylog:true,pl:44,xt:[30,50,70,100,130].map(v=>({v,l:v+'%'})),yt:[{v:1,l:'1×'},{v:10,l:'10×'},{v:100,l:'100×'}],hl:[{y:1}],
+      series:[{pts:sample(r=>(S.L/100)/Math.pow(r/100,4),30,130,70),color:C.air}],
+      markers:[{x:S.r,y:clamp(s.Rr,.31,290),color:C.blood,label:'R = '+nf(s.Rr,s.Rr<10?1:0)+'×'}]});
+  }};
+}
+
+/* =========================================================
+   MÓDULO 1B · Reynolds
+   ========================================================= */
+{
+  const o1=mk('c1c'),o2=mk('c1d'),o3=mk('c1e');
+  const S={Q:0.5,z:0,g:AIR};
+  const P=parts(90,()=>({x:Math.random(),y:rand(-1,1),vy:0,h:[]}));
+  const set=reads($('#r1b'),[['gas','Gas'],['D','Diámetro'],['Re','Número de Reynolds'],['reg','Régimen'],['dp','ΔP total del flujo'],['k2','Parte turbulenta (K₂·V̇²)']]);
+  const sq=ctl($('#s1b'),{id:'b-q',label:'Flujo total en la tráquea',min:0.1,max:10,step:0.1,value:0.5,unit:'L/s',dec:1,onChange:v=>S.Q=v});
+  const sz=ctl($('#s1b'),{id:'b-z',label:'Generación bronquial',min:0,max:23,step:1,value:0,onChange:v=>S.z=v});
+  const apply=(q,z,g)=>{S.Q=q;S.z=z;if(g)S.g=g;sq.set(q);sz.set(z)};
+  chips($('#p1b'),[['Reposo',()=>apply(.5,0)],['Ejercicio',()=>apply(3,0)],['Tos',()=>apply(8,0)],['Bronquiolo (gen. 10)',()=>apply(.5,10)],['Aire',()=>S.g=AIR],['Heliox 80/20',()=>S.g=HEL]]);
+  mods[2]={draw(dt){
+    const re=Re(S.z,S.Q,S.g),I=re<2000?0:clamp(.3+.7*(re-2000)/6000,0,1);
+    const reg=re<2000?['Laminar','ok']:re<4000?['Transición','mid']:['Turbulento','bad'];
+    const dp=S.g.K1*S.Q+S.g.K2*S.Q*S.Q;
+    set('gas',S.g.n);set('D',nf(WD[S.z],WD[S.z]<2?2:1)+' mm');set('Re',nf(re,0),reg[1]);set('reg',reg[0],reg[1]);set('dp',nf(dp,1)+' cmH₂O');set('k2',nf(100*S.g.K2*S.Q*S.Q/dp,0)+' %');
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const half=h*.3,cy=h/2+6,x0=14,x1=w-14,Lp=x1-x0;
+      tube(ctx,x0,x1,cy,half);
+      P.forEach(p=>{
+        const u=170*((1-I)*1.4*(1-p.y*p.y)+I*1.05*(1-Math.pow(Math.abs(p.y),8)));
+        p.vy+=(-4*p.vy)*dt+I*3.5*Math.sqrt(dt)*randn();p.y+=p.vy*dt;
+        if(Math.abs(p.y)>1){p.y=Math.sign(p.y)*(2-Math.abs(p.y));p.vy*=-1}
+        p.x+=(u*dt+(dt?randn()*I*40*Math.sqrt(dt):0))/Lp;
+        if(p.x>1){p.x=0;p.y=rand(-1,1);p.h=[]}
+        if(dt>0){p.h.push([x0+p.x*Lp,cy+p.y*half*.92]);if(p.h.length>7)p.h.shift()}
+        if(p.h.length>1){ctx.strokeStyle=C.air;ctx.lineWidth=1.6;ctx.beginPath();p.h.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke()}
+      });
+      const col=reg[1]==='ok'?C.air:reg[1]==='mid'?C.warn:C.blood;
+      label(ctx,'Generación '+S.z+' · Re = '+nf(re,0),x0,8,C.ink);label(ctx,reg[0],x1,8,col,'right');
+    }
+    const rs=sample(z=>Re(Math.round(z),S.Q,S.g),0,23,23);
+    chart(o2,{x0:0,x1:23,y0:1,y1:1e5,ylog:true,pl:56,xlabel:'Generación',xt:[0,4,8,12,16,20,23].map(v=>({v,l:''+v})),yt:logT([1,10,100,1000,1e4,1e5],gt),
+      bands:[{x0:0,x1:23,y0:2000,y1:4000,color:C.warn,alpha:.2,label:'transición'}],hl:[{y:2000,color:C.warn},{y:4000,color:C.blood}],
+      series:[{pts:rs,color:C.air}],markers:[{x:S.z,y:clamp(re,1.05,9e4),color:C.blood,label:'Re = '+nf(re,0)}]});
+    const f=q=>S.g.K1*q+S.g.K2*q*q;
+    chart(o3,{x0:0,x1:10,y0:0,y1:50,pl:44,xlabel:'Flujo V̇ (L/s)',xt:[0,2,4,6,8,10].map(v=>({v,l:''+v})),yt:[0,10,20,30,40,50].map(v=>({v,l:''+v})),
+      series:[{pts:sample(q=>AIR.K1*q,0,10,2),color:C.muted,dash:[2,4],width:1.5},{pts:sample(q=>AIR.K1*q+AIR.K2*q*q,0,10,40),color:C.air},{pts:sample(q=>HEL.K1*q+HEL.K2*q*q,0,10,40),color:C.warn,dash:[6,4]}],
+      markers:[{x:S.Q,y:f(S.Q),color:C.blood,label:nf(f(S.Q),1)+' cmH₂O',dy:-8}]});
+    label(o3.ctx,'— aire   - - heliox   ··· solo laminar',o3.w-14,18,C.muted,'right','top');
+  }};
+}
+
+/* =========================================================
+   MÓDULO 2 · Weibel
+   ========================================================= */
+{
+  const o1=mk('c2a'),o2=mk('c2b'),o3=mk('c2c');
+  const S={Q:0.5,z:0};
+  const P=parts(130,()=>({x:Math.random(),y:rand(-1,1)}));
+  const set=reads($('#r2'),[['n','Ramas en la generación'],['D','Diámetro de cada rama'],['A','Área total'],['v','Velocidad media'],['Pe','Péclet (Pe)'],['tr','Transporte dominante'],['pe1','Pe = 1 desde']]);
+  const sq=ctl($('#s2'),{id:'w-q',label:'Flujo total V̇',min:0.1,max:5,step:0.1,value:0.5,unit:'L/s',dec:1,onChange:v=>S.Q=v});
+  const sz=ctl($('#s2'),{id:'w-z',label:'Generación bronquial n',min:0,max:23,step:1,value:0,onChange:v=>S.z=v});
+  chips($('#p2'),[['Tráquea',()=>{S.z=0;sz.set(0)}],['Bronquios lobares',()=>{S.z=4;sz.set(4)}],['Bronquiolos',()=>{S.z=12;sz.set(12)}],['Acino',()=>{S.z=18;sz.set(18)}],['Sacos alveolares',()=>{S.z=23;sz.set(23)}]]);
+  const Q=()=>S.Q*1000; // cm³/s
+  const vz=z=>Q()/ATOT[z], Pe=z=>vz(z)*(WL[z]/10)/0.2;
+  mods[3]={draw(dt){
+    const z=S.z,v=vz(z),pe=Pe(z);let z1=23;for(let i=0;i<24;i++)if(Pe(i)<1){z1=i;break}
+    set('n',nf(Math.pow(2,z),0));set('D',nf(WD[z],WD[z]<2?2:1)+' mm');set('A',nf(ATOT[z],ATOT[z]<10?1:0)+' cm²');set('v',nf(v,v<1?2:v<10?1:0)+' cm/s');
+    set('Pe',pe>=10?nf(pe,0):nf(pe,2),pe>5?'ok':pe>1?'mid':'bad');set('tr',pe>5?'Convección':pe>1?'Mixto':'Difusión',pe>5?'ok':pe>1?'mid':'bad');set('pe1','gen. '+z1);
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const pad=18,W=w-2*pad,cy=h*.56,hmin=h*.1,hmax=h*.72;
+      const lA0=Math.log(ATOT[0]),lA1=Math.log(ATOT[23]);
+      const Hz=zf=>hmin+(hmax-hmin)*(Math.log(interp(ATOT,zf))-lA0)/(lA1-lA0);
+      const X=zf=>pad+zf/23*W;
+      ctx.fillStyle=rgba(C.air,.1);ctx.fillRect(X(16.5),0,w-X(16.5),h);
+      label(ctx,'Zona de conducción (gen. 0–16)',pad,6);label(ctx,'Zona respiratoria (17–23)',w-pad,6,C.muted,'right');
+      // canal
+      ctx.beginPath();for(let i=0;i<=120;i++){const zf=i/120*23;const x=X(zf),y=cy-Hz(zf)/2;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}
+      for(let i=120;i>=0;i--){const zf=i/120*23;ctx.lineTo(X(zf),cy+Hz(zf)/2)}ctx.closePath();
+      ctx.fillStyle=C.surface2;ctx.fill();ctx.strokeStyle=C.blood;ctx.lineWidth=2;ctx.stroke();
+      P.forEach(p=>{
+        const zf=clamp(p.x*23,0,23),vv=Q()/interp(ATOT,zf),pe2=vv*(interp(WL,zf)/10)/0.2,f=1/(1+pe2);
+        const sp=12*Math.pow(vv,.4);
+        p.x+=(sp*dt+(dt?randn()*Math.sqrt(2*100*dt)*f:0))/W;
+        if(dt)p.y+=randn()*.06*f*Math.sqrt(dt*60);
+        if(Math.abs(p.y)>1)p.y=Math.sign(p.y)*(2-Math.abs(p.y));
+        if(p.x<0)p.x=-p.x;if(p.x>1){p.x=0;p.y=rand(-1,1)}
+        const zz=p.x*23;ctx.fillStyle=C.air;ctx.beginPath();ctx.arc(X(zz),cy+p.y*Hz(zz)/2*.9,2.2,0,PI*2);ctx.fill();
+      });
+      ctx.setLineDash([4,4]);ctx.strokeStyle=C.ink;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(X(z),14*2);ctx.lineTo(X(z),h-18);ctx.stroke();
+      ctx.strokeStyle=C.warn;ctx.beginPath();ctx.moveTo(X(z1),h*.2);ctx.lineTo(X(z1),h-18);ctx.stroke();ctx.setLineDash([]);
+      label(ctx,'gen. '+z,X(z),h-4,C.ink,z>12?'right':'left','bottom');label(ctx,'Pe = 1',X(z1),h*.2-2,C.warn,'center','bottom');
+    }
+    const ar=ATOT.map((a,i)=>[i,a]),ve=ATOT.map((a,i)=>[i,Q()/a]);
+    const xt=[0,4,8,12,16,20,23].map(x=>({v:x,l:''+x}));
+    const bands=[{x0:16.5,x1:23,color:C.air,alpha:.12}];
+    chart(o2,{x0:0,x1:23,y0:1,y1:3e4,ylog:true,pl:56,xt,yt:logT([1,10,100,1000,1e4],gt),bands,series:[{pts:ar,color:C.air}],vl:[{x:z,color:C.ink}],markers:[{x:z,y:ATOT[z],color:C.blood,label:nf(ATOT[z],ATOT[z]<10?1:0)+' cm²',dy:-12}]});
+    chart(o3,{x0:0,x1:23,y0:.001,y1:1000,ylog:true,pl:56,xlabel:'Generación',xt,yt:logT([.001,.01,.1,1,10,100,1000],gt),bands,series:[{pts:ve,color:C.blood}],vl:[{x:z1,color:C.warn,label:'Pe = 1'},{x:z,color:C.ink}],markers:[{x:z,y:clamp(v,.0012,900),color:C.air,label:nf(v,v<1?2:0)+' cm/s',dy:-12}]});
+  }};
+}
+
+/* =========================================================
+   MÓDULO 3A · Bernoulli
+   ========================================================= */
+{
+  const o1=mk('c3a'),o2=mk('c3b');
+  const S={Q:1,s:60};
+  const P=parts(90,()=>({x:Math.random(),y:rand(-1,1)}));
+  const A1=PI*Math.pow(.009,2),rho=1.14;
+  const set=reads($('#r3a'),[['v1','Velocidad antes'],['v2','Velocidad en la estenosis'],['dp','Caída de presión'],['x4','Con el doble de flujo']]);
+  const sq=ctl($('#s3a'),{id:'e-q',label:'Flujo V̇',min:0.1,max:6,step:0.1,value:1,unit:'L/s',dec:1,onChange:v=>S.Q=v});
+  const ss=ctl($('#s3a'),{id:'e-s',label:'Estrechamiento del área',min:0,max:90,step:1,value:60,unit:'%',onChange:v=>S.s=v});
+  const apply=(q,s)=>{S.Q=q;S.s=s;sq.set(q);ss.set(s)};
+  chips($('#p3a'),[['Sin estenosis',()=>apply(1,0)],['Estenosis moderada',()=>apply(1,60)],['Estenosis crítica',()=>apply(1,85)],['Esfuerzo con estenosis',()=>apply(3,60)]]);
+  const g=x=>Math.exp(-Math.pow((x-.5)/.1,2)),af=x=>1-S.s/100*g(x);
+  const pdrop=(Q,s)=>{const v1=Q*1e-3/A1,f=1-s/100;return .5*rho*(v1*v1/(f*f)-v1*v1)/98.07};
+  const nice=v=>{const e=Math.pow(10,Math.floor(Math.log10(v)));const m=v/e;return(m<=1?1:m<=2?2:m<=5?5:10)*e};
+  mods[4]={draw(dt){
+    const v1=S.Q*1e-3/A1,v2=v1/(1-S.s/100),dp=pdrop(S.Q,S.s);
+    set('v1',nf(v1,1)+' m/s');set('v2',nf(v2,1)+' m/s',S.s>=75?'bad':S.s>=40?'mid':'');set('dp','−'+nf(dp,dp<1?2:1)+' cmH₂O',dp>3?'bad':dp>.8?'mid':'');set('x4','−'+nf(pdrop(S.Q*2,S.s),pdrop(S.Q*2,S.s)<1?2:1)+' cmH₂O');
+    const pl=46,pr=12;
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const half1=h*.34,cy=h/2+6,Lp=w-pl-pr,X=x=>pl+x*Lp;
+      ctx.fillStyle=C.bloodSoft;ctx.fillRect(pl,cy-half1-12,Lp,2*half1+24);
+      ctx.beginPath();for(let i=0;i<=100;i++){const x=i/100;i?ctx.lineTo(X(x),cy-half1*Math.sqrt(af(x))):ctx.moveTo(X(x),cy-half1*Math.sqrt(af(x)))}
+      for(let i=100;i>=0;i--){const x=i/100;ctx.lineTo(X(x),cy+half1*Math.sqrt(af(x)))}ctx.closePath();
+      ctx.fillStyle=C.surface2;ctx.fill();ctx.strokeStyle=C.blood;ctx.lineWidth=2;ctx.stroke();
+      const base=40*(.6+.4*S.Q);
+      P.forEach(p=>{const f=af(p.x),sp=Math.min(base/f,1200);p.x+=sp*dt/Lp;if(p.x>1){p.x=0;p.y=rand(-1,1)}
+        const px=X(p.x),py=cy+p.y*half1*Math.sqrt(af(p.x))*.9,len=Math.min(sp*.03,26),k=clamp((1/f-1)/6,0,1);
+        ctx.strokeStyle=mix(C.air,C.blood,k);ctx.lineWidth=2.4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(px-len,py);ctx.lineTo(px,py);ctx.stroke()});
+      ctx.lineCap='butt';
+      label(ctx,'v₁ = '+nf(v1,1)+' m/s',pl+6,8);label(ctx,'v₂ = '+nf(v2,1)+' m/s',X(.5),h-6,C.blood,'center','bottom');
+    }
+    const pm=-pdrop(S.Q,S.s),y0=-nice(Math.max(.5,-pm*1.2));
+    chart(o2,{x0:0,x1:1,y0,y1:Math.abs(y0)*.15,pl,xt:[],yt:[{v:y0,l:nf(y0,Math.abs(y0)<1?1:0)},{v:y0/2,l:nf(y0/2,Math.abs(y0/2)<1?1:0)},{v:0,l:'0'}],
+      hl:[{y:0}],vl:[{x:.5,color:C.muted}],series:[{pts:sample(x=>{const v=v1/af(x);return -.5*rho*(v*v-v1*v1)/98.07},0,1,160),color:C.air}],
+      markers:[{x:.5,y:Math.max(pm,y0*.98),color:C.blood,label:nf(pm,Math.abs(pm)<1?2:1)+' cmH₂O',dy:-4}]});
+  }};
+}
+
+/* =========================================================
+   MÓDULO 3B · Espiración forzada
+   ========================================================= */
+{
+  const o1=mk('c3c'),o2=mk('c3d');
+  const S={Ppl:30,Pel:20,R:4};
+  const set=reads($('#r3b'),[['V','Flujo espiratorio'],['Vu','Flujo si la vía fuera rígida'],['st','Estado'],['pip','Punto de igual presión']]);
+  const sp=ctl($('#s3b'),{id:'f-p',label:'Esfuerzo (presión pleural)',min:0,max:50,step:1,value:30,unit:'cmH₂O',onChange:v=>S.Ppl=v});
+  const se=ctl($('#s3b'),{id:'f-e',label:'Retroceso elástico',min:4,max:25,step:1,value:20,unit:'cmH₂O',onChange:v=>S.Pel=v});
+  const sr=ctl($('#s3b'),{id:'f-r',label:'Resistencia de la vía',min:2.5,max:15,step:0.5,value:4,unit:'cmH₂O·s/L',dec:1,onChange:v=>S.R=v});
+  const apply=(p,e,r)=>{S.Ppl=p;S.Pel=e;S.R=r;sp.set(p);se.set(e);sr.set(r)};
+  chips($('#p3b'),[['Normal',()=>apply(30,20,4)],['Asma (resistencia alta)',()=>apply(30,20,10)],['Enfisema (retroceso bajo)',()=>apply(30,8,6)]]);
+  const calc=()=>{const Vu=(S.Pel+S.Ppl)/S.R,Vl=S.Pel/(.5*S.R);return{Vu,Vl,V:Math.min(Vu,Vl),lim:Vu>Vl}};
+  mods[5]={draw(dt){
+    const s=calc();
+    set('V',nf(s.V,1)+' L/s');set('Vu',nf(s.Vu,1)+' L/s');set('st',s.lim?'Limitado':'Depende del esfuerzo',s.lim?'bad':'ok');set('pip',s.lim?'a mitad de la vía':'no se forma',s.lim?'mid':'');
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const x0=70,x1=w-50,Lp=x1-x0,cy=h/2+10,full=24,pinch=7,xe=x0+Lp*.5;
+      const hf=x=>s.lim?full-(full-pinch)*smooth((x-xe+16)/32):full;
+      ctx.fillStyle=C.bloodSoft;ctx.fillRect(x0,cy-full-14,Lp,2*full+28);
+      ctx.beginPath();for(let x=x0;x<=x1;x+=3)x===x0?ctx.moveTo(x,cy-hf(x)):ctx.lineTo(x,cy-hf(x));for(let x=x1;x>=x0;x-=3)ctx.lineTo(x,cy+hf(x));ctx.closePath();
+      ctx.fillStyle=C.airSoft;ctx.fill();ctx.strokeStyle=C.blood;ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.arc(x0-22,cy,26,0,PI*2);ctx.fillStyle=C.airSoft;ctx.fill();ctx.strokeStyle=C.air;ctx.lineWidth=2;ctx.stroke();
+      const ah=4+14*S.Ppl/50;
+      if(S.Ppl>2)for(let i=0;i<7;i++){const x=x0+Lp*(.06+.14*i),e=hf(x);arrow(ctx,x,cy-e-12-ah,x,cy-e-3,C.blood,1.6);arrow(ctx,x,cy+e+12+ah,x,cy+e+3,C.blood,1.6)}
+      arrow(ctx,x1+4,cy,x1+4+Math.min(40,s.V*3.2),cy,C.air,2.4);
+      if(s.lim){ctx.setLineDash([4,4]);ctx.strokeStyle=C.warn;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(xe,cy-full-18);ctx.lineTo(xe,cy+full+18);ctx.stroke();ctx.setLineDash([]);label(ctx,'punto de igual presión',xe,6,C.warn,'center','top');label(ctx,'vía comprimida',(xe+x1)/2,h-6,C.blood,'center','bottom')}
+      label(ctx,'alvéolo',x0-22,h-6,C.muted,'center','bottom');label(ctx,'presión pleural ↓',x0+4,6);
+    }
+    chart(o2,{x0:0,x1:50,y0:0,y1:20,pl:44,xlabel:'Esfuerzo (cmH₂O)',xt:[0,10,20,30,40,50].map(v=>({v,l:''+v})),yt:[0,5,10,15,20].map(v=>({v,l:''+v})),
+      series:[{pts:sample(p=>(S.Pel+p)/S.R,0,50,50),color:C.muted,dash:[5,4],width:1.6},{pts:sample(p=>Math.min((S.Pel+p)/S.R,s.Vl),0,50,100),color:C.air}],
+      vl:[],markers:[{x:S.Ppl,y:s.V,color:C.blood,label:nf(s.V,1)+' L/s',dy:s.lim?-14:10}]});
+    label(o2.ctx,'--- vía rígida   — vía real',o2.w-14,16,C.muted,'right','top');
+  }};
+}
+
+/* =========================================================
+   MÓDULO 4 · Laplace
+   ========================================================= */
+{
+  const o1=mk('c4a'),o2=mk('c4b');
+  const S={c:0,r1:60,r2:100};let sim;
+  const set=reads($('#r4'),[['T1','Tensión alvéolo pequeño'],['T2','Tensión alvéolo grande'],['P1','Presión pequeño'],['P2','Presión grande'],['st','Estado']]);
+  const sc=ctl($('#s4'),{id:'l-c',label:'Surfactante',min:0,max:100,step:1,value:0,unit:'%',onChange:v=>{S.c=v/100;reset()}});
+  const s1=ctl($('#s4'),{id:'l-1',label:'Radio del alvéolo pequeño',min:35,max:100,step:1,value:60,unit:'µm',onChange:v=>{S.r1=v;reset()}});
+  const s2=ctl($('#s4'),{id:'l-2',label:'Radio del alvéolo grande',min:80,max:150,step:1,value:100,unit:'µm',onChange:v=>{S.r2=v;reset()}});
+  const T=(r,c)=>70*(1-c)+c*clamp(25*Math.pow(r/100,1.5),.5,70);
+  const Pr=(r,c)=>2000*T(r,c)/r/98.07;
+  const vol=r=>4/3*PI*r*r*r,rad=v=>Math.cbrt(3*v/(4*PI));
+  function reset(){sim={V1:vol(S.r1),V2:vol(S.r2),col:false,t:0}}
+  reset();
+  chips($('#p4'),[['Sin surfactante',()=>{S.c=0;sc.set(0);reset()}],['Déficit parcial',()=>{S.c=.6;sc.set(60);reset()}],['Surfactante normal',()=>{S.c=1;sc.set(100);reset()}],['Reiniciar',reset]]);
+  const VMIN=vol(22);
+  mods[6]={draw(dt){
+    let r1=rad(sim.V1),r2=rad(sim.V2);
+    const P1=Pr(r1,S.c),P2=Pr(r2,S.c);
+    if(!sim.col&&dt>0){const k=3.2e4;for(let i=0;i<4;i++){const d=k*(P2-P1)*dt/4;sim.V1+=d;sim.V2-=d;
+      if(sim.V1<=VMIN){sim.V2+=sim.V1-VMIN;sim.V1=VMIN;sim.col=true;break}
+      if(rad(sim.V2)>185){sim.V2=vol(185);break}}}
+    r1=rad(sim.V1);r2=rad(sim.V2);
+    const p1=Pr(r1,S.c),p2=Pr(r2,S.c),dpp=p1-p2;
+    set('T1',nf(T(r1,S.c),1)+' mN/m');set('T2',nf(T(r2,S.c),1)+' mN/m');set('P1',nf(p1,1)+' cmH₂O');set('P2',nf(p2,1)+' cmH₂O');
+    const st=sim.col?['Colapsado (atelectasia)','bad']:Math.abs(dpp)<.05?['Estable','ok']:dpp>0?['Inestable: el pequeño se vacía','bad']:['Se equilibra','mid'];
+    set('st',st[0],st[1]);
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const sc2=Math.min((h-90)/340,(w-60)/760)*1.15,cy=(h-40)/2+6,xa=w*.27,xb=w*.73;
+      const rr1=r1*sc2*1.15,rr2=r2*sc2*1.15;
+      ctx.fillStyle=C.surface2;ctx.fillRect(xa+rr1-4,cy-7,xb-rr2-xa-rr1+8,14);ctx.strokeStyle=C.line;ctx.lineWidth=1.5;ctx.strokeRect(xa+rr1-4,cy-7,xb-rr2-xa-rr1+8,14);
+      const dr=(x,r,rrr,col)=>{ctx.beginPath();ctx.arc(x,cy,rrr,0,PI*2);ctx.fillStyle=col?C.bloodSoft:C.airSoft;ctx.fill();ctx.strokeStyle=col?C.blood:C.air;ctx.lineWidth=3;ctx.stroke();
+        const n=Math.round(46*S.c);ctx.fillStyle=C.warn;for(let i=0;i<n;i++){const a=i/n*PI*2;ctx.beginPath();ctx.arc(x+Math.cos(a)*(rrr+5),cy+Math.sin(a)*(rrr+5),2.2,0,PI*2);ctx.fill()}};
+      dr(xa,r1,rr1,sim.col);dr(xb,r2,rr2,false);
+      label(ctx,'r = '+nf(r1,0)+' µm',xa,h-36,C.ink,'center','top');label(ctx,'P = '+nf(p1,1)+' cmH₂O',xa,h-20,C.air,'center','top');
+      label(ctx,'r = '+nf(r2,0)+' µm',xb,h-36,C.ink,'center','top');label(ctx,'P = '+nf(p2,1)+' cmH₂O',xb,h-20,C.air,'center','top');
+      if(!sim.col&&Math.abs(dpp)>.05){const dir=dpp>0?1:-1,mx=(xa+xb)/2;arrow(ctx,mx-dir*28,cy,mx+dir*28,cy,C.blood,3)}
+      if(S.c>0)label(ctx,'puntos amarillos = surfactante',8,6,C.warn);
+    }
+    chart(o2,{x0:20,x1:170,y0:0,y1:30,pl:44,xlabel:'Radio del alvéolo (µm)',xt:[20,50,80,110,140,170].map(v=>({v,l:''+v})),yt:[0,10,20,30].map(v=>({v,l:''+v})),
+      series:[{pts:sample(r=>Pr(r,0),20,170,100),color:C.blood,dash:[5,4],width:1.8},{pts:sample(r=>Pr(r,S.c),20,170,100),color:C.air}],
+      markers:[{x:clamp(r1,20,170),y:p1,color:C.ink,label:'pequeño',dy:-10},{x:r2,y:p2,color:C.air,label:'grande',dy:-10}]});
+    label(o2.ctx,'--- sin surfactante   — con surfactante actual',o2.w-14,16,C.muted,'right','top');
+  }};
+}
+
+/* =========================================================
+   MÓDULO 5 · Mecánica pulmonar
+   ========================================================= */
+{
+  const o1=mk('c5a'),o2=mk('c5b');
+  const S={R:4,C:100,f:15,dP:5,t:0};const NB=8;
+  const set=reads($('#r5'),[['tau','Constante de tiempo τ'],['te','Tiempo espiratorio'],['vt','Volumen corriente'],['trap','Volumen atrapado'],['pp','Auto-PEEP'],['st','Estado']]);
+  const sR=ctl($('#s5'),{id:'m-r',label:'Resistencia R',min:1,max:30,step:0.5,value:4,unit:'cmH₂O·s/L',dec:1,onChange:v=>S.R=v});
+  const sC=ctl($('#s5'),{id:'m-c',label:'Distensibilidad C',min:10,max:250,step:5,value:100,unit:'mL/cmH₂O',onChange:v=>S.C=v});
+  const sF=ctl($('#s5'),{id:'m-f',label:'Frecuencia respiratoria',min:8,max:40,step:1,value:15,unit:'/min',onChange:v=>S.f=v});
+  const sD=ctl($('#s5'),{id:'m-d',label:'Presión inspiratoria',min:3,max:20,step:0.5,value:5,unit:'cmH₂O',dec:1,onChange:v=>S.dP=v});
+  const apply=(R,Cc,f,dP)=>{S.R=R;S.C=Cc;S.f=f;S.dP=dP;sR.set(R);sC.set(Cc);sF.set(f);sD.set(dP);S.t=0};
+  chips($('#p5'),[['Normal',()=>apply(4,100,15,5)],['Fibrosis (C baja)',()=>apply(4,30,15,12)],['Enfisema (C alta, R alta)',()=>apply(12,200,20,5)],['Asma (R alta)',()=>apply(20,100,20,5)]]);
+  function model(){const tau=S.R*S.C/1000,T=60/S.f,Ti=T/3,Te=T-Ti,a=Math.exp(-Ti/tau),b=Math.exp(-Te/tau),Vinf=S.C*S.dP;
+    const Vs=[0],Vp=[];for(let k=0;k<NB;k++){const vp=Vinf-(Vinf-Vs[k])*a;Vp.push(vp);Vs.push(vp*b)}
+    const Vps=Vinf*(1-a)/(1-a*b),V0=b*Vps;return{tau,T,Ti,Te,Vinf,Vs,Vp,Vps,V0,Vt:Vps-V0,ap:V0/S.C}}
+  const volAt=(t,m)=>{const k=Math.min(NB-1,Math.floor(t/m.T)),tt=t-k*m.T;return tt<m.Ti?m.Vinf-(m.Vinf-m.Vs[k])*Math.exp(-tt/m.tau):m.Vp[k]*Math.exp(-(tt-m.Ti)/m.tau)};
+  mods[7]={draw(dt){
+    const m=model();S.t+=dt*(NB*m.T)/12;if(S.t>NB*m.T)S.t=0;
+    const V=volAt(S.t,m),insp=(S.t%m.T)<m.Ti,ratio=m.Te/m.tau;
+    set('tau',nf(m.tau,2)+' s',m.tau>1?'bad':m.tau>.6?'mid':'ok');set('te',nf(m.Te,1)+' s = '+nf(ratio,1)+' τ',ratio<3?'bad':'ok');set('vt',nf(m.Vt,0)+' mL');set('trap',nf(m.V0,0)+' mL',m.V0>50?'bad':'ok');set('pp',nf(m.ap,1)+' cmH₂O',m.ap>1?'bad':'ok');
+    set('st',m.V0>50?'Aire atrapado':'Vacía por completo',m.V0>50?'bad':'ok');
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const cx=w*.3,cy=h*.6,rf=34,sc=34/1.0,mx=Math.max(m.Vinf,600),rad=v=>rf+(v/mx)*44;
+      ctx.setLineDash([4,4]);ctx.strokeStyle=C.muted;ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,rf,0,PI*2);ctx.stroke();
+      if(m.V0>1){ctx.strokeStyle=C.blood;ctx.beginPath();ctx.arc(cx,cy,rad(m.V0),0,PI*2);ctx.stroke()}ctx.setLineDash([]);
+      ctx.beginPath();ctx.arc(cx,cy,rad(V),0,PI*2);ctx.fillStyle=C.airSoft;ctx.fill();ctx.strokeStyle=C.air;ctx.lineWidth=3;ctx.stroke();
+      ctx.strokeStyle=C.blood;ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(cx,cy-rad(V));ctx.lineTo(cx,6);ctx.stroke();ctx.lineCap='butt';
+      if(insp)arrow(ctx,cx+14,8,cx+14,34,C.air,2.4);else arrow(ctx,cx+14,34,cx+14,8,C.warn,2.4);
+      const tx=w*.58;label(ctx,insp?'Inspiración':'Espiración pasiva',tx,16,insp?C.air:C.warn);label(ctx,'V = '+nf(V,0)+' mL sobre CRF',tx,38,C.ink);
+      label(ctx,insp?'Presión: '+nf(S.dP,1)+' cmH₂O':'Presión: 0 cmH₂O',tx,60,C.muted);
+      label(ctx,'- - CRF',tx,86,C.muted);if(m.V0>1)label(ctx,'- - volumen atrapado',tx,104,C.blood);
+      label(ctx,'tiempo acelerado',w-8,h-6,C.muted,'right','bottom');
+    }
+    const tot=NB*m.T,my=Math.max(m.Vinf*1.05,100),tk=(()=>{const st=my>800?200:my>300?100:my>150?50:25;const a=[];for(let v=0;v<=my;v+=st)a.push({v,l:nf(v,0)});return a})();
+    const bands=[];for(let k=0;k<NB;k++)bands.push({x0:k*m.T,x1:k*m.T+m.Ti,color:C.air,alpha:.1});
+    chart(o2,{x0:0,x1:tot,y0:0,y1:my,pl:48,xlabel:'Tiempo (s) · franjas = inspiración',xt:Array.from({length:5},(_,i)=>({v:tot*i/4,l:nf(tot*i/4,0)})),yt:tk,bands,
+      hl:m.V0>1?[{y:m.V0,color:C.blood,label:'atrapado '+nf(m.V0,0)+' mL'}]:[],
+      series:[{pts:sample(t=>volAt(Math.min(t,tot-1e-6),m),0,tot,360),color:C.air}],vl:[{x:S.t,color:C.ink,dash:[2,3]}]});
+  }};
+}
+
+/* =========================================================
+   MÓDULO 6 · Fick
+   ========================================================= */
+{
+  const o1=mk('c6a'),o2=mk('c6b');
+  const A0=70,T0=.6,PA0=104,PV=40,TAU0=.08;
+  const S={A:70,T:.6,PA:104,tr:.75};
+  const set=reads($('#r6'),[['rel','Difusión de O₂ (normal = 100 %)'],['tau','Constante de equilibrio'],['pc','PO₂ capilar al salir'],['st','Estado']]);
+  const sA=ctl($('#s6'),{id:'d-a',label:'Área de intercambio A',min:20,max:90,step:1,value:70,unit:'m²',onChange:v=>S.A=v});
+  const sT=ctl($('#s6'),{id:'d-t',label:'Espesor de la membrana T',min:0.3,max:3,step:0.1,value:0.6,unit:'µm',dec:1,onChange:v=>S.T=v});
+  const sP=ctl($('#s6'),{id:'d-p',label:'PO₂ alveolar',min:40,max:150,step:1,value:104,unit:'mmHg',onChange:v=>S.PA=v});
+  const sR=ctl($('#s6'),{id:'d-r',label:'Tiempo de tránsito del glóbulo rojo',min:0.2,max:1,step:0.05,value:0.75,unit:'s',dec:2,onChange:v=>S.tr=v});
+  const cond=(A,T,PA)=>{S.A=A;S.T=T;S.PA=PA;sA.set(A);sT.set(T);sP.set(PA)};
+  chips($('#p6'),[['Normal',()=>cond(70,.6,104)],['Enfisema (área baja)',()=>cond(35,.6,104)],['Fibrosis (membrana gruesa)',()=>cond(70,1.8,104)],['Altura (PO₂ baja)',()=>cond(70,.6,60)]]);
+  chips($('#p6b'),[['Reposo (0,75 s)',()=>{S.tr=.75;sR.set(.75)}],['Esfuerzo (0,30 s)',()=>{S.tr=.3;sR.set(.3)}]]);
+  const MP=[];let acc=0;
+  const RB=parts(9,()=>({x:Math.random()}));
+  const tauD=()=>TAU0*(S.T/T0)/(S.A/A0), pc=t=>S.PA-(S.PA-PV)*Math.exp(-t/tauD());
+  mods[8]={draw(dt){
+    const rel=100*(S.A/A0)*(T0/S.T)*((S.PA-PV)/(PA0-PV)),pe=pc(S.tr),frac=(pe-PV)/(S.PA-PV);
+    set('rel',nf(rel,0)+' %',rel<60?'bad':rel<90?'mid':'ok');set('tau',nf(tauD(),2)+' s',tauD()>.2?'bad':tauD()>.12?'mid':'ok');set('pc',nf(pe,0)+' mmHg',pe<S.PA-8?'bad':pe<S.PA-2?'mid':'ok');
+    set('st',frac>.97?'Equilibrio completo':frac>.85?'Casi completo':'Equilibrio incompleto',frac>.97?'ok':frac>.85?'mid':'bad');
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const my=h*.5,thick=clamp(S.T/T0*9,5,52),extFull=w-60,ext=extFull*S.A/90,xs=(w-ext)/2,xe=xs+ext,xf0=(w-extFull)/2;
+      ctx.fillStyle=rgba(C.air,.14);ctx.fillRect(0,0,w,my-thick/2);ctx.fillStyle=rgba(C.blood,.16);ctx.fillRect(0,my+thick/2,w,h-my-thick/2);
+      label(ctx,'Alvéolo (aire)',10,8,C.air);label(ctx,'Capilar (sangre)',10,h-8,C.blood,'left','bottom');
+      ctx.setLineDash([4,4]);ctx.strokeStyle=C.muted;ctx.lineWidth=1;ctx.strokeRect(xf0,my-thick/2,extFull,thick);ctx.setLineDash([]);
+      ctx.fillStyle=C.surface2;ctx.fillRect(xs,my-thick/2,ext,thick);ctx.strokeStyle=C.warn;ctx.lineWidth=2;ctx.strokeRect(xs,my-thick/2,ext,thick);
+      label(ctx,'membrana: T = '+nf(S.T,1)+' µm · A = '+S.A+' m²',w-10,8,C.warn,'right','top');
+      // glóbulos rojos
+      RB.forEach(r=>{r.x=(r.x+dt*.16*(.75/S.tr))%1.1;const x=r.x*w*1.0-20,y=my+thick/2+(h-my-thick/2)*.62;ctx.beginPath();ctx.ellipse(x,y,14,8,0,0,PI*2);ctx.fillStyle=mix(C.blood,C.bloodSoft,.3+.5*(1-clamp((pc(r.x*S.tr)-PV)/(S.PA-PV+1e-6),0,1))*0.5);ctx.fill();ctx.strokeStyle=C.blood;ctx.lineWidth=1.4;ctx.stroke()});
+      // moléculas
+      const rate=26*(ext/(w-60))*(((S.PA-PV)/(PA0-PV)))*(T0/S.T)*(w-60)/340;
+      acc+=rate*dt;while(acc>=1&&MP.length<420){acc--;MP.push({x:rand(xs,xe),y:rand(14,Math.max(16,my-thick/2-4)),s:0})}
+      const vA=60,vM=thick/(.5*S.T/T0),vC=45;
+      for(let i=MP.length-1;i>=0;i--){const p=MP[i];
+        if(p.y<my-thick/2){p.y+=vA*dt;p.x+=randn()*20*dt;p.s=0}else if(p.y<my+thick/2){p.y+=vM*dt;p.s=1}else{p.y+=vC*dt;p.x+=40*dt;p.s=2}
+        if(p.y>h-10||p.x>w){MP.splice(i,1);continue}
+        ctx.fillStyle=p.s===2?C.blood:p.s===1?C.warn:C.air;ctx.beginPath();ctx.arc(p.x,p.y,3,0,PI*2);ctx.fill()}
+    }
+    const top=Math.max(S.PA+10,115);
+    chart(o2,{x0:0,x1:1,y0:30,y1:top,pl:46,xlabel:'Tiempo en el capilar (s)',xt:[0,.25,.5,.75,1].map(v=>({v,l:nf(v,2)})),yt:Array.from({length:Math.floor((top-40)/20)+1},(_,i)=>({v:40+20*i,l:''+(40+20*i)})),
+      bands:[{x0:S.tr,x1:1,color:C.muted,alpha:.1}],hl:[{y:S.PA,color:C.air,label:'PO₂ alveolar '+S.PA},{y:PV,color:C.blood,label:'sangre venosa '+PV,dash:[2,4]}],
+      series:[{pts:sample(pc,0,1,80),color:C.ink}],vl:[{x:S.tr,color:C.muted}],markers:[{x:S.tr,y:pe,color:C.blood,label:nf(pe,0)+' mmHg',dy:14}]});
+  }};
+}
+
+
+/* =========================================================
+   MÓDULO 7 · Acondicionamiento del aire
+   ========================================================= */
+{
+  const o1=mk('c7a'),o2=mk('c7b'),o3=mk('c7c');
+  const S={T:20,RH:50,Q:.5,route:'nariz'};
+  const U=15,TB=37;
+  const cum=[];{let a=U;WL.forEach(l=>{a+=l/10;cum.push(a)})}
+  const TOT=cum[23],CAR=cum[0];
+  const P=parts(110,()=>({x:Math.random(),y:rand(-1,1),v:Math.random()}));
+  const ahs=T=>216.7*6.112*Math.exp(17.67*T/(T+243.5))/(T+273.15);
+  const fq=()=>Math.pow(S.Q/.5,.35);
+  const LU=()=>(S.route==='nariz'?3.5:10)*fq(),LL=()=>(S.route==='tubo'?7.5:9)*fq();
+  const I=x=>S.route==='tubo'?Math.max(0,x-U)/LL():Math.min(x,U)/LU()+Math.max(0,x-U)/LL();
+  const D0=()=>TB-S.T;
+  const Tx=x=>TB-D0()*Math.exp(-I(x));
+  const AHin=()=>S.RH/100*ahs(S.T);
+  const AHx=x=>AHin()+(ahs(Tx(x))-AHin())*(1-Math.exp(-2*I(x)));
+  const isb=()=>{const d=Math.abs(D0());if(d<=.5)return 0;const Is=Math.log(d/.5);if(S.route==='tubo')return U+Is*LL();const iu=U/LU();return Is<=iu?Is*LU():U+(Is-iu)*LL()};
+  const where=d=>d>TOT?'no se alcanza':d<U?'vía superior':d<=CAR?'tráquea':'generación '+cum.findIndex(c=>c>=d);
+  const set=reads($('#r7'),[['isb','Aire saturado desde'],['tc','Temperatura en la carina'],['ta','Temperatura en el alvéolo'],['rh','Humedad que entra'],['agua','Agua aportada por la mucosa'],['st','Estado']]);
+  const sT=ctl($('#s7'),{id:'h-t',label:'Temperatura del aire inspirado',min:-20,max:40,step:1,value:20,unit:'°C',onChange:v=>S.T=v});
+  const sH=ctl($('#s7'),{id:'h-h',label:'Humedad relativa del aire',min:0,max:100,step:1,value:50,unit:'%',onChange:v=>S.RH=v});
+  const sQ=ctl($('#s7'),{id:'h-q',label:'Flujo inspiratorio',min:.2,max:4,step:.1,value:.5,unit:'L/s',dec:1,onChange:v=>S.Q=v});
+  const env=(T,H,Q)=>{S.T=T;S.RH=H;S.Q=Q;sT.set(T);sH.set(H);sQ.set(Q)};
+  chips($('#p7'),[['Nariz',()=>S.route='nariz'],['Boca',()=>S.route='boca'],['Intubado (sin vía superior)',()=>S.route='tubo']]);
+  chips($('#p7b'),[['Reposo, aire de sala',()=>env(20,50,.5)],['Aire frío y seco',()=>env(-10,30,.5)],['Ejercicio',()=>env(20,50,3)],['Aire cálido y húmedo',()=>env(35,90,.5)]]);
+  mods[9]={draw(dt){
+    const x=isb(),agua=(AHx(TOT)-AHin())*15*S.Q;
+    set('isb',x>TOT?'no se alcanza':nf(x,0)+' cm · '+where(x),x>TOT?'bad':x>CAR?'mid':'ok');
+    set('tc',nf(Tx(CAR),1)+' °C',TB-Tx(CAR)>2?'bad':'');set('ta',nf(Tx(TOT),1)+' °C',TB-Tx(TOT)>.5?'bad':'ok');
+    set('rh',nf(AHin(),1)+' mg/L');set('agua',nf(agua,0)+' mg/min',agua>600?'mid':'');
+    set('st',x<=U?'Se acondiciona arriba':x<=CAR?'Llega a la tráquea justo':x<=TOT?'Baja a los bronquios':'Llega aire sin acondicionar',x<=U?'ok':x<=CAR?'ok':x<=TOT?'mid':'bad');
+    const tcol=T=>mix(C.air,C.blood,clamp((T+20)/57,0,1));
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const pad=18,W=w-2*pad,cy=h*.46,X=d=>pad+d/TOT*W;
+      const half=d=>d<U?15:d<CAR?20:Math.max(5,20-(d-CAR)/(TOT-CAR)*15);
+      ctx.fillStyle=C.surface2;ctx.beginPath();for(let px=0;px<=W;px+=3){const d=px/W*TOT;px?ctx.lineTo(pad+px,cy-half(d)):ctx.moveTo(pad,cy-half(d))}for(let px=W;px>=0;px-=3)ctx.lineTo(pad+px,cy+half(px/W*TOT));ctx.closePath();ctx.fill();
+      ctx.globalAlpha=.5;for(let px=0;px<W;px+=3){const d=px/W*TOT;ctx.fillStyle=tcol(Tx(d));ctx.fillRect(pad+px,cy-half(d),3.2,2*half(d))}ctx.globalAlpha=1;
+      ctx.strokeStyle=C.blood;ctx.lineWidth=2;ctx.beginPath();for(let px=0;px<=W;px+=3){const d=px/W*TOT;px?ctx.lineTo(pad+px,cy-half(d)):ctx.moveTo(pad,cy-half(d))}ctx.stroke();ctx.beginPath();for(let px=0;px<=W;px+=3){const d=px/W*TOT;px?ctx.lineTo(pad+px,cy+half(d)):ctx.moveTo(pad,cy+half(d))}ctx.stroke();
+      const sp=70+55*S.Q;
+      P.forEach(p=>{p.x+=sp*dt/W;if(p.x>1){p.x=0;p.y=rand(-1,1);p.v=Math.random()}const d=p.x*TOT,px=X(d),py=cy+p.y*half(d)*.85;
+        ctx.fillStyle=tcol(Tx(d));ctx.beginPath();ctx.arc(px,py,2.6,0,PI*2);ctx.fill();
+        if(p.v<AHx(d)/44){ctx.strokeStyle=C.air;ctx.lineWidth=1;ctx.beginPath();ctx.arc(px,py,5,0,PI*2);ctx.stroke()}});
+      ctx.setLineDash([3,3]);ctx.strokeStyle=C.muted;ctx.lineWidth=1;[U,CAR].forEach(d=>{ctx.beginPath();ctx.moveTo(X(d),cy-28);ctx.lineTo(X(d),cy+28);ctx.stroke()});ctx.setLineDash([]);
+      label(ctx,S.route==='tubo'?'tubo (sin vía superior)':S.route==='nariz'?'nariz y faringe':'boca y faringe',X(U/2),6,C.muted,'center');
+      label(ctx,'tráquea',X((U+CAR)/2),6,C.muted,'center');label(ctx,'bronquios y bronquiolos',X((CAR+TOT)/2+2),6,C.muted,'center');
+      if(x<=TOT){ctx.setLineDash([5,4]);ctx.strokeStyle=C.warn;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(X(x),cy-36);ctx.lineTo(X(x),cy+40);ctx.stroke();ctx.setLineDash([]);label(ctx,'ISB',X(x),cy+42,C.warn,'center')}
+      const g=ctx.createLinearGradient(w-pad-120,0,w-pad,0);g.addColorStop(0,C.air);g.addColorStop(1,C.blood);ctx.fillStyle=g;ctx.fillRect(w-pad-120,h-24,120,7);
+      label(ctx,'−20 °C',w-pad-120,h-6,C.muted,'left','bottom');label(ctx,'37 °C',w-pad,h-6,C.muted,'right','bottom');label(ctx,'anillo = vapor de agua',pad,h-6,C.muted,'left','bottom');
+    }
+    const xt=[0,10,20,30,40].map(v=>({v,l:''+v}));
+    const vl=[{x:U,color:C.muted},{x:CAR,color:C.muted,label:'carina'}];if(x<=TOT)vl.push({x,color:C.warn,label:'ISB'});
+    chart(o2,{x0:0,x1:TOT,y0:-25,y1:45,pl:44,xlabel:'Distancia desde la entrada (cm)',xt,yt:[-20,0,20,40].map(v=>({v,l:''+v})),hl:[{y:TB,color:C.warn,label:'37 °C'}],vl,
+      series:[{pts:sample(Tx,0,TOT,120),color:C.blood}],markers:[{x:0,y:S.T,color:C.air,label:S.T+' °C',dy:-12}]});
+    chart(o3,{x0:0,x1:TOT,y0:0,y1:50,pl:44,xlabel:'Distancia desde la entrada (cm)',xt,yt:[0,10,20,30,40,50].map(v=>({v,l:''+v})),hl:[{y:44,color:C.warn,label:'44 mg/L'}],vl,
+      series:[{pts:sample(x=>ahs(Tx(x)),0,TOT,120),color:C.muted,dash:[5,4],width:1.5},{pts:sample(AHx,0,TOT,120),color:C.air}],markers:[{x:0,y:AHin(),color:C.air,label:nf(AHin(),1)+' mg/L',dy:-12}]});
+    label(o3.ctx,'--- saturación a esa temperatura   — contenido real',56,16,C.muted,'left','top');
+  }};
+}
+
+/* =========================================================
+   MÓDULO 8 · Tos
+   ========================================================= */
+{
+  const o1=mk('c8a'),o2=mk('c8b'),o3=mk('c8c');
+  const S={P:100,V:80,R:4,th:2,c:.95};
+  const A0=2.54e-4,rho=1.14,TINS=.4,TCOMP=.6,TEND=1.6;
+  const g=t=>t<0?0:(1-Math.exp(-t/.02))*Math.exp(-t/.25);
+  let gmax=0,tpk=0;for(let i=0;i<500;i++){const t=i/500,v=g(t);if(v>gmax){gmax=v;tpk=t}}
+  const calc=()=>{const Pel=5+20*(S.V-40)/60,Qlim=Pel/(.5*S.R),Qu=(Pel+S.P)/S.R,Q=Math.min(Qlim,Qu),comp=.6*(1-Math.exp(-S.P/60)),a=1-comp,v=Q*1e-3/(A0*a),pd=.5*rho*v*v/1000;return{Pel,Q,lim:Qu>Qlim,comp,a,v,pd,ok:pd>S.th}};
+  const flow=(t,c)=>t<TINS?-2*Math.sin(PI*t/TINS):t<TCOMP?0:c.Q*g(t-TCOMP)/gmax;
+  const pres=t=>t<TINS?0:t<TCOMP?S.P*(1-Math.exp(-(t-TINS)/.06)):S.P*(.55+.45*g(t-TCOMP)/gmax);
+  const set=reads($('#r8'),[['Q','Flujo pico'],['a','Área de la tráquea'],['v','Velocidad en la tráquea'],['pd','Presión dinámica ½ρv²'],['pc','Presión en la vía con glotis cerrada'],['st','Moco']]);
+  const sP=ctl($('#s8'),{id:'t-p',label:'Esfuerzo (presión pleural)',min:20,max:200,step:5,value:100,unit:'cmH₂O',onChange:v=>S.P=v});
+  const sV=ctl($('#s8'),{id:'t-v',label:'Aire inspirado antes de toser',min:40,max:100,step:5,value:80,unit:'% de la CPT',onChange:v=>S.V=v});
+  const sR=ctl($('#s8'),{id:'t-r',label:'Resistencia de la vía',min:2.5,max:15,step:.5,value:4,unit:'cmH₂O·s/L',dec:1,onChange:v=>S.R=v});
+  const sT=ctl($('#s8'),{id:'t-m',label:'Adherencia del moco (umbral)',min:1,max:8,step:.5,value:2,unit:'kPa',dec:1,onChange:v=>S.th=v});
+  const apply=(P,V,R,th)=>{S.P=P;S.V=V;S.R=R;S.th=th;sP.set(P);sV.set(V);sR.set(R);sT.set(th);S.c=0};
+  chips($('#p8'),[['Tos normal',()=>apply(100,80,4,2)],['Tos débil (músculos)',()=>apply(30,60,4,2)],['Inspiración corta',()=>apply(100,45,4,2)],['Vía obstruida',()=>apply(100,80,10,2)],['Moco espeso',()=>apply(100,80,4,4)],['Moco espeso, más esfuerzo',()=>apply(200,80,4,4)]]);
+  const P=parts(90,()=>({x:Math.random(),y:rand(-1,1)}));
+  const XN=[.12,.24,.36,.48,.6,.7];let M=XN.map(x=>({x,off:0,gone:false}));
+  const reset=()=>{M=XN.map(x=>({x,off:0,gone:false}))};
+  mods[10]={draw(dt){
+    const c=calc();const prev=S.c;S.c+=dt*.4;if(S.c>TEND+.5){S.c=0}if(S.c<prev)reset();const t=Math.min(S.c,TEND);
+    const q=flow(t,c),qn=t>=TCOMP?g(t-TCOMP)/gmax:0,s=S.P?pres(t)/S.P:0;
+    set('Q',nf(c.Q,1)+' L/s',c.Q<5?'bad':'');set('a',nf(100*c.a,0)+' %');set('v',nf(c.v,0)+' m/s');set('pd',nf(c.pd,1)+' kPa',c.ok?'ok':'bad');set('pc',nf(c.Pel+S.P,0)+' cmH₂O');set('st',c.ok?'Se expulsa':'Queda adherido',c.ok?'ok':'bad');
+    if(o1.w){const{ctx,w,h}=o1;ctx.clearRect(0,0,w,h);const x0=40,x1=w-48,L=x1-x0,cy=h*.5+4,full=28;
+      const aL=xn=>1-c.comp*s*Math.exp(-Math.pow((xn-.45)/.18,2));
+      const half=xn=>full*aL(xn);
+      ctx.fillStyle=C.bloodSoft;ctx.fillRect(x0,cy-full-16,L,2*full+32);
+      ctx.beginPath();for(let i=0;i<=80;i++){const xn=i/80;i?ctx.lineTo(x0+xn*L,cy-half(xn)):ctx.moveTo(x0,cy-half(xn))}for(let i=80;i>=0;i--)ctx.lineTo(x0+i/80*L,cy+half(i/80));ctx.closePath();ctx.fillStyle=C.airSoft;ctx.fill();ctx.strokeStyle=C.blood;ctx.lineWidth=2;ctx.stroke();
+      if(s>.05)for(let i=0;i<6;i++){const xn=.2+.1*i,e=half(xn),len=3+14*s;arrow(ctx,x0+xn*L,cy-e-14-len,x0+xn*L,cy-e-4,C.blood,1.5);arrow(ctx,x0+xn*L,cy+e+14+len,x0+xn*L,cy+e+4,C.blood,1.5)}
+      // partículas
+      P.forEach(p=>{let sp=0;if(t<TINS)sp=-150*Math.sin(PI*t/TINS);else if(t>=TCOMP)sp=clamp(380*qn*(c.Q/8)/aL(p.x),0,1500);
+        p.x+=(sp*dt+(sp===0?randn()*10*Math.sqrt(dt):0))/L;if(p.x>1)p.x=0;if(p.x<0)p.x=1;
+        ctx.fillStyle=C.air;ctx.beginPath();ctx.arc(x0+p.x*L,cy+p.y*half(p.x)*.8,2.3,0,PI*2);ctx.fill()});
+      // moco
+      M.forEach(m=>{if(m.gone)return;if(t>=TCOMP){const sp=clamp(380*qn*(c.Q/8)/aL(m.x),0,1500);m.off+=(c.ok?.5*sp:sp*.01)*dt}
+        const px=x0+m.x*L+m.off;if(px>x1){m.gone=true;return}const xn=(px-x0)/L;ctx.fillStyle=C.warn;ctx.beginPath();ctx.ellipse(px,cy+half(xn)-3,7,3.6,0,0,PI*2);ctx.fill()});
+      // glotis
+      const xg=x0+L*.88,gap=t>=TINS&&t<TCOMP?.04:.75;ctx.strokeStyle=C.warn;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(xg,cy-full);ctx.lineTo(xg+12,cy-full*gap);ctx.moveTo(xg,cy+full);ctx.lineTo(xg+12,cy+full*gap);ctx.stroke();ctx.lineCap='butt';
+      if(q>.3)arrow(ctx,x1+4,cy,x1+4+Math.min(40,q*4),cy,C.air,2.4);
+      const ph=t<TINS?'1 · Inspiración profunda':t<TCOMP?'2 · Compresión: glotis cerrada':'3 · Explosión: glotis abierta';
+      label(ctx,ph,x0,6,t<TINS?C.air:t<TCOMP?C.warn:C.blood);label(ctx,'pulmón',x0,h-6,C.muted,'left','bottom');label(ctx,'glotis',xg+6,h-6,C.warn,'center','bottom');label(ctx,'boca',x1+4,h-6,C.muted,'right','bottom');
+      if(s>.3)label(ctx,'tráquea comprimida: A = '+nf(100*c.a,0)+' %',x0+L*.45,h-6,C.blood,'center','bottom');
+    }
+    const vl=[{x:t,color:C.ink,dash:[2,3]}];
+    const bands=[{x0:0,x1:TINS,color:C.air,alpha:.12,label:'insp.'},{x0:TINS,x1:TCOMP,color:C.warn,alpha:.18},{x0:TCOMP,x1:TEND,color:C.blood,alpha:.08,label:'explosión'}];
+    chart(o2,{x0:0,x1:TEND,y0:-4,y1:14,pl:44,xt:[0,.4,.8,1.2,1.6].map(v=>({v,l:nf(v,1)})),yt:[-4,0,4,8,12].map(v=>({v,l:''+v})),bands,hl:[{y:0,color:C.muted,dash:[]}],vl,
+      series:[{pts:sample(t=>flow(t,c),0,TEND,200),color:C.air}],markers:[{x:TCOMP+tpk,y:c.Q,color:C.blood,label:'pico '+nf(c.Q,1)+' L/s',dy:-2}]});
+    chart(o3,{x0:0,x1:TEND,y0:0,y1:210,pl:44,xlabel:'Tiempo real (s)',xt:[0,.4,.8,1.2,1.6].map(v=>({v,l:nf(v,1)})),yt:[0,50,100,150,200].map(v=>({v,l:''+v})),bands,vl,
+      series:[{pts:sample(pres,0,TEND,200),color:C.blood}]});
+  }};
+}
+
+/* ---------- navegación ---------- */
+const RUN={1:[1,2],2:[3],3:[4,5],4:[6],5:[7],6:[8],7:[9],8:[10]};
+const tabs=[...document.querySelectorAll('.tab')];
+let active=1;
+function show(n,focus){
+  active=n;
+  tabs.forEach(t=>{const on=+t.dataset.n===n;t.setAttribute('aria-selected',on);t.tabIndex=on?0:-1;$('#m'+t.dataset.n).hidden=!on;if(on&&focus)t.focus()});
+  document.querySelectorAll('#lungmap [data-m]').forEach(e=>e.classList.toggle('on',e.dataset.m.split(' ').includes(String(n))));
+  document.querySelectorAll('#lungmap .mk').forEach(e=>e.classList.toggle('on',+e.dataset.go===n));
+  try{history.replaceState(null,'','#m'+n)}catch(e){}
+}
+tabs.forEach((t,i)=>{
+  t.addEventListener('click',()=>show(+t.dataset.n));
+  t.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();show(((i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length)+1,true)}});
+});
+document.querySelectorAll('#lungmap .mk').forEach(g=>g.addEventListener('click',()=>show(+g.dataset.go)));
+let start=1;const hm=(location.hash||'').match(/^#m([1-8])$/);if(hm)start=+hm[1];
+
+/* ---------- bucle de animación ---------- */
+let paused=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pb=$('#pause');
+const syncPause=()=>{pb.textContent=paused?'Reanudar animación':'Pausar animación';pb.setAttribute('aria-pressed',paused)};
+pb.addEventListener('click',()=>{paused=!paused;syncPause()});syncPause();
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;readColors();
+  const run=RUN[active];
+  try{run.forEach(k=>mods[k].draw(paused?0:dt))}catch(e){console.error(e)}
+  requestAnimationFrame(frame);
+}
+readColors();show(start);requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
